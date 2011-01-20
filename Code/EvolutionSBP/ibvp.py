@@ -64,7 +64,7 @@ class IBVP:
             
             if self.theActions is not None:
                 for action in self.theActions:
-                    actions(self.iteration, u)
+                    action(self.iteration, u)
             
             t, u = advance(t, u, dt)
             self.iteration+=1
