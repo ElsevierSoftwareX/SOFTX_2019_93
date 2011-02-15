@@ -66,7 +66,7 @@ class advection_eqn(system.System):
         return tslices.timeslice((u, v), x, time = t0)
 
     def left(self,t):
-        return 0.0
+        return np.sin(t*5)
 
     def right(self,t):
         return 0.0
