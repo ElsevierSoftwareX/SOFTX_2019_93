@@ -10,7 +10,8 @@ Copyright (c) 2010 University of Otago. All rights reserved.
 import sys
 import os
 import unittest
-
+import math
+import numpy as np
 
 from solvers import Solver
 from system import System
@@ -21,10 +22,27 @@ class Grid(object):
     def __init__(self, shape):
         self.dim = len(shape)
         self.shape = shape
-    
-    
-    
 
+    def getX1(self):
+        return self.x1
+    
+    
+    
+class Interval(Grid):
+    """docstring for Interval"""
+    def __init__(self, shape, bounds):
+        super(Interval, self).__init__(shape)
+        self.x1 = np.linspace(bounds[0],bounds[1],shape[0]+1)
+
+        
+        
+class Periodic(Grid):
+    """docstring for Loop"""
+    def __init__(self, shape, bounds):
+        super(Periodic, self).__init__(shape)
+        x = np.linspace(bounds[0],bounds[1],shape[0]+1)
+        self.x1 = x[:-1]
+        
 
 #############################################################################
 class IBVP:
@@ -34,7 +52,7 @@ class IBVP:
     iteration = 0
     maxIteration = None
     
-    def __init__(self, sol, eqn, grid = None, action = None, maxIteration = 1000):
+    def __init__(self, sol, eqn, grid = None, action = None, maxIteration = 10000):
         sol.useSystem(eqn)
         self.theSolver = sol
         self.theSystem = eqn
@@ -45,6 +63,7 @@ class IBVP:
     
     
     def _ic(self,t0):
+        print ("Setting up initial data")
         return self.theSystem.initialValues(t0, grid = self.theGrid)
     
     
@@ -53,13 +72,15 @@ class IBVP:
         t = tstart
         u = self._ic(tstart)
         dt = self.theSystem.timestep(u)
+        print("Using timestep dt=%f"%(dt,))
         advance = self.theSolver.advance
         while(True):
             if (self.iteration > self.maxIteration):
                 print("Maximum number of iterations exceeded\n")
                 break
             
-            if (t >= tstop):
+            if (math.fabs(t-tstop) < dt/2):
+                print("Time: %f,  Iterations: %d" % (t, self.iteration))
                 break
             
             if self.theActions is not None:
@@ -67,7 +88,8 @@ class IBVP:
             
             t, u = advance(t, u, dt)
             self.iteration+=1
-        print("Finished.-")
+        print("Finished.-\n\n")
+        return u
 
 
 
