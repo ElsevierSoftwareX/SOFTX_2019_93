@@ -73,7 +73,9 @@ class D43_Tiglioetal(diffop):
 
 
 class D43_CNG(diffop):
-    """This operator looks somewhat suspicious. It does not converge at the boundaries"""
+    """This operator looks somewhat suspicious. It does not converge at the boundaries.
+    The operator is taken from Carpenter, Nordstrom, Gottlieb, J. Comp.
+    Phys. 148:341-365."""
     r1 = -(2177.*math.sqrt(295369.) - 1166427.)/(25488.)
     r2 = (66195.*math.sqrt(53.*5573.) - 35909375.)/101952.
     A = np.array([-1./12.,2./3.,0.,-2./3.,1./12.])
@@ -114,7 +116,7 @@ class D43_CNG(diffop):
         P[0,3] = -(108*b + 756*a + 421)/1296
         
         P[1,0] = P[0,1]
-        P[1,1] = -(4140*b + 32400*a + 11225)/4320
+        P[1,1] = -(4104*b + 32400*a + 11225)/4320
         P[1,2] = (1836*b + 14580*a + 7295)/2160
         P[1,3] = -(216*b + 2160*a + 665)/(4320)
         
