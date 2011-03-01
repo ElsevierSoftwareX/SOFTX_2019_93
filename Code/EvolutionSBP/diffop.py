@@ -28,7 +28,7 @@ class diffop(object):
         du[-r:] = np.dot(self.Qr, u[-c:])
         return du/dx
 
-    def def penalty_boundary(self,eigenvalue,dx,vector_length):
+    def penalty_boundary(self,eigenvalue,dx,vector_length):
         return NotImplementedError("%s does not implement the method \
             penalty_boundary(self,eigenvalue,dx,vector_length)"%str(self))
 
