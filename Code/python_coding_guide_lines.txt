@@ -1,0 +1,4 @@
+"""
+Python coding guidelines can be found at
+http://www.python.org/dev/peps/pep-0008/
+"""

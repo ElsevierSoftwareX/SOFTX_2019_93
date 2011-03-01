@@ -22,26 +22,28 @@ class Grid(object):
     def __init__(self, shape):
         self.dim = len(shape)
         self.shape = shape
-
+        self.name = None
+        self.grid = None
+        
     def getX1(self):
         return self.x1
-    
-    
     
 class Interval(Grid):
     """docstring for Interval"""
     def __init__(self, shape, bounds):
         super(Interval, self).__init__(shape)
         self.x1 = np.linspace(bounds[0],bounds[1],shape[0]+1)
+        self.grid = self.x1
+        self.name = "Interval grid, %s" % str(self.grid.shape)
 
-        
-        
 class Periodic(Grid):
     """docstring for Loop"""
     def __init__(self, shape, bounds):
         super(Periodic, self).__init__(shape)
         x = np.linspace(bounds[0],bounds[1],shape[0]+1)
         self.x1 = x[:-1]
+        self.grid = self.x1
+        self.name = "Periodic grid, %s" % (str(self.grid.shape))
         
 
 #############################################################################
@@ -52,7 +54,8 @@ class IBVP:
     iteration = 0
     maxIteration = None
     
-    def __init__(self, sol, eqn, grid = None, action = None, maxIteration = 10000):
+    def __init__(self, sol, eqn, grid = None, action = None,\
+        maxIteration = 10000):
         sol.useSystem(eqn)
         self.theSolver = sol
         self.theSystem = eqn
@@ -60,12 +63,9 @@ class IBVP:
         self.theGrid = grid
         self.theActions = action
         
-    
-    
     def _ic(self,t0):
         print ("Setting up initial data")
         return self.theSystem.initialValues(t0, grid = self.theGrid)
-    
     
     def run(self, tstart, tstop = float('inf')):
         """Go for it"""
@@ -84,7 +84,8 @@ class IBVP:
                 break
             
             if self.theActions is not None:
-                self.theActions(self.iteration, u)
+                for action in self.theActions:
+                    action(self.iteration, u)
             
             t, u = advance(t, u, dt)
             self.iteration+=1
@@ -92,11 +93,7 @@ class IBVP:
         return u
 
 
-
-
-
-
-#############################################################################
+###############################################################################
 class IBVPTests(unittest.TestCase):
     def setUp(self):
         eqn = System()

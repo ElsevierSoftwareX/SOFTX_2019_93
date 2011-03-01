@@ -15,6 +15,8 @@ import numpy as np
 
 class diffop(object):
     name = "Dx"
+    g00 = None
+    gnn = None
     def __init__(self):
         self.bdyRegion = self.Ql.shape
     
@@ -26,6 +28,10 @@ class diffop(object):
         du[-r:] = np.dot(self.Qr, u[-c:])
         return du/dx
 
+    def def penalty_boundary(self,eigenvalue,dx,vector_length):
+        return NotImplementedError("%s does not implement the method \
+            penalty_boundary(self,eigenvalue,dx,vector_length)"%str(self))
+
     def __str__(self):
         return "Differential operator "%self.name
         
@@ -35,8 +41,6 @@ class diffop(object):
         np.savetxt(filename + "_left.txt", self.Ql)
         np.savetxt(filename + "_right.txt", self.Qr)
         np.savetxt(filename + "_mid.txt", self.A)
-
-
 
 ################################################
 # Fourth order accurate differential operators
@@ -56,9 +60,6 @@ class D42(diffop):
         self.Qr = -self.Ql[::-1,::-1]
         super(D42, self).__init__()
         
-
-
-
 
 class D43_Tiglioetal(diffop):
     """D43 is a finite difference operator which has the SBP property.
@@ -86,7 +87,21 @@ class D43_CNG(diffop):
     r2 = (66195.*math.sqrt(53.*5573.) - 35909375.)/101952.
     A = np.array([-1./12.,2./3.,0.,-2./3.,1./12.])
     name = "D43_CNG"
+    g00 = -1
+    gnn = 1
+    
+    def penalty_boundary(self,eigenvalue,dx,vector_shape):
+        rv = np.zeros(vector_shape)
+        n = self.pbound.shape[0]
+        if eigenvalue > 0:
+            rv[-n:] = self.pbound[::-1]
+            return self.gnn*eigenvalue*rv/dx
+        elif eigenvalue_sign < 0:
+            rv[n:] = self.pbound
+            return self.g00*eigenvalue*self.pbound/dx
+    
     def __init__(self):
+        
         a = self.r1
         b = self.r2
         Q = np.mat(np.zeros((4,7)))
@@ -122,7 +137,7 @@ class D43_CNG(diffop):
         P[0,3] = -(108*b + 756*a + 421)/1296
         
         P[1,0] = P[0,1]
-        P[1,1] = -(4140*b + 32400*a + 11225)/4320
+        P[1,1] = -(4104*b + 32400*a + 11225)/4320
         P[1,2] = (1836*b + 14580*a + 7295)/2160
         P[1,3] = -(216*b + 2160*a + 665)/(4320)
         
@@ -136,14 +151,26 @@ class D43_CNG(diffop):
         P[3,2] = P[2,3]
         P[3,3] = -(216*b + 2160*a - 12085)/(12960)
         
-        self.Ql = np.dot(np.linalg.inv(P),Q)
+        Pinv = np.linalg.inv(P)
+        self.pbound = P[:,0]
+        self.Ql = np.dot(Pinv,Q)
         self.Qr = -self.Ql[::-1,::-1]
+        
+        # Note that the operation Ql[::-1,::-1]
+        # is not the transpose. The instructions in
+        # the relevant paper are misleading.        
+        #>>> a = np.array([[1,2,3],[4,5,6],[7,8,9]])
+        #>>> a
+        #array([[1, 2, 3],
+        #       [4, 5, 6],
+        #       [7, 8, 9]])
+        #>>> a[::-1,::-1]
+        #array([[9, 8, 7],
+        #       [6, 5, 4],
+        #       [3, 2, 1]])
         
         super(D43_CNG, self).__init__()
         
-
-
-
 
 class D43_Strand(diffop):
     """docstring for D43_Strand"""
@@ -192,8 +219,6 @@ class D43_Strand(diffop):
         
         
         super(D43_Strand, self).__init__()
-
-
 
 
 ################################################
