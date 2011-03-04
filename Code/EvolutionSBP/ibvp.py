@@ -66,13 +66,16 @@ class IBVP:
     def _ic(self,t0):
         print ("Setting up initial data")
         return self.theSystem.initialValues(t0, grid = self.theGrid)
+        print "...Done.-\n"
     
     def run(self, tstart, tstop = float('inf')):
         """Go for it"""
         t = tstart
         u = self._ic(tstart)
         dt = self.theSystem.timestep(u)
+        print "Grid = %s"%str(self.theGrid)
         print("Using timestep dt=%f"%(dt,))
+        print("Using spacestep dx=%f"%(u.dx,))
         advance = self.theSolver.advance
         while(True):
             if (self.iteration > self.maxIteration):

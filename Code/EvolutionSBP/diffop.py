@@ -96,15 +96,15 @@ class D43_CNG(diffop):
         if eigenvalue > 0:
             rv[-n:] = self.pbound[::-1]
             return self.gnn*eigenvalue*rv/dx
-        elif eigenvalue_sign < 0:
-            rv[n:] = self.pbound
-            return self.g00*eigenvalue*self.pbound/dx
+        elif eigenvalue < 0:
+            rv[:n] = self.pbound
+            return self.g00*eigenvalue*rv/dx
     
     def __init__(self):
         
         a = self.r1
         b = self.r2
-        Q = np.mat(np.zeros((4,7)))
+        Q = np.zeros((4,7))
         
         Q[0,0] = -0.5
         Q[0,1] = -(864.*b + 6480*a + 305)/4320.
@@ -130,7 +130,7 @@ class D43_CNG(diffop):
         Q[3,5] = -1./12.
         Q[3,4] =  8./12.
         
-        P = np.mat(np.zeros((4,4)))
+        P = np.zeros((4,4))
         P[0,0] = -(216*b + 2160*a - 2125)/(12960)
         P[0,1] = (81*b + 675*a + 415)/540
         P[0,2] = -(72*b + 720*a + 445)/(1440)
@@ -152,7 +152,7 @@ class D43_CNG(diffop):
         P[3,3] = -(216*b + 2160*a - 12085)/(12960)
         
         Pinv = np.linalg.inv(P)
-        self.pbound = P[:,0]
+        self.pbound = Pinv[:,0]
         self.Ql = np.dot(Pinv,Q)
         self.Qr = -self.Ql[::-1,::-1]
         
