@@ -27,6 +27,9 @@ class Grid(object):
         
     def getX1(self):
         return self.x1
+        
+    def __str__(self):
+        return self.name
     
 class Interval(Grid):
     """docstring for Interval"""
