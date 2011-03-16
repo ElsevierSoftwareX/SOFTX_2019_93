@@ -87,6 +87,18 @@ class diffop(object):
 # Fourth order accurate differential operators
 #
 
+class CD4(diffop):
+    """Implements the 4th order central difference, with
+    no treatment of the boundaries
+    """
+
+    def __init__(self):
+        self.name = "CD4"
+        self.Ql = np.array([[1,0],[0,1]])
+        self.Qr = self.Ql
+        self.A = np.array([-1./12.,2./3.,0.,-2./3.,1./12.])
+        super(CD4, self).__init__()
+
 class D42(diffop):
     """docstring for D42
        This operator is the D42 operator given in
@@ -113,7 +125,7 @@ class D42(diffop):
              [3.0/98.0,           0,-59.0/98.0,         0, 32.0/49.0, -4.0/49.0 ]])
         self.Qr = -self.Ql[::-1,::-1]
         #P is the identity, H is as given above
-        self.pbound = np.array([17./48])
+        self.pbound = np.array([48./17])
         super(D42, self).__init__()
 
 
@@ -123,7 +135,7 @@ class D43_Tiglioetal(diffop):
     boundaries. It is from the paper, "Optimized high-order derivative and 
     dissipation operators
     satisfying summation by parts, and applications in three-dimensional 
-    multi-block evolutions" by Diener, Dorband, Schnetter and Tiglio. 
+    multi-block evolutions" by Diener, Dorband, Schnetter and Tiglio (DDST). 
     
     The operator corresponds to the operator with minimum error.
     
@@ -134,7 +146,8 @@ class D43_Tiglioetal(diffop):
     
     Fortunately we do have the explicit values for Q and as such can calculate
     the correct values for the norm from them. We only need
-    to calculate h_00 as the norm is restricted full. Using the notation of page 62
+    to calculate h_00 as the norm is restricted full. Using the notation of 
+    page 62
     of Strand we get,
     h_00 = 4.186595269326998 = x_1.
     """
@@ -151,7 +164,7 @@ class D43_Tiglioetal(diffop):
         ])
         self.Qr = -self.Ql[::-1,::-1]
         # P is the identity.
-        self.pbound = np.array([1./4.186595269326998])
+        self.pbound = np.array([4.186595269326998])
         super(D43_Tiglioetal, self).__init__()
         
 
@@ -399,7 +412,7 @@ class D65_min_err(diffop):
 
     def __init__(self):
         self.Qr = -self.Ql[::-1,::-1]
-        self.pbound = np.array([1/4.930709842221048])
+        self.pbound = np.array([4.930709842221048])
         super(D65_min_err, self).__init__()
 
         
@@ -421,22 +434,19 @@ class diffopTests(unittest.TestCase):
     
     def test_SBPTest(self):
         Ql = self.D.Ql
-        HinvB = Ql[:4,:4]
+        HinvBl = Ql[:4,:4]
         H = np.diag([17./48,59./48,43./48,49./48])
-        B = np.dot(H,HinvB)
-        print B
-        D = self.D
-        u = np.zeros((101,))
-        #u[1] =1
-        u[0] = 1
-        #u = np.exp(np.linspace(0,1,101))
-        #v = np.exp(np.linspace(0,1,101))
-        dx = 0.01
-        print np.dot(u,D(u,dx))+0.5*u[0]*u[0]    
+        Bl = np.dot(H,HinvBl)
+        HinvBr = self.D.Qr[-4:,-4:]
+        #print HinvBr 
+        #print np.dot(H[::-1,::-1],HinvBr)
+        print np.linalg.inv(H)
+        print " "
+        print np.linalg.inv(H[::-1,::-1])
 
     def setUp(self):
         self.D = D42()
-        
+    """
     def test_pointconvergence(self):
         power2 = (1, 2, 4, 8, 16, 32)
         D = self.D
@@ -475,7 +485,7 @@ class diffopTests(unittest.TestCase):
         gca().set_title("Global convergence for %s" % D.name)
         show()
         self.assertTrue(True)
-        
+        """
         
 if __name__ == '__main__':
     unittest.main()

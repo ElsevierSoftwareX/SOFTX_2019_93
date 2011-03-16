@@ -76,6 +76,7 @@ class IBVP:
         t = tstart
         u = self._ic(tstart)
         dt = self.theSystem.timestep(u)
+        print "Running system %s"%str(self.theSystem)
         print "Grid = %s"%str(self.theGrid)
         print("Using timestep dt=%f"%(dt,))
         print("Using spacestep dx=%f"%(u.dx,))
