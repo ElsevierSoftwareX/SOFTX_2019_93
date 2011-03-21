@@ -6,7 +6,7 @@ diffop.py
 Created by Jörg Frauendiener on 2011-01-10.
 Copyright (c) 2011 University of Otago. All rights reserved.
 """
-
+from __future__ import division
 import sys
 import os
 import unittest
@@ -14,12 +14,20 @@ import math
 import numpy as np
 
 class diffop(object):
+    """The values of g_{00} and g_{NN} given here
+    are based on the values given in theorem 2.1 of Strand's paper,
+    "Summation by parts for finite difference approximations for d/dx."
+    
+    It is highly unlikely, therefore, that they will ever need to change.
+    """
     name = "Dx"
-    g00 = None
-    gnn = None
+    g00 = -1
+    gNN = 1
+    pbound = None
+
     def __init__(self):
         self.bdyRegion = self.Ql.shape
-    
+
     def __call__(self,u,dx):
         r,c = self.bdyRegion
         du = np.zeros_like(u)
@@ -28,9 +36,42 @@ class diffop(object):
         du[-r:] = np.dot(self.Qr, u[-c:])
         return du/dx
 
-    def penalty_boundary(self,eigenvalue,dx,vector_length):
-        return NotImplementedError("%s does not implement the method \
-            penalty_boundary(self,eigenvalue,dx,vector_length)"%str(self))
+    def penalty_boundary(self,eigenvalue,dx,vector_shape,exclude_zeros = True):
+        """The vector self.pbound is, in the notation of CGA,
+        given by P^(-1)H^(-1)e_i, i=1,2 where
+        e_0 = (1,0,...,0)^T and
+        e_n = (0,...,0,1)^T.
+        
+        We assume that only the terms from the first non-zero to the end
+        of the vector are given.
+        
+        Ensure that self.pbound is set up correctly in the init()
+        method of the individual operators. It depends on the
+        norm used to ensure the SBP property. This norm changes depending
+        on the operator.
+        """
+        rv = np.zeros(vector_shape)
+        n = self.pbound.shape[0]
+        if exclude_zeros:
+            if all(np.atleast_1d(eigenvalue) > 0):
+                rv[-n:] = self.pbound[::-1]
+                return self.gNN*eigenvalue*rv/dx
+            elif all(np.atleast_1d(eigenvalue) < 0):
+                rv[:n] = self.pbound
+                return self.g00*eigenvalue*rv/dx
+            else:
+                return Exception("Eigenvalue %s has change of sign"%\
+                    str(eigenvalue))
+        else:
+            if all(np.atleast_1d(eigenvalue) >= 0):
+                rv[-n:] = self.pbound[::-1]
+                return self.gNN*eigenvalue*rv/dx
+            elif all(np.atleast_1d(eigenvalue) <= 0):
+                rv[:n] = self.pbound
+                return self.g00*eigenvalue*rv/dx
+            else:
+                return Exception("Eigenvalue %s has change of sign"%\
+                    str(eigenvalue))
 
     def __str__(self):
         return "Differential operator "%self.name
@@ -46,8 +87,33 @@ class diffop(object):
 # Fourth order accurate differential operators
 #
 
+class CD4(diffop):
+    """Implements the 4th order central difference, with
+    no treatment of the boundaries
+    """
+
+    def __init__(self):
+        self.name = "CD4"
+        self.Ql = np.array([[1,0],[0,1]])
+        self.Qr = self.Ql
+        self.A = np.array([-1./12.,2./3.,0.,-2./3.,1./12.])
+        super(CD4, self).__init__()
+
 class D42(diffop):
-    """docstring for D42"""
+    """docstring for D42
+       This operator is the D42 operator given in
+       the paper, "Optimized high-order derivative and dissipation operators
+       satisfying summation by parts, and applications in three-dimensional 
+       multi-block evolutions" by Diener, Dorband, Schnetter and Tiglio.
+       
+       More detail on this operator can be found on page 59, of Strand's paper,
+       "Summation by parts for finite difference approximations for d/dx" 
+       under the heading "Second-order accuracy at the boundary". This 
+       paper also gives the norm used. 
+       
+       The norm in this case is given as np.diag([17./48,59./48,43./48,49./48]).
+       Note the additional factors included below.
+    """
     
     def __init__(self):
         self.name = "D42"
@@ -58,12 +124,33 @@ class D42(diffop):
              [4.0/43.0,  -59.0/86.0,         0, 59.0/86.0, -4.0/43.0,         0 ],\
              [3.0/98.0,           0,-59.0/98.0,         0, 32.0/49.0, -4.0/49.0 ]])
         self.Qr = -self.Ql[::-1,::-1]
+        #P is the identity, H is as given above
+        self.pbound = np.array([48./17])
         super(D42, self).__init__()
-        
+
 
 class D43_Tiglioetal(diffop):
     """D43 is a finite difference operator which has the SBP property.
-    It is 4th order accurate in the interior and 3rd order accurate at the boundaries."""
+    It is 4th order accurate in the interior and 3rd order accurate at the
+    boundaries. It is from the paper, "Optimized high-order derivative and 
+    dissipation operators
+    satisfying summation by parts, and applications in three-dimensional 
+    multi-block evolutions" by Diener, Dorband, Schnetter and Tiglio (DDST). 
+    
+    The operator corresponds to the operator with minimum error.
+    
+    From Stand, page 75, we know that the norm is restricted full, as is also
+    mentioned in DDST. It appears that, without perhaps staring at Cactus
+    code, the values of the three parameters are not given. This is
+    needed as the numerical values of the norm used depends on these values.
+    
+    Fortunately we do have the explicit values for Q and as such can calculate
+    the correct values for the norm from them. We only need
+    to calculate h_00 as the norm is restricted full. Using the notation of 
+    page 62
+    of Strand we get,
+    h_00 = 4.186595269326998 = x_1.
+    """
     def __init__(self):
         self.name = "D43_Tiglioetal"
         self.A = np.array([-1./12.,2./3.,0.,-2./3.,1./12.])
@@ -76,30 +163,22 @@ class D43_Tiglioetal(diffop):
          [ -0.00883569468552192965061,  0.03056074759203203857284,  0.05021168274530854232278, -0.66307364652444929534068,  0.014878787464005191116088,  0.65882706381707471953820,  -0.082568940408449266558615  ]\
         ])
         self.Qr = -self.Ql[::-1,::-1]
+        # P is the identity.
+        self.pbound = np.array([4.186595269326998])
         super(D43_Tiglioetal, self).__init__()
-
-
+        
 
 
 class D43_CNG(diffop):
-    """This operator looks somewhat suspicious. It does not converge at the boundaries"""
+    """
+    Taken from "A stable and conservative interface treatment of arbitrary
+    spatial accuracy", the matrix H is the identity.
+    """
     r1 = -(2177.*math.sqrt(295369.) - 1166427.)/(25488.)
     r2 = (66195.*math.sqrt(53.*5573.) - 35909375.)/101952.
     A = np.array([-1./12.,2./3.,0.,-2./3.,1./12.])
     name = "D43_CNG"
-    g00 = -1
-    gnn = 1
-    
-    def penalty_boundary(self,eigenvalue,dx,vector_shape):
-        rv = np.zeros(vector_shape)
-        n = self.pbound.shape[0]
-        if eigenvalue > 0:
-            rv[-n:] = self.pbound[::-1]
-            return self.gnn*eigenvalue*rv/dx
-        elif eigenvalue < 0:
-            rv[:n] = self.pbound
-            return self.g00*eigenvalue*rv/dx
-    
+
     def __init__(self):
         
         a = self.r1
@@ -110,6 +189,9 @@ class D43_CNG(diffop):
         Q[0,1] = -(864.*b + 6480*a + 305)/4320.
         Q[0,2] = (216*b + 1620*a + 725)/540.
         Q[0,3] = -(864*b + 6480*a + 3335)/4320
+        
+        self.g00 = Q[0,0]
+        self.gnn = -Q[0,0]
         
         Q[1,0] = -Q[0,1]
         Q[1,1] = 0.0
@@ -173,7 +255,13 @@ class D43_CNG(diffop):
         
 
 class D43_Strand(diffop):
-    """docstring for D43_Strand"""
+    """docstring for D43_Strand
+    See page 66 of Strand's paper, "Summation by parts finite difference
+    approximations for first derivatives". The norm in this case
+    is restricted full and we have h00 = 3./11.
+    
+    Note the terms introduced below.    
+    """
     A = np.array([-1./12.,2./3.,0.,-2./3.,1./12.])
     name = "D43_Strand"
     def __init__(self):
@@ -216,9 +304,10 @@ class D43_Strand(diffop):
         
         self.Ql = Q
         self.Qr = -self.Ql[::-1,::-1]
-        
+        self.pbound = np.array([11./3])
         
         super(D43_Strand, self).__init__()
+
 
 
 ################################################
@@ -229,7 +318,14 @@ class D43_Strand(diffop):
 class D65_min_err(diffop):
     """D65_min_err is a first order derivative according to Diener et al, 
        which has minimised error. Coefficients taken from the source file 
-       of the paper in the arxive.org repository"""
+       of the paper in the arxive.org repository.
+        
+       As above the norm is not given. We can calculate h_00 by noting
+       that h is restricted full and that {h^(-1)q}_{00} = -1/2.
+       The result is, to 15 decimal places,
+       h_{00} = 4.930709842221048 
+       
+    """
        
     name = "D65"
     A = np.array([1./60.,-3./20.,3./4.,0.,-3./4.,3./20.,-1./60.])
@@ -312,8 +408,11 @@ class D65_min_err(diffop):
     Ql[6,8] = -0.1480235854665196220062411065981933720158
     Ql[6,9] = 0.01651566843542843794512095516024596165494
 
+
+
     def __init__(self):
         self.Qr = -self.Ql[::-1,::-1]
+        self.pbound = np.array([4.930709842221048])
         super(D65_min_err, self).__init__()
 
         
@@ -332,9 +431,22 @@ def df(x):
     return exp(x)
 
 class diffopTests(unittest.TestCase):
+    
+    def test_SBPTest(self):
+        Ql = self.D.Ql
+        HinvBl = Ql[:4,:4]
+        H = np.diag([17./48,59./48,43./48,49./48])
+        Bl = np.dot(H,HinvBl)
+        HinvBr = self.D.Qr[-4:,-4:]
+        #print HinvBr 
+        #print np.dot(H[::-1,::-1],HinvBr)
+        print np.linalg.inv(H)
+        print " "
+        print np.linalg.inv(H[::-1,::-1])
+
     def setUp(self):
-        self.D = D65_min_err()
-        
+        self.D = D42()
+    """
     def test_pointconvergence(self):
         power2 = (1, 2, 4, 8, 16, 32)
         D = self.D
@@ -373,8 +485,7 @@ class diffopTests(unittest.TestCase):
         gca().set_title("Global convergence for %s" % D.name)
         show()
         self.assertTrue(True)
-        
-        
+        """
         
 if __name__ == '__main__':
     unittest.main()
