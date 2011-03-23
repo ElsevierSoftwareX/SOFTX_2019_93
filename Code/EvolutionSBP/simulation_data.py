@@ -99,6 +99,9 @@ class Sim(object):
     def getDgType(self,dgType):
         return self.simHDF.getDgType(dgType,self.name)
         
+    def getDgTypeAttr(self,dgType,attr,i):
+        return self.simHDF.getDgTypeAttr(dgType,attr,i,self.name)
+        
     def GNUplot(group,  xlabel=None, ylabel=None,\
         yrange=None,  graphPause=0.01, pauseAtEnd=True):
         """A utility function which plots a given group.
@@ -179,6 +182,9 @@ class SimulationHDF(object):
         
     def getDgType(self,dgType,sim):
         return DataGroup(self.file[dgTypes[dgType]+"/"+sim])   
+    
+    def getDgTypeAttr(dgType,attr,i,sim):
+        return DataGroup(self.file[dgTypes[dgType]+"/"+sim]).attr[attr]
     
     def indexOfTime(self,t,sim):
         times_dg = DataGroup(self.file[dgTypes["time"]+"/"+sim])
