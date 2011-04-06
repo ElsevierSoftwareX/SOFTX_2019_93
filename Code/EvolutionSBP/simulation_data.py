@@ -339,7 +339,7 @@ class SimOutput(actions.UserAction):
         
         def __call__(self,it,u):
             dg = self.data_group
-            dg[it] = self.parent.system.weyl_constraintsIJ(it,u)
+            dg[it] = self.parent.system.weyl_constantsIJ(it,u)
             super(SimOutput.WeylConstants,self).__call__(it,u)
 
     class DerivedData(SimOutputType):
