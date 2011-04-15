@@ -27,6 +27,7 @@ import simulation_data
 # These represent the types of data that a simulation knows about.
 dgTypes = {\
     "raw":"Raw",\
+    "exact":"Exact",\
     "error":"Error",\
     "weyl":"Weyl",\
     "domain":"Domain",\
@@ -295,6 +296,16 @@ class SimOutput(actions.UserAction):
             dg = self.data_group
             dg[it] = u.fields
             super(SimOutput.Data,self).__call__(it,u)
+
+    class Exact(SimOutputType):
+
+        groupname = dgTypes["exact"]
+
+        def __call__(self,it,u):
+            dg = self.data_group
+            parent = self.parent
+            dg[it] = parent.system.exactValue(u)
+            super(SimOutput.Exact, self).__call__(it, u)
 
     class Times(SimOutputType):
         
