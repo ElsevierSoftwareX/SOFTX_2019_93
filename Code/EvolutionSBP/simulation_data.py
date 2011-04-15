@@ -28,6 +28,7 @@ import simulation_data
 dgTypes = {\
     "raw":"Raw",\
     "error":"Error",\
+    "exact":"Exact",\
     "weyl":"Weyl",\
     "domain":"Domain",\
     "time":"Time",\
@@ -354,6 +355,16 @@ class SimOutput(actions.UserAction):
             dg[it] = self.func(it,u)
             super(SimOutput.DerivedData,self).__call__(it,u)
 
+    class Exact(SimOutputType):
+
+        groupname = dgTypes["exact"]
+
+        def __call__(self,it,u):
+            dg = self.data_group
+            parent = self.parent
+            dg[it] = parent.system.exactValue(u.time,u.x).fields
+            super(SimOutput.Exact, self).__call__(it, u)
+
     class System(SimOutputType):
         
         groupname = systemD
@@ -481,3 +492,4 @@ def _list_comparor_recursive(correct_index,  correct_axes, comparison_index,\
                 comparison_index,\
                 row, reduced_comparison_axes, compare_function)
             comparison_index.pop()
+
