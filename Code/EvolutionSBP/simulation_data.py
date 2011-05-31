@@ -2,7 +2,10 @@ import functools
 import h5py
 import cPickle
 import numpy as np
+import Gnuplot
+import time
 import sys
+import math
 
 sys.path.append("../../EvolutionSBP/")
 import system
@@ -34,6 +37,7 @@ dgTypes = {\
     "domain":"Domain",\
     "time":"Time",\
     "dt": "TimeStep",\
+    "scri+":"Scri+",\
     "constraint": "Constraint"\
     }
 
@@ -71,16 +75,25 @@ class Sim(object):
         for key, item in dgTypes.items():
             if item in existing_items:
                 if self.name in self.simHDF[item].keys():
+#                    setattr(self,key,\
+#                        Sim.dsReturnValue(\
+#                            DataGroup(self.simHDF[item+"/"+self.name])
+#                        ))
                     setattr(self,key,\
-                        Sim.dsReturnValue(\
-                            DataGroup(self.simHDF[item+"/"+self.name])
-                        ))
+                      DataGroup(self.simHDF[item+"/"+self.name],\
+                        returnValue=True\
+                        )\
+                      )
+
     
     def tslice(self,i):
         return self.simHDF.tslice(i,self.name,dgType = dgType["raw"])
     
     def indexOfTime(self,t):
         return self.simHDF.indexOfTime(t,self.name)
+        
+    def indexOfDomain(self,d,time_index):
+        return self.simHDF.indexOfDomain(d,time_index,self.name)
     
     def __eq__(self,other):
         return self.cmp == other.cmp
@@ -94,46 +107,89 @@ class Sim(object):
     def write(self,dgType,it,data,name = None,derivedAttrs = None):
         self.simHDF.write(dgType,self.name,it,data,name,derivedAttrs)
     
-    def plot(self,*args,**kwds):
-        dgType = args[0]
-        self.GNUplot(dgType,**kwds)
-    
     def getDgType(self,dgType):
         return self.simHDF.getDgType(dgType,self.name)
         
     def getDgTypeAttr(self,dgType,attr,i):
-        return self.simHDF.getDgTypeAttr(dgType,attr,i,self.name)
-        
-    def GNUplot(group,  xlabel=None, ylabel=None,\
-        yrange=None,  graphPause=0.01, pauseAtEnd=True):
+        return self.simHDF.getDgTypeAttr(dgType,attr,i,self.name)    
+    
+    def plot(self,dgType="raw",gnuCommands=None,\
+        graphPause=0.01,\
+        gnuInitialisationCommands = {'debug':0,'persist':1},\
+        tstart = -float('Infinity'),tstop = float('Infinity'),
+        animationLength = 2,\
+        framesPerSec = 60,\
+        ):
+        if commands is None:
+          commands = []
+        self.GNUplot(self.getDgType(dgType),\
+            gnuCommands=gnuCommands,\
+            gnuInitialisationCommands=gnuInitialisationCommands,\
+            graphPause=graphPause,\
+            tstart = tstart, tstop = tstop,
+            animationLength = animationLength,
+            framesPerSec = framesPerSec)
+      
+    def GNUplot(self,group,  gnuCommands=None,\
+        gnuInitialisationCommands=None,\
+        graphPause=0.01,\
+        tstart = -float('Infinity'),tstop = float('Infinity'),
+        animationLength = 2,\
+        framesPerSec = 60,\
+        ):
         """A utility function which plots a given group.
         If group = None then the current data_group is used.
         """
-        #Ensure that group is a datagroup
-        group = self.dgType
-        domains = self.domains
-        times = self.times
+        if gnuCommands is None:
+            gnuCommands = []
+        if gnuInitialisationCommands is None:
+            gnuInitialisationCommands = []
+        
+        # Get x values
+        domains = self.getDgType('domain')
+        
+        # Get all times
+        times = self.getDgType('time')
+        times.rV = True
+        numOfFrames = len(times)
+        frameSkip = math.min(1,\
+            int(numOfFrames/(animationLength*frameRate)))
+
+        # Get data for scri            
+        scris = self.getDgType('scri+')
+        scris.rV = True
 
         #Initialize gnuplot
-        gnu = Gnuplot.Gnuplot(debug=0)
-        gnu('set style data lines') 
-        gnu.xlabel(xlabel)
-        gnu.ylabel(ylabel)
-        if yrange != None:
-            gnu('set yrange '+yrange)
+        gnu = Gnuplot.Gnuplot(**gnuInitialisationCommands)
+        for command in gnuCommands:
+          gnu(command)
         
         #Iterate across group
-        for i,y in enumerate(group):
-            gnu.title('Time {0}'.format(times[i])) 
+        # Get starting and stoping index
+        nextFrame_index = group.indexOfTime(tstart)
+        stop_index = group.indexOfTime(tstop)
+        
+        # While there is a next frame...
+        while nextFrame_index<numOfFrames:
+            # plot data
+            i = nextFrame_index
+            y = group[i]
+            gnu.title('Time %f'%(times[i])) 
             plotItems = []
-            for j,row in enumerate(numpy.atleast_2d(dataset.value)):
+            for j,row in enumerate(np.atleast_2d(y.value)):
                 plotItems +=[Gnuplot.Data(domains[i],row, \
                     title = 'Component '+str(j))]
+            plotItems += [Gnuplot.Data(domains[i],scris[i],\
+                title = 'Scri+')]
             gnu.plot(*plotItems)
-            time.sleep(graphPause)
-        
-        if pauseAtEnd:
-            raw_input('Press key to continue')
+            # if there are not enough frames left set the frameSkip to 1
+            if nextFrame_index+frameskip >= numOfFrames:
+                frameSkip = 1
+            nextFrame_index += frameSkip
+            # if the next frame is larger than the stop_index then stop
+            # plotting
+            if nextFrame_index > stop_index:
+                break
 
 
     class dsReturnValue(object):
@@ -160,6 +216,9 @@ class SimulationHDF(object):
     
     def sim(self,name):
         return Sim(name,self)
+    
+    def name(self):
+      return self.file.name
     
     def getSims(self):
         simArray = [self.sim(name) for name in \
@@ -190,9 +249,24 @@ class SimulationHDF(object):
     
     def indexOfTime(self,t,sim):
         times_dg = DataGroup(self.file[dgTypes["time"]+"/"+sim])
-        for i,time_dg in enumerate(times_dg):
-            dt = times_dg[i+1].value-time_dg.value
-            if t-dt/2<time_dg.value<t+dt/2:
+        min_time = times_dg[0]
+        max_time = times_dg[-1]
+        if t <= min_time:
+            return 0
+        elif t>= max_times:
+            return len(times_dg)-1
+        else:
+            for i,time_dg in enumerate(times_dg):
+                dt = times_dg[i+1].value-time_dg.value
+                if t-dt/2<time_dg.value<t+dt/2:
+                    return i
+            return -1
+        
+    def indexOfDomain(self,d,time_index,sim):
+        domain_dg = DataGroup(self.file[dgTypes["domain"]+"/"+sim])[time_index]
+        dr = domain_dg[1] - domain_dg[0]
+        for i,pos in enumerate(domain_dg):
+            if d-dr/2<=pos<d+dr/2:
                 return i
         return -1
     
@@ -307,6 +381,15 @@ class SimOutput(actions.UserAction):
             parent = self.parent
             dg[it] = parent.system.exactValue(u)
             super(SimOutput.Exact, self).__call__(it, u)
+
+    class Scri(SimOutputType):
+        
+        groupname = dgTypes["scri+"]
+        
+        def __call__(self,it,u):
+            dg = self.data_group
+            dg[it] = self.parent.system.n*u.x-u.time+1
+            super(SimOutput.Scri,self).__call__(it,u)
 
     class Times(SimOutputType):
         
@@ -432,12 +515,13 @@ class DataGroup():
                 break
         return index
     
-    def __init__(self, grp):
+    def __init__(self, grp,returnValue=False):
         """The group to behave like an array. It is assumed that
         the group has/will have a number of datasets with the labels
         '0','1', etc... 
         """
         self.group = grp
+        self.rV = returnValue
 
     def __iter__(self):
         """Iterates in increasing numerical order 0,1,2,3,...
@@ -462,6 +546,8 @@ class DataGroup():
         dataset.attrs['index'] = i
     
     def __getitem__(self, i):
+        if self.rV:
+          return self.group[str(i)].value
         return self.group[str(i)]
         
     def __repr__(self):
