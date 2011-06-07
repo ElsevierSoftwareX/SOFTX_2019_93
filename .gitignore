@@ -1,0 +1,15 @@
+# File types to be ignored by git
+
+# binary python files and objects
+*.pyc
+*.pyo
+
+# data output and visualisation
+*.gif
+*.hdf
+*.ps
+*.gp
+
+# tex auxillary files
+*.aux
+*.bbl
