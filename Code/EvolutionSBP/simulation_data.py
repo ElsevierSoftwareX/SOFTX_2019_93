@@ -36,7 +36,7 @@ dgTypes = {\
     "domain":"Domain",\
     "time":"Time",\
     "dt": "Time_Step",\
-    "scri+":"Scri+",\
+    "scrif":"Scri+",\
     "constraint": "Constraint"\
     }
 
@@ -65,11 +65,16 @@ class Sim(object):
         self.simHDF = simHDF
         self.name = simName
         existing_items = self.simHDF[systemD+"/"+self.name].keys()
+#        for key, item in sysDTypes.items():
+#            if item in existing_items:
+#                setattr(self,key,cPickle.loads(\
+#                    self.simHDF[systemD+"/"+self.name][item].value\
+#                    ))
         for key, item in sysDTypes.items():
             if item in existing_items:
-                setattr(self,key,cPickle.loads(\
+                setattr(self,key,\
                     self.simHDF[systemD+"/"+self.name][item].value\
-                    ))
+                    )
         self.cmp = float(self.cmp)
         existing_items = self.simHDF.file.keys()
         for key, item in dgTypes.items():
@@ -114,18 +119,14 @@ class Sim(object):
         return self.simHDF.getDgTypeAttr(dgType,attr,i,self.name)    
     
     def animate(self,dgType="raw",gnuCommands=None,\
-        graphPause=0.01,\
         gnuInitialisationCommands = {'debug':0,'persist':1},\
         tstart = -float('Infinity'),tstop = float('Infinity'),
         animationLength = 2,\
         framesPerSec = 60,\
         ):
-        if gnuCommands is None:
-          gnuCommands = []
         self.GNUplot(self.getDgType(dgType),\
             gnuCommands=gnuCommands,\
             gnuInitialisationCommands=gnuInitialisationCommands,\
-            graphPause=graphPause,\
             tstart = tstart, tstop = tstop,
             animationLength = animationLength,
             framesPerSec = framesPerSec)
@@ -139,7 +140,6 @@ class Sim(object):
       
     def GNUplot(self,group,  gnuCommands=None,\
         gnuInitialisationCommands=None,\
-        graphPause=0.01,\
         tstart = -float('Infinity'),tstop = float('Infinity'),
         animationLength = 2,\
         framesPerSec = 60,\
@@ -158,19 +158,18 @@ class Sim(object):
         times = self.getDgType('time')
         times.rV = True
         numOfFrames = len(times)
-        frameSkip = min(1,\
-            int(numOfFrames/(animationLength*framesPerSec)))
+        frameSkip = int(numOfFrames/(animationLength*framesPerSec))
 
         # Get data for scri            
-        scris = self.getDgType('scri+')
-        scris.rV = True
+        scrif = self.getDgType('scrif')
+        scrif.rV = True
 
         #Initialize gnuplot
         gnu = Gnuplot.Gnuplot(**gnuInitialisationCommands)
         for command in gnuCommands:
           gnu(command)
         
-        #Iterate across group
+        # Iterate across group
         # Get starting and stoping index
         nextFrame_index = self.indexOfTime(tstart)
         stop_index = self.indexOfTime(tstop)
@@ -185,13 +184,13 @@ class Sim(object):
             for j,row in enumerate(np.atleast_2d(y.value)):
                 plotItems +=[Gnuplot.Data(domains[i],row, \
                     title = 'Component '+str(j))]
-            plotItems += [Gnuplot.Data(domains[i],scris[i],\
+            plotItems += [Gnuplot.Data(domains[i],scrif[i],\
                 title = 'Scri+')]
             gnu.plot(*plotItems)
-            # if there are not enough frames left set the frameSkip to 1
+            # if there are not enough frames left set the frameSkip to 0
             if nextFrame_index+frameSkip >= numOfFrames:
-                frameSkip = 1
-            nextFrame_index += frameSkip
+                frameSkip = 0
+            nextFrame_index += 1+frameSkip
             # if the next frame is larger than the stop_index then stop
             # plotting
             if nextFrame_index > stop_index:
@@ -388,14 +387,14 @@ class SimOutput(actions.UserAction):
             dg[it] = parent.system.exactValue(u)
             super(SimOutput.Exact, self).__call__(it, u)
 
-    class Scri(SimOutputType):
+    class Scrif(SimOutputType):
         
-        groupname = dgTypes["scri+"]
+        groupname = dgTypes["scrif"]
         
         def __call__(self,it,u):
             dg = self.data_group
             dg[it] = self.parent.system.n*u.x-u.time+1
-            super(SimOutput.Scri,self).__call__(it,u)
+            super(SimOutput.Scrif,self).__call__(it,u)
 
     class Times(SimOutputType):
         
@@ -472,10 +471,24 @@ class SimOutput(actions.UserAction):
         def setup(self,parent):
             super(SimOutput.System,self).setup(parent)
             g =self.data_group.group
-            psystem = np.asarray(cPickle.dumps(parent.system,-1))
-            pgrid = np.asarray(cPickle.dumps(parent.grid,-1))
-            psolver = np.asarray(cPickle.dumps(parent.solver))
-            pcmp = np.asarray(cPickle.dumps(parent.cmp))
+#            psystem = np.asarray(cPickle.dumps(parent.system,-1))
+#            pgrid = np.asarray(cPickle.dumps(parent.grid,-1))
+#            psolver = np.asarray(cPickle.dumps(parent.solver))
+#            pcmp = np.asarray(cPickle.dumps(parent.cmp))
+#            g.require_dataset(sysDTypes['system'],\
+#                psystem.shape,psystem.dtype,\
+#                data=psystem)
+#            g.require_dataset(sysDTypes['grid'],\
+#                pgrid.shape,pgrid.dtype,data=pgrid)
+#            g.require_dataset(sysDTypes['solver'],\
+#                psolver.shape,psolver.dtype,\
+#                data = psolver)
+#            g.require_dataset(sysDTypes['cmp'],\
+#                pcmp.shape,pcmp.dtype,data=pcmp)
+            psystem = np.asarray(repr(parent.system))
+            pgrid = np.asarray(repr(parent.grid))
+            psolver = np.asarray(repr(parent.solver))
+            pcmp = np.asarray(repr(parent.cmp))
             g.require_dataset(sysDTypes['system'],\
                 psystem.shape,psystem.dtype,\
                 data=psystem)

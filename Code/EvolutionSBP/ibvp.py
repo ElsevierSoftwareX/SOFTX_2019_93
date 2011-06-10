@@ -16,40 +16,6 @@ import numpy as np
 from solvers import Solver
 from system import System
 
-
-class Grid(object):
-    """docstring for Grid"""
-    def __init__(self, shape):
-        self.dim = len(shape)
-        self.shape = shape
-        self.name = None
-        self.grid = None
-        
-    def getX1(self):
-        return self.x1
-        
-    def __str__(self):
-        return self.name
-    
-class Interval(Grid):
-    """docstring for Interval"""
-    def __init__(self, shape, bounds):
-        super(Interval, self).__init__(shape)
-        self.x1 = np.linspace(bounds[0],bounds[1],shape[0]+1)
-        self.grid = self.x1
-        self.name = "Interval grid, %s" % str(self.grid.shape)
-
-class Periodic(Grid):
-    """docstring for Loop"""
-    def __init__(self, shape, bounds):
-        super(Periodic, self).__init__(shape)
-        x = np.linspace(bounds[0],bounds[1],shape[0]+1)
-        self.x1 = x[:-1]
-        self.grid = self.x1
-        self.name = "Periodic grid, %s" % (str(self.grid.shape))
-        
-
-#############################################################################
 class IBVP:
     theActions  = None
     theGrid = None
@@ -67,9 +33,9 @@ class IBVP:
         self.theActions = action
         
     def _ic(self,t0):
-        print ("Setting up initial data")
-        return self.theSystem.initialValues(t0, grid = self.theGrid)
-        print "...Done.-\n"
+        print "Setting up initial data...",
+        return self.theSystem.initialValues(t0, self.theGrid.domain(t0))
+        print "...done."
     
     def run(self, tstart, tstop = float('inf')):
         """Go for it"""
@@ -81,6 +47,7 @@ class IBVP:
         print("Using timestep dt=%f"%(dt,))
         print("Using spacestep dx=%f"%(u.dx,))
         advance = self.theSolver.advance
+        validate = self.theGrid.validate
         while(True):
             if (self.iteration > self.maxIteration):
                 print("Maximum number of iterations exceeded\n")
@@ -93,8 +60,24 @@ class IBVP:
             if self.theActions is not None:
                 for action in self.theActions:
                     action(self.iteration, u)
-            
-            t, u = advance(t, u, dt)
+            try:
+                t, u = advance(t, validate(u,t+dt), dt)
+            except ValueError as error:
+                if error.__str__() == 'matrices are not aligned' or\
+                    error.__str__() == \
+                        'domain too small for application of diffop':
+                    print "Limit of computational domain reached at"\
+                        "time: %f and iteration: %i"%(t,self.iteration)
+                else:
+                    raise
+                break
+            except IndexError as error:
+                if error.__str__() == 'index out of bounds':
+                    print "Limit of computational domain reached at"\
+                        "time: %f and iteration: %i"%(t,self.iteration)
+                else:
+                    raise
+                break
             self.iteration+=1
         print("Finished.-\n\n")
         return u
