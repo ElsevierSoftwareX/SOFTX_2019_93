@@ -5,6 +5,7 @@ import numpy as np
 import Gnuplot
 import time
 import sys
+import logging
 
 sys.path.append("../../EvolutionSBP/")
 import system
@@ -120,24 +121,26 @@ class Sim(object):
     
     def animate(self,dgType="raw",gnuCommands=None,\
         gnuInitialisationCommands = {'debug':0,'persist':1},\
-        tstart = -float('Infinity'),tstop = float('Infinity'),
+        tstart = -float('Infinity'),tstop = float('Infinity'),\
         animationLength = 2,\
-        framesPerSec = 60,\
+        framesPerSec = 60\
         ):
         self.GNUplot(self.getDgType(dgType),\
             gnuCommands=gnuCommands,\
             gnuInitialisationCommands=gnuInitialisationCommands,\
-            tstart = tstart, tstop = tstop,
-            animationLength = animationLength,
-            framesPerSec = framesPerSec)
+            tstart = tstart, tstop = tstop,\
+            animationLength = animationLength,\
+            framesPerSec = framesPerSec
+            )
       
     def plot(self,time,dgType="raw",gnuCommands=None,\
-        gnuInitialisationCommands = {'debug':0,'persist':1}
+        gnuInitialisationCommands = {'debug':0,'persist':1}\
         ):
         self.animate(dgType=dgType,gnuCommands=gnuCommands,\
         gnuInitialisationCommands=gnuInitialisationCommands,\
-        tstart=time,tstop=time)
-      
+        tstart=time,tstop=time\
+        )
+    
     def GNUplot(self,group,  gnuCommands=None,\
         gnuInitialisationCommands=None,\
         tstart = -float('Infinity'),tstop = float('Infinity'),
@@ -166,6 +169,7 @@ class Sim(object):
 
         #Initialize gnuplot
         gnu = Gnuplot.Gnuplot(**gnuInitialisationCommands)
+        gnu.reset()
         for command in gnuCommands:
           gnu(command)
         
@@ -179,10 +183,11 @@ class Sim(object):
             # plot data
             i = nextFrame_index
             y = group[i]
-            gnu.title('Time %f'%(times[i])) 
+            gnu.title('Simulation %s at time %f'%(self.name,times[i])) 
             plotItems = []
             for j,row in enumerate(np.atleast_2d(y.value)):
-                plotItems +=[Gnuplot.Data(domains[i],row, \
+                plotItems +=[Gnuplot.Data(domains[i],\
+                    row, \
                     title = 'Component '+str(j))]
             plotItems += [Gnuplot.Data(domains[i],scrif[i],\
                 title = 'Scri+')]
@@ -195,6 +200,7 @@ class Sim(object):
             # plotting
             if nextFrame_index > stop_index:
                 break
+        gnu.close()
 
 
     class dsReturnValue(object):
@@ -273,15 +279,22 @@ class SimulationHDF(object):
         for i,pos in enumerate(domain_dg):
             if d-dr/2<=pos<d+dr/2:
                 return i
-        return -1
+        return -1    
     
     def write(self,dgType,sim,it,data,name = None,derivedAttrs = None,
         overwrite = True):
+        #"""This method allows for writing to SimulationHDF objects. Note that if dgType is an error type data group then name must be given. We recommend that its value be taken as the data group from which the error data was generated."""        
         # Create empy derivedAttrs if no argument is passed
         if derivedAttrs is None:
             self.derivedAttrs = {}
         else:
             self.derivedAttrs = derivedAttrs
+        
+        #If dgType is an error type then name must be set.
+        #if dgType == sd.dgTypes["errorNum"] or\
+        #    dgType == sd.dgTypes["errorExa"]:
+        #    if name is None:
+        #        raise Exception("""If SimulationHDF.write() is based an error dgType the name keyword must be set. Suggested usage is that name = the dgType of the data from which the error data was calculated.""")
         
         # get name if not none
         if name is not None:
@@ -317,8 +330,10 @@ class SimulationHDF(object):
 # actions.py framework.
 class SimOutput(actions.UserAction):
     def __init__(self, hdf_file,solver,theSystem,theInterval, 
-        actionTypes,frequency = 1,name = None,cmp = None,overwrite = True):
-        print "Setting up HDF output...",
+        actionTypes,frequency = 1,name = None,cmp = None,overwrite = True,\
+        debug_parent = "main.IBVP"):
+        self.log = logging.getLogger(debug_parent+".SimOutput")
+        self.log.debug("Setting up HDF output...")
         super(SimOutput,self).__init__(frequency)
         if name == None:
             hour = str(time.localtime()[3])
@@ -335,7 +350,7 @@ class SimOutput(actions.UserAction):
         self.cmp = cmp
         for action in actionTypes:
             action.setup(self)
-        print "Done.-"
+        self.log.debug("HDF output setup completed.")
         
     def _doit(self,it,u):
         for action in self.actions:
@@ -360,12 +375,12 @@ class SimOutput(actions.UserAction):
                     ).create_group(parent.name))
             self.parent = parent
             self.data_group.attrs['cmp'] = parent.cmp
+            self.log = parent.log.getChild(self.groupname)
         
         def __call__(self,it,u):
             for key,value in self.derivedAttrs.items():
                 v = value(it,u,self.parent.system)
-                if __debug__:
-                    print "%s"%str(v)
+                self.log.debug("Derived Attrs = %s"%str(v))
                 self.data_group[it].attrs[key] = v
          
     class Data(SimOutputType):
