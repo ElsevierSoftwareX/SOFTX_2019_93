@@ -446,7 +446,7 @@ class diffopTests(unittest.TestCase):
 
     def setUp(self):
         self.D = D42()
-    """
+
     def test_pointconvergence(self):
         power2 = (1, 2, 4, 8, 16, 32)
         D = self.D
@@ -485,7 +485,7 @@ class diffopTests(unittest.TestCase):
         gca().set_title("Global convergence for %s" % D.name)
         show()
         self.assertTrue(True)
-        """
+
         
 if __name__ == '__main__':
     unittest.main()

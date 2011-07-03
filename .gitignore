@@ -13,3 +13,11 @@
 # tex auxillary files
 *.aux
 *.bbl
+*.blg
+*.log
+*.synctex.gz
+*.out
+*.tex~
+
+# for MacOSX
+.DS_Store
