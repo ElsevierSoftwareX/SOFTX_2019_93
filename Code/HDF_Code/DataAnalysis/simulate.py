@@ -7,8 +7,8 @@ parser = argparse.ArgumentParser(description=\
 """This program runs a complete simulation: the numerical calculations, the error caculations and the visulations.""")
 
 # Parse files
-#parser.add_argument('file', help=\
-#"""The name of the hdf file to be produced.""")
+parser.add_argument('-f','-file', help=\
+"""The name of the hdf file to be produced. If not given the file default from main.py will be used.""")
 
 # Parse times
 parser.add_argument('-terr','-times-error',nargs='+',help=\
@@ -19,47 +19,56 @@ parser.add_argument('-tplo','-times-plot',nargs='+', help=\
 """A list of all times for which plots of the specified data types should be made.""")
 
 # Parse data types
-parser.add_argument('-dg','-dgTypes',nargs='+',default='raw',help=\
+parser.add_argument('-dg','-dgTypes',nargs='+',help=\
 """A list of the data group types for error calculation and visulisation. Currently only implemented for "raw".""")
 
+# Collect args and set up defaults
 args = parser.parse_args()
-#print args
+if args.dg is None:
+    args.dg = ['raw']
 
-#args.dg = ['raw']
 if args.tani is not None:
     args.tani = [eval(tani) for tani in args.tani]
 
-def bash_string(sarray):
+def bash_string(sarray,prefix):
     rs = ''
     for s in sarray:
-        rs = rs + "'%s' "%s
+        rs = rs + prefix+" '%s' "%s
     return rs.strip()
 
-args.dg = bash_string(args.dg)
-args.terr_bash = bash_string(args.terr)
+args.dg = bash_string(args.dg,'-dg')
+args.terr_bash = bash_string(args.terr,'-t')
 
+# Run main.py. Need to do this to get file name if it wasn't specified
 main_run = "python -O ../Computation/main.py"
 print "MAIN CALCULATION: "+main_run
-args.file =  subprocess.Popen(main_run,\
-    shell=True,stdout=subprocess.PIPE).communicate()[0]
+#args.mfile =  subprocess.Popen(main_run,\
+#    shell=True,stdout=subprocess.PIPE).communicate()[0]
+
+if args.f is None:
+    args.f = args.mfile
 
 errorNum_run = []
-for time in args.terr:
-    errorNum_run += ["./errorNumerical -t %s -dg %s %s"%\
-        (time,args.dg,args.file)]
+errorNum_run += ["python ./errorNumerical %s %s %s"%\
+        (args.terr_bash,args.dg,args.f)]
+#for time in args.terr:
+#    errorNum_run += ["python ./errorNumerical -t %s -dg %s %s"%\
+#        (time,args.dg,args.f)]
         
 hdfvis_error = []
-hdfvis_plot = []
 for time in args.terr:
-    hdfvis_error += ['./hdfvis -dg %s err -t %s %s'%\
-        (args.dg,time,args.file)]
-    hdfvis_plot  += ['./hdfvis -dg %s plot -t %s %s'%\
-        (args.dg,time,args.file)]
+    hdfvis_error += ['python ./hdfvis %s err -t %s %s'%\
+        (args.dg,time,args.f)]
+
+hdfvis_plot = []
+for time in args.tplo:
+    hdfvis_plot  += ['python ./hdfvis %s plot -t %s %s'%\
+        (args.dg,time,args.f)]
         
 hdfvis_ani = []
 for tani in args.tani:
-        hdfvis_ani  += ['./hdfvis -dg %s ani -t0 %s -t1 %s %s'%\
-            (args.dg,tani[0],tani[1],args.file)]
+        hdfvis_ani  += ['./hdfvis %s ani -t0 %s -t1 %s %s'%\
+            (args.dg,tani[0],tani[1],args.f)]
 
 
 for s in errorNum_run:
