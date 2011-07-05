@@ -6,6 +6,7 @@ import Gnuplot
 import time
 import sys
 import logging
+import math
 
 sys.path.append("../../EvolutionSBP/")
 import system
@@ -38,7 +39,9 @@ dgTypes = {\
     "time":"Time",\
     "dt": "Time_Step",\
     "scrif":"Scri+",\
-    "constraint": "Constraint"\
+    "constraint": "Constraint",\
+    "mu":"mu",\
+    "mup":"mup"\
     }
 
 dgTypesInv = dict(zip(dgTypes.values(),dgTypes.keys()))
@@ -258,6 +261,20 @@ class SimulationHDF(object):
     def getDgTypeAttr(dgType,attr,i,sim):
         return DataGroup(self.file[dgTypes[dgType]+"/"+sim]).attr[attr]
     
+    #def indexOfTime(self,t,sim):
+    #    times_dg = DataGroup(self.file[dgTypes["time"]+"/"+sim])
+    #    times_dg.rV = True
+    #    uIndex = simulation_data.binarysearch(times_dg,0,len(times_dg)-1,t)
+    #    uTime = times_dg[uIndex]
+    #    lIndex = uIndex-1
+    #    lTime = times_dg[lIndex]
+    #    dts = DataGroup(self.file[dgTypes["dt"]+"/"+sim])
+    #    dt = dts[lIndex].value
+    #    if t<lTime+dt/2:
+    #        return lIndex
+    #    else:
+    #        return uIndex
+    
     def indexOfTime(self,t,sim):
         times_dg = DataGroup(self.file[dgTypes["time"]+"/"+sim])
         min_time = times_dg[0][0]
@@ -408,8 +425,26 @@ class SimOutput(actions.UserAction):
         
         def __call__(self,it,u):
             dg = self.data_group
-            dg[it] = self.parent.system.n*u.x-u.time+1
+            dg[it] = (1./self.parent.system.mu(u.x))-u.time
             super(SimOutput.Scrif,self).__call__(it,u)
+            
+    class Mu(SimOutputType):
+        
+        groupname = dgTypes["mu"]
+        
+        def __call__(self,it,u):
+            dg = self.data_group
+            dg[it] = self.parent.system.mu(u.x)
+            super(SimOutput.Mu,self).__call__(it,u)
+
+    class Mup(SimOutputType):
+        
+        groupname = dgTypes["mup"]
+        
+        def __call__(self,it,u):
+            dg = self.data_group
+            dg[it] = self.parent.system.mup(u.x)
+            super(SimOutput.Mup,self).__call__(it,u)
 
     class Times(SimOutputType):
         
@@ -490,16 +525,6 @@ class SimOutput(actions.UserAction):
 #            pgrid = np.asarray(cPickle.dumps(parent.grid,-1))
 #            psolver = np.asarray(cPickle.dumps(parent.solver))
 #            pcmp = np.asarray(cPickle.dumps(parent.cmp))
-#            g.require_dataset(sysDTypes['system'],\
-#                psystem.shape,psystem.dtype,\
-#                data=psystem)
-#            g.require_dataset(sysDTypes['grid'],\
-#                pgrid.shape,pgrid.dtype,data=pgrid)
-#            g.require_dataset(sysDTypes['solver'],\
-#                psolver.shape,psolver.dtype,\
-#                data = psolver)
-#            g.require_dataset(sysDTypes['cmp'],\
-#                pcmp.shape,pcmp.dtype,data=pcmp)
             psystem = np.asarray(repr(parent.system))
             pgrid = np.asarray(repr(parent.grid))
             psolver = np.asarray(repr(parent.solver))
@@ -590,6 +615,21 @@ class DataGroup():
         
     def __repr__(self):
         return r"<H5pyArray datagroup %s (%d)>"% (self.name, len(self))       
+        
+def binarysearch(a,low,high,value):
+    if high<low:
+        return -1
+    mid = int(low +(high-low)/2.)
+    if mid ==0:
+        return 0
+    if value<=a[mid-1]:
+        return binarysearch(a,low,mid,value)
+    elif value>a[mid]:
+        return binarysearch(a,mid+1,high,value)
+    else:
+        return mid
+        
+        
         
 # array_value_index_mapping takes two arrays and returns a list of pairs
 # of indices (index1,index2) so that correct[index1] = comparison[index2]

@@ -67,19 +67,19 @@ for time in args.tplo:
         
 hdfvis_ani = []
 for tani in args.tani:
-        hdfvis_ani  += ['./hdfvis %s ani -t0 %s -t1 %s %s'%\
+        hdfvis_ani  += ['python ./hdfvis %s ani -t0 %s -t1 %s %s'%\
             (args.dg,tani[0],tani[1],args.f)]
 
 
 for s in errorNum_run:
     print "ERROR CALCULATION: "+s
-    subprocess.call(s,shell=True)
+#    subprocess.call(s,shell=True)
 for s in hdfvis_error: 
     print "ERROR VISULISATION: "+s    
-    subprocess.call(s,shell=True)
+#    subprocess.call(s,shell=True)
 for s in hdfvis_plot: 
     print "GRAPHING: "+s    
-    subprocess.call(s,shell=True)
+#    subprocess.call(s,shell=True)
 for s in hdfvis_ani: 
     print "ANIMATION: "+s    
-    subprocess.call(s,shell=True)
+#    subprocess.call(s,shell=True)
