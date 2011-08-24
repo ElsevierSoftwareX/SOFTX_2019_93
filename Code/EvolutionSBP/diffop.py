@@ -24,16 +24,32 @@ class diffop(object):
     g00 = -1
     gNN = 1
     pbound = None
+    RIGHT = 1
+    LEFT = -1
+    CENTRE = 0
 
-    def __init__(self):
+    def __init__(self,log):
         self.bdyRegion = self.Ql.shape
+        self.log = log.getChild('diffop')
 
-    def __call__(self,u,dx):
+    def __call__(self,u,dx,boundary_ID=None):
         r,c = self.bdyRegion
+        self.log.debug("Boundary region r = %s, c = %s"%(r,c))
+        self.log.debug("Array to operate on is = %s"%repr(u))
         du = np.zeros_like(u)
         du = np.convolve(u, self.A, mode='same')
-        du[0:r] = np.dot(self.Ql, u[0:c])
-        du[-r:] = np.dot(self.Qr, u[-c:])
+        self.log.debug("After convolve: du = %s"%repr(du))
+        if boundary_ID == self.LEFT:
+            du[0:r] = np.dot(self.Ql, u[0:c])
+            self.log.debug("Applying left boundary region computation")
+        elif boundary_ID == self.RIGHT:
+            du[-r:] = np.dot(self.Qr, u[-c:])
+            self.log.debug("Applying right boundary region computation")
+        elif boundary_ID == None:
+            du[0:r] = np.dot(self.Ql, u[0:c])
+            du[-r:] = np.dot(self.Qr, u[-c:])
+            self.log.debug("Applying both boundary region computation")
+        self.log.debug("After boudnary conditions: du = %s"%repr(du))
         return du/dx
 
     def penalty_boundary(self,eigenvalue,dx,vector_shape,exclude_zeros = True):
@@ -83,6 +99,7 @@ class diffop(object):
         np.savetxt(filename + "_right.txt", self.Qr)
         np.savetxt(filename + "_mid.txt", self.A)
 
+
 ################################################
 # Fourth order accurate differential operators
 #
@@ -92,12 +109,12 @@ class CD4(diffop):
     no treatment of the boundaries
     """
 
-    def __init__(self):
+    def __init__(self,log):
         self.name = "CD4"
         self.Ql = np.array([[1,0],[0,1]])
         self.Qr = self.Ql
         self.A = np.array([-1./12.,2./3.,0.,-2./3.,1./12.])
-        super(CD4, self).__init__()
+        super(CD4, self).__init__(log)
 
 class D42(diffop):
     """docstring for D42
@@ -115,7 +132,7 @@ class D42(diffop):
        Note the additional factors included below.
     """
     
-    def __init__(self):
+    def __init__(self,log):
         self.name = "D42"
         self.A = np.array([-1./12.,2./3.,0.,-2./3.,1./12.])
         self.Ql = np.array( \
@@ -126,7 +143,7 @@ class D42(diffop):
         self.Qr = -self.Ql[::-1,::-1]
         #P is the identity, H is as given above
         self.pbound = np.array([48./17])
-        super(D42, self).__init__()
+        super(D42, self).__init__(log)
 
 
 class D43_Tiglioetal(diffop):
@@ -151,7 +168,7 @@ class D43_Tiglioetal(diffop):
     of Strand we get,
     h_00 = 4.186595269326998 = x_1.
     """
-    def __init__(self):
+    def __init__(self,log):
         self.name = "D43_Tiglioetal"
         self.A = np.array([-1./12.,2./3.,0.,-2./3.,1./12.])
         self.Ql = np.array( \
@@ -165,7 +182,7 @@ class D43_Tiglioetal(diffop):
         self.Qr = -self.Ql[::-1,::-1]
         # P is the identity.
         self.pbound = np.array([4.186595269326998])
-        super(D43_Tiglioetal, self).__init__()
+        super(D43_Tiglioetal, self).__init__(log)
         
 
 
@@ -179,7 +196,7 @@ class D43_CNG(diffop):
     A = np.array([-1./12.,2./3.,0.,-2./3.,1./12.])
     name = "D43_CNG"
 
-    def __init__(self):
+    def __init__(self,log):
         
         a = self.r1
         b = self.r2
@@ -251,7 +268,7 @@ class D43_CNG(diffop):
         #       [6, 5, 4],
         #       [3, 2, 1]])
         
-        super(D43_CNG, self).__init__()
+        super(D43_CNG, self).__init__(log)
         
 
 class D43_Strand(diffop):
@@ -264,7 +281,8 @@ class D43_Strand(diffop):
     """
     A = np.array([-1./12.,2./3.,0.,-2./3.,1./12.])
     name = "D43_Strand"
-    def __init__(self):
+    
+    def __init__(self,log):
         Q = np.mat(np.zeros((5,7)))
         Q[0,0] = -1.83333333333333333333333333333
         Q[0,1] = 3.00000000000000000000000000000
@@ -306,7 +324,7 @@ class D43_Strand(diffop):
         self.Qr = -self.Ql[::-1,::-1]
         self.pbound = np.array([11./3])
         
-        super(D43_Strand, self).__init__()
+        super(D43_Strand, self).__init__(log)
 
 
 
@@ -410,10 +428,10 @@ class D65_min_err(diffop):
 
 
 
-    def __init__(self):
+    def __init__(self,log):
         self.Qr = -self.Ql[::-1,::-1]
         self.pbound = np.array([4.930709842221048])
-        super(D65_min_err, self).__init__()
+        super(D65_min_err, self).__init__(log)
 
         
 

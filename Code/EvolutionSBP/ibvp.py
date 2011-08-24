@@ -53,6 +53,7 @@ class IBVP:
         which will be used to indicate if the boundary FD should be applied.
         """
         self.log.debug("Setting up initial data...")
+<<<<<<< HEAD
         #If no mpi
         if self.mpisize == 1:
             ic = self.theSystem.initialValues(t0, self.theGrid.domain(t0))

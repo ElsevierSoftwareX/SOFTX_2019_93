@@ -371,6 +371,7 @@ class SimOutput(actions.UserAction):
         
     def _doit(self,it,u):
         for action in self.actions:
+            self.log.debug("Outputting %s"%action.groupname)
             action(it,u)
 
     class SimOutputType(object):
