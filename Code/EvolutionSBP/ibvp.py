@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# encoding: utf-8
+# encoding: utf-8 
 """
 ibvp.py
 
@@ -56,7 +56,7 @@ class IBVP:
         #If no mpi
         if self.mpisize == 1:
             ic = self.theSystem.initialValues(t0, self.theGrid.domain(t0))
-            return ic
+            return ic 
         else:
                 
             #Get the number of ghoast points required.

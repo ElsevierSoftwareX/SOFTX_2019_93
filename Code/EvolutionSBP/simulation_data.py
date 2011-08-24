@@ -5,8 +5,8 @@ import numpy as np
 import Gnuplot
 import time
 import sys
-import logging
-import math
+import logging 
+import math 
 
 sys.path.append("../../EvolutionSBP/")
 import system
