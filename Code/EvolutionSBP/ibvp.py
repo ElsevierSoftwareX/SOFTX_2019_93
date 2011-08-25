@@ -40,6 +40,7 @@ class IBVP:
         self.mpicomm = MPI.COMM_WORLD
         self.mpirank = self.mpicomm.rank
         self.mpisize = self.mpicomm.size
+        np.set_printoptions(precision = 17,suppress = True)
         
     def _ic(self,t0):
         """
@@ -53,7 +54,6 @@ class IBVP:
         which will be used to indicate if the boundary FD should be applied.
         """
         self.log.debug("Setting up initial data...")
-<<<<<<< HEAD
         #If no mpi
         if self.mpisize == 1:
             ic = self.theSystem.initialValues(t0, self.theGrid.domain(t0))
@@ -85,26 +85,26 @@ class IBVP:
         if self.mpisize == 1:
             return
         if self.mpirank == 0:
+            tslices.boundary = tslices.LEFT
             tslice = tslices.timeslice(\
                 tslice.fields[:,s:e+tslice.num_ghost_points],\
                 tslice.domain[s:e+tslice.num_ghost_points],
                 tslice.time\
                 )
-            tslice.boundary = tslices.LEFT
         elif self.mpirank == self.mpisize-1:
+            tslices.boundary = tslices.RIGHT
             tslice = tslices.timeslice(\
                 tslice.fields[:,s-tslice.num_ghost_points:e],\
                 tslice.domain[s-tslice.num_ghost_points:e],\
                 tslice.time\
                 )
-            tslice.boundary = tslices.RIGHT
         else:
+            tslices.boundary = tslices.CENTRE
             tslice = tslices.timeslice(\
                 tslice.fields[:,s-tslice.num_ghost_points:e+tslice.num_ghost_points],\
                 tslice.domain[s-tslice.num_ghost_points:e+tslice.num_ghost_points],\
                 tslice.time\
                 )
-            tslice.boundary = tslices.CENTRE
         self.log.debug("tslice.boundary is set to %i"%tslice.boundary)
         self.log.debug("Sub tslice is %s"%repr(tslice))
         return tslice
@@ -131,8 +131,10 @@ class IBVP:
         dt = self.theSystem.timestep(u)
         self.log.info("Running system %s"%str(self.theSystem))
         self.log.info("Grid = %s"%str(self.theGrid))
-        self.log.info("Using timestep dt=%f"%(dt,))
-        self.log.info("Using spacestep dx=%f"%(u.dx,))
+        self.log.info("Using timestep dt=%s"%repr(dt))
+        self.log.debug("dt = %.53f"%dt)
+        self.log.info("Using spacestep dx=%s"%repr(u.dx))
+        self.log.debug("dx = %.53f"%u.dx)
         advance = self.theSolver.advance
         validate = self.theGrid.validate
         while(True):
@@ -157,7 +159,7 @@ class IBVP:
                 #t, u = advance(t, validate(u,t+dt), dt,self.boundary)
                 self.log.debug("About to advance for iteration = %i"%self.iteration)
                 t, u = advance(t, u, dt)
-                self.log.debug("time slice after advance = %s"%repr(u))
+                self.log.info("time slice after advance = %s"%repr(u))
                 self.iteration+=1
                  
             except ValueError as error:

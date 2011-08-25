@@ -12,6 +12,7 @@ import os
 import unittest
 import math
 import numpy as np
+import tslices
 
 class diffop(object):
     """The values of g_{00} and g_{NN} given here
@@ -39,10 +40,10 @@ class diffop(object):
         du = np.zeros_like(u)
         du = np.convolve(u, self.A, mode='same')
         self.log.debug("After convolve: du = %s"%repr(du))
-        if boundary_ID == self.LEFT:
+        if boundary_ID == tslices.LEFT:
             du[0:r] = np.dot(self.Ql, u[0:c])
             self.log.debug("Applying left boundary region computation")
-        elif boundary_ID == self.RIGHT:
+        elif boundary_ID == tslices.RIGHT:
             du[-r:] = np.dot(self.Qr, u[-c:])
             self.log.debug("Applying right boundary region computation")
         elif boundary_ID == None:
