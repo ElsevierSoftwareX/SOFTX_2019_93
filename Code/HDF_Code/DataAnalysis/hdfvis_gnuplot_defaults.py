@@ -1,10 +1,12 @@
 # Defaults for gnuplot
 hdfvis_gnuplot_anima=[\
-          'set style data lines',\
-          'set grid',\
-          'set xlabel "r"',\
-          'set ylabel "value of function"'\
-          ]
+        'set yrange [-0.5:0.5]',\
+        'set xrange [0:1]',\
+        'set style data lines',\
+        'set grid',\
+        'set xlabel "r"',\
+        'set ylabel "value of function"'\
+        ]
 hdfvis_gnuplot_plot = hdfvis_gnuplot_anima
 hdfvis_gnuplot_error = [\
     'set xlabel "r"',\

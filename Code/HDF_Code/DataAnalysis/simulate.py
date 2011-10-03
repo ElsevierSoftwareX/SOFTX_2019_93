@@ -43,14 +43,14 @@ def bash_string(sarray,prefix):
 args.dg = bash_string(args.dg,'-dg')
 args.terr_bash = bash_string(args.terr,'-t')
 
-# Run main.py. Need to do this to get file name if it wasn't specified
-main_run = "python -O ../Computation/main.py"
-print "MAIN CALCULATION: "+main_run
-args.mfile =  subprocess.Popen(main_run,\
-    shell=True,stdout=subprocess.PIPE).communicate()[0]
-
-if args.f is None:
-    args.f = args.mfile
+## Run main.py. Need to do this to get file name if it wasn't specified
+#main_run = "python -O ../Computation/main.py"
+#print "MAIN CALCULATION: "+main_run
+#args.mfile =  subprocess.Popen(main_run,\
+#    shell=True,stdout=subprocess.PIPE).communicate()[0]
+#
+#if args.f is None:
+#    args.f = args.mfile
 
 errorNum_run = []
 errorNum_run += ["python ./errorNumerical.py %s %s %s"%\
@@ -61,15 +61,15 @@ for time in args.terr:
     hdfvis_error += ['python ./hdfvis.py %s err -t %s %s'%\
         (args.dg,time,args.f)]
 
-hdfvis_plot = []
-for time in args.tplo:
-    hdfvis_plot  += ['python ./hdfvis.py %s plot -t %s %s'%\
-        (args.dg,time,args.f)]
-        
-hdfvis_ani = []
-for tani in args.tani:
-        hdfvis_ani  += ['python ./hdfvis.py %s ani -t0 %s -t1 %s %s'%\
-            (args.dg,tani[0],tani[1],args.f)]
+#hdfvis_plot = []
+#for time in args.tplo:
+#    hdfvis_plot  += ['python ./hdfvis.py %s plot -t %s %s'%\
+#        (args.dg,time,args.f)]
+#        
+#hdfvis_ani = []
+#for tani in args.tani:
+#        hdfvis_ani  += ['python ./hdfvis.py %s ani -t0 %s -t1 %s %s'%\
+#            (args.dg,tani[0],tani[1],args.f)]
 
 
 for s in errorNum_run:
