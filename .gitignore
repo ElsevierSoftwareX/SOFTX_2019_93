@@ -11,7 +11,7 @@
 *.gp
 *.eps
 
-# tex auxillary files
+# tex auxiliary files
 *.aux
 *.bbl
 *.blg
