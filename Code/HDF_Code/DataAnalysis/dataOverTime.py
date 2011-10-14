@@ -50,7 +50,7 @@ with sd.SimulationHDF(sys.argv[1]) as file:
         time = []
         mapping = sd.array_value_index_mapping(domain,sim.domain[0])
         for i,ds in enumerate(sim.getDgType(sys.argv[2])):
-            dl = np.zeros((2,))
+            dl = np.zeros((2,1))
             for map in mapping:
                 if sim.domain[0][map[1]]<=0:
                     dl = dl + np.absolute(ds.value[:,map[1]])
