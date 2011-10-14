@@ -14,7 +14,6 @@ import ibvp
 import diffop
 import actions
 import solvers
-import hdf_output
 import simulation_data
 
 # Do not change the keys!
@@ -350,7 +349,8 @@ class SimOutput(actions.UserAction):
         actionTypes,frequency = 1,name = None,cmp = None,overwrite = True,\
         debug_parent = "main.IBVP"):
         self.log = logging.getLogger(debug_parent+".SimOutput")
-        self.log.debug("Setting up HDF output...")
+        if self.log.isEnabledFor(logging.DEBUG):
+            self.log.debug("Setting up HDF output...")
         super(SimOutput,self).__init__(frequency)
         if name == None:
             hour = str(time.localtime()[3])
@@ -367,11 +367,13 @@ class SimOutput(actions.UserAction):
         self.cmp = cmp
         for action in actionTypes:
             action.setup(self)
-        self.log.debug("HDF output setup completed.")
+        if self.log.isEnabledFor(logging.DEBUG):
+            self.log.debug("HDF output setup completed.")
         
     def _doit(self,it,u):
         for action in self.actions:
-            self.log.debug("Outputting %s"%action.groupname)
+            if self.log.isEnabledFor(logging.DEBUG):
+                self.log.debug("Outputting %s"%action.groupname)
             action(it,u)
 
     class SimOutputType(object):
@@ -398,7 +400,8 @@ class SimOutput(actions.UserAction):
         def __call__(self,it,u):
             for key,value in self.derivedAttrs.items():
                 v = value(it,u,self.parent.system)
-                self.log.debug("Derived Attrs = %s"%str(v))
+                if self.log.isEnabledFor(logging.DEBUG):
+                    self.log.debug("Derived Attrs = %s"%str(v))
                 self.data_group[it].attrs[key] = v
          
     class Data(SimOutputType):

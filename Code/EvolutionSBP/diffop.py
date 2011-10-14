@@ -25,9 +25,7 @@ class diffop(object):
     g00 = -1
     gNN = 1
     pbound = None
-    RIGHT = 1
-    LEFT = -1
-    CENTRE = 0
+
 
     def __init__(self,log):
         self.bdyRegion = self.Ql.shape
@@ -40,16 +38,16 @@ class diffop(object):
         du = np.zeros_like(u)
         du = np.convolve(u, self.A, mode='same')
         self.log.debug("After convolve: du = %s"%repr(du))
-        if boundary_ID == tslices.LEFT:
-            du[0:r] = np.dot(self.Ql, u[0:c])
-            self.log.debug("Applying left boundary region computation")
-        elif boundary_ID == tslices.RIGHT:
-            du[-r:] = np.dot(self.Qr, u[-c:])
-            self.log.debug("Applying right boundary region computation")
-        elif boundary_ID == None:
+        if boundary_ID is None:
             du[0:r] = np.dot(self.Ql, u[0:c])
             du[-r:] = np.dot(self.Qr, u[-c:])
             self.log.debug("Applying both boundary region computation")
+        elif boundary_ID == grid.LEFT:
+            du[0:r] = np.dot(self.Ql, u[0:c])
+            self.log.debug("Applying left boundary region computation")
+        elif boundary_ID == grid.RIGHT:
+            du[-r:] = np.dot(self.Qr, u[-c:])
+            self.log.debug("Applying right boundary region computation")    
         self.log.debug("After boudnary conditions: du = %s"%repr(du))
         return du/dx
 
