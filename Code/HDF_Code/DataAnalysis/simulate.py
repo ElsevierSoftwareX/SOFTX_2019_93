@@ -7,8 +7,10 @@ parser = argparse.ArgumentParser(description=\
 """This program runs a complete simulation: the numerical calculations, the error caculations and the visulations.""")
 
 # Parse files
-parser.add_argument('-f','-file', help=\
-"""The name of the hdf file to be produced. If not given the file default from main.py will be used.""")
+parser.add_argument('-s','-simulation_file', help=\
+"""The name of the hdf file to be produced.""")
+parser.add_argument('-o','-output_file', help=\
+"""The name of the hdf file to be produced.""")
 
 # Parse times
 parser.add_argument('-terr','-times-error',nargs='+',help=\
@@ -43,35 +45,32 @@ def bash_string(sarray,prefix):
 args.dg = bash_string(args.dg,'-dg')
 args.terr_bash = bash_string(args.terr,'-t')
 
-# Run main.py. Need to do this to get file name if it wasn't specified
-main_run = "python -O ../Computation/main.py"
-print "MAIN CALCULATION: "+main_run
-args.mfile =  subprocess.Popen(main_run,\
-    shell=True,stdout=subprocess.PIPE).communicate()[0]
 
-if args.f is None:
-    args.f = args.mfile
+## Run main.py. Need to do this to get file name if it wasn't specified
+main_run = "python -O %s -o %s"%(args.s,args.o)
 
 errorNum_run = []
 errorNum_run += ["python ./errorNumerical.py %s %s %s"%\
-        (args.terr_bash,args.dg,args.f)]
+        (args.terr_bash,args.dg,args.o)]
         
 hdfvis_error = []
 for time in args.terr:
     hdfvis_error += ['python ./hdfvis.py %s err -t %s %s'%\
-        (args.dg,time,args.f)]
+        (args.dg,time,args.o)]
 
 hdfvis_plot = []
 for time in args.tplo:
     hdfvis_plot  += ['python ./hdfvis.py %s plot -t %s %s'%\
-        (args.dg,time,args.f)]
+        (args.dg,time,args.o)]
         
 hdfvis_ani = []
 for tani in args.tani:
         hdfvis_ani  += ['python ./hdfvis.py %s ani -t0 %s -t1 %s %s'%\
-            (args.dg,tani[0],tani[1],args.f)]
+            (args.dg,tani[0],tani[1],args.o)]
 
-
+print "MAIN CALCULATION: "+main_run
+args.mfile =  subprocess.Popen(main_run,\
+    shell=True,stdout=subprocess.PIPE).communicate()[0]
 for s in errorNum_run:
     print "ERROR CALCULATION: "+s
     subprocess.call(s,shell=True)

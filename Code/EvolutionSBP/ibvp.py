@@ -56,7 +56,7 @@ class IBVP:
         self.log.info("Running system %s"%str(self.theSystem))
         self.log.info("Using timestep dt=%s"%repr(dt))
         self.log.info("Using spacestep dx=%s"%repr(u.dx))
-        if self.log.isEnabledFor(logging.DEBUG):
+        if __debug__:
             self.log.debug("Initial data is = %s"%repr(u))
         advance = self.theSolver.advance
         validate = self.theGrid.validate
@@ -71,21 +71,23 @@ class IBVP:
                 break
             
             if self.theActions is not None:
-                tslice = u.collect_data() #Would be better to do this only after we know an
-                #action will happen
-                for action in self.theActions:
-                    if tslice is not None:
-                        if self.log.isEnabledFor(logging.DEBUG):
-                            self.log.debug("Running action %s at iteration %i"%(str(action),\
-                                self.iteration))
-                        action(self.iteration, tslice)
-                    
+                actions_do_actions = [action.will_run(self.iteration,u) \
+                    for action in self.theActions]
+                if any(actions_do_actions):
+                    tslice = u.collect_data()
+                    for action in self.theActions:
+                        if action.will_run(self.iteration,u) and tslice is not None:
+                            if __debug__:
+                                self.log.debug("Running action %s at iteration %i"%(str(action),\
+                                    self.iteration))
+                            action(self.iteration, tslice)
+                        
             try:
                 #t, u = advance(t, validate(u,t+dt), dt,self.boundary)
-                if self.log.isEnabledFor(logging.DEBUG):
+                if __debug__:
                     self.log.debug("About to advance for iteration = %i"%self.iteration)
                 t, u = advance(t, u, dt)
-                if self.log.isEnabledFor(logging.DEBUG):
+                if __debug__:
                     self.log.debug("time slice after advance = %s"%repr(u))
                 self.iteration+=1
                  

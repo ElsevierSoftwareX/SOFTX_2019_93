@@ -349,7 +349,7 @@ class SimOutput(actions.UserAction):
         actionTypes,frequency = 1,name = None,cmp = None,overwrite = True,\
         debug_parent = "main.IBVP"):
         self.log = logging.getLogger(debug_parent+".SimOutput")
-        if self.log.isEnabledFor(logging.DEBUG):
+        if __debug__:
             self.log.debug("Setting up HDF output...")
         super(SimOutput,self).__init__(frequency)
         if name == None:
@@ -367,12 +367,12 @@ class SimOutput(actions.UserAction):
         self.cmp = cmp
         for action in actionTypes:
             action.setup(self)
-        if self.log.isEnabledFor(logging.DEBUG):
+        if __debug__:
             self.log.debug("HDF output setup completed.")
         
     def _doit(self,it,u):
         for action in self.actions:
-            if self.log.isEnabledFor(logging.DEBUG):
+            if __debug__:
                 self.log.debug("Outputting %s"%action.groupname)
             action(it,u)
 
@@ -400,7 +400,7 @@ class SimOutput(actions.UserAction):
         def __call__(self,it,u):
             for key,value in self.derivedAttrs.items():
                 v = value(it,u,self.parent.system)
-                if self.log.isEnabledFor(logging.DEBUG):
+                if __debug__:
                     self.log.debug("Derived Attrs = %s"%str(v))
                 self.data_group[it].attrs[key] = v
          

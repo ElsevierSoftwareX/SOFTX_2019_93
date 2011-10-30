@@ -12,7 +12,14 @@ import os
 import unittest
 import math
 import numpy as np
+import logging
+
 import tslices
+
+
+################################################################################
+# Base class for SBP operators
+################################################################################
 
 class diffop(object):
     """The values of g_{00} and g_{NN} given here
@@ -26,30 +33,35 @@ class diffop(object):
     gNN = 1
     pbound = None
 
-
-    def __init__(self,log):
+    def __init__(self):
         self.bdyRegion = self.Ql.shape
-        self.log = log.getChild('diffop')
+        self.log = logging.getLogger('diffop')
 
     def __call__(self,u,dx,boundary_ID=None):
         r,c = self.bdyRegion
-        self.log.debug("Boundary region r = %s, c = %s"%(r,c))
-        self.log.debug("Array to operate on is = %s"%repr(u))
+#        if __debug__:
+#            self.log.debug("Boundary region r = %s, c = %s"%(r,c))
+#            self.log.debug("Array to operate on is = %s"%repr(u))
         du = np.zeros_like(u)
         du = np.convolve(u, self.A, mode='same')
-        self.log.debug("After convolve: du = %s"%repr(du))
+#        if __debug__:
+#            self.log.debug("After convolve: du = %s"%repr(du))
         if boundary_ID is None:
             du[0:r] = np.dot(self.Ql, u[0:c])
             du[-r:] = np.dot(self.Qr, u[-c:])
-            self.log.debug("Applying both boundary region computation")
+#            if __debug__:
+#                self.log.debug("Applying both boundary region computation")
         elif boundary_ID == grid.LEFT:
             du[0:r] = np.dot(self.Ql, u[0:c])
-            self.log.debug("Applying left boundary region computation")
+#            if __debug__:
+#                self.log.debug("Applying left boundary region computation")
         elif boundary_ID == grid.RIGHT:
             du[-r:] = np.dot(self.Qr, u[-c:])
-            self.log.debug("Applying right boundary region computation")    
-        self.log.debug("After boudnary conditions: du = %s"%repr(du))
-        return du/dx
+#            if __debug__:
+#                self.log.debug("Applying right boundary region computation")    
+#        if __debug__:
+#            self.log.debug("After boudnary conditions: du = %s"%repr(du))
+        return du/(dx**self.order)
 
     def penalty_boundary(self,eigenvalue,dx,vector_shape,exclude_zeros = True):
         """The vector self.pbound is, in the notation of CGA,
@@ -99,21 +111,51 @@ class diffop(object):
         np.savetxt(filename + "_mid.txt", self.A)
 
 
-################################################
-# Fourth order accurate differential operators
-#
+################################################################################
+# Second order 
+################################################################################
 
-class CD4(diffop):
-    """Implements the 4th order central difference, with
-    no treatment of the boundaries
+class D21_CNG(diffop):
     """
+    Taken from "A stable and conservative interface treatment of arbitrary
+    spatial accuracy". Check this operator carefully, it has not been
+    thoroughly tested.
+    """
+    A = np.array([-1.0/2,0.0,1.0/2])
+    name = "D21_CNG"
+    order = 1
 
-    def __init__(self,log):
-        self.name = "CD4"
-        self.Ql = np.array([[1,0],[0,1]])
-        self.Qr = self.Ql
-        self.A = np.array([-1./12.,2./3.,0.,-2./3.,1./12.])
-        super(CD4, self).__init__(log)
+    def __init__(self):
+        
+        Q = np.zeros((2,3))
+        
+        Q[0,0] = -0.5
+        Q[0,1] = 1.0
+        Q[0,2] = 0.0
+        
+        self.g00 = -1
+        self.gnn = 1
+        
+        Q[1,0] = -1.0
+        Q[1,1] = 0.0
+        Q[1,2] = 1
+        
+        P = np.zeros((2,2))
+        P[0,0] = 0.5
+        P[0,1] = 0
+        P[1,0] = 0
+        P[1,1] = 1
+        
+        Pinv = np.linalg.inv(P)
+        self.pbound = Pinv[:,0]
+        self.Ql = np.dot(Pinv,Q)
+        self.Qr = -self.Ql[::-1,::-1]
+        
+        super(D43_CNG, self).__init__()
+
+################################################################################
+# Fourth order accurate differential operators
+################################################################################
 
 class D42(diffop):
     """docstring for D42
@@ -133,6 +175,7 @@ class D42(diffop):
     
     def __init__(self,log):
         self.name = "D42"
+        self.order = 1
         self.A = np.array([-1./12.,2./3.,0.,-2./3.,1./12.])
         self.Ql = np.array( \
             [[-24.0/17.0, 59.0/34.0, -4.0/17.0, -3.0/34.0,         0,         0 ],\
@@ -169,6 +212,7 @@ class D43_Tiglioetal(diffop):
     """
     def __init__(self,log):
         self.name = "D43_Tiglioetal"
+        self.order = 1
         self.A = np.array([-1./12.,2./3.,0.,-2./3.,1./12.])
         self.Ql = np.array( \
         [\
@@ -197,6 +241,7 @@ class D43_CNG(diffop):
 
     def __init__(self,log):
         
+        self.order = 1
         a = self.r1
         b = self.r2
         Q = np.zeros((4,7))
@@ -206,8 +251,8 @@ class D43_CNG(diffop):
         Q[0,2] = (216*b + 1620*a + 725)/540.
         Q[0,3] = -(864*b + 6480*a + 3335)/4320
         
-        self.g00 = Q[0,0]
-        self.gnn = -Q[0,0]
+        self.g00 = -1 #Q[0,0]
+        self.gnn = 1  #-Q[0,0]
         
         Q[1,0] = -Q[0,1]
         Q[1,1] = 0.0
@@ -281,7 +326,8 @@ class D43_Strand(diffop):
     A = np.array([-1./12.,2./3.,0.,-2./3.,1./12.])
     name = "D43_Strand"
     
-    def __init__(self,log):
+    def __init__(self):
+        self.order = 1
         Q = np.mat(np.zeros((5,7)))
         Q[0,0] = -1.83333333333333333333333333333
         Q[0,1] = 3.00000000000000000000000000000
@@ -323,13 +369,13 @@ class D43_Strand(diffop):
         self.Qr = -self.Ql[::-1,::-1]
         self.pbound = np.array([11./3])
         
-        super(D43_Strand, self).__init__(log)
+        super(D43_Strand, self).__init__()
 
 
 
-################################################
+################################################################################
 # Higher order accurate differential operators
-#
+################################################################################
 
 
 class D65_min_err(diffop):
@@ -429,14 +475,90 @@ class D65_min_err(diffop):
 
     def __init__(self,log):
         self.Qr = -self.Ql[::-1,::-1]
+        self.order = 1
         self.pbound = np.array([4.930709842221048])
         super(D65_min_err, self).__init__(log)
 
+################################################################################
+# Second Derivative - Second Order SBP operators
+################################################################################
+
+class D43_2_CNG(diffop):
+    """
+    Taken from "A stable and conservative interface treatment of arbitrary
+    spatial accuracy", the matrix H is the identity.
+    """
+    r1 = -(2177.*math.sqrt(295369.) - 1166427.)/(25488.)
+    r2 = (66195.*math.sqrt(53.*5573.) - 35909375.)/101952.
+    A = np.array([-1./12.,16./12.,-30./12.,16./12.,-1./12.])
+    name = "D43_2_CNG"
+
+    def __init__(self):
         
+        self.order = 2
+        a = self.r1
+        b = self.r2
+        Ql = np.zeros((3,5))
+        
+        Ql[0,0] = 35.0/12
+        Ql[0,1] = -26.0/3
+        Ql[0,2] = 19.0/2
+        Ql[0,3] = -14.0/3
+        Ql[0,4] = 11./12
+        
+        # Formulations involving second derivative operators
+        # don't seem to require knowledge of the eigenvectors of the
+        # system
+        self.g00 = 1 
+        self.gnn = 1 
+        
+        Ql[1,0] = 11./12
+        Ql[1,1] = -5./3
+        Ql[1,2] = 1./2
+        Ql[1,3] = 1./3
+        Ql[1,4] = -1./12
+        
+        Ql[2,0] = -1./12
+        Ql[2,1] = 16./12
+        Ql[2,2] = -30./12
+        Ql[2,3] = 16./12
+        Ql[2,4] = -1./12
+        
+        P = np.zeros((4,4))
+        P[0,0] = -(216*b + 2160*a - 2125)/(12960)
+        P[0,1] = (81*b + 675*a + 415)/540
+        P[0,2] = -(72*b + 720*a + 445)/(1440)
+        P[0,3] = -(108*b + 756*a + 421)/1296
+        
+        P[1,0] = P[0,1]
+        P[1,1] = -(4104*b + 32400*a + 11225)/4320
+        P[1,2] = (1836*b + 14580*a + 7295)/2160
+        P[1,3] = -(216*b + 2160*a + 665)/(4320)
+        
+        P[2,0] = P[0,2]
+        P[2,1] = P[1,2]
+        P[2,2] = -(4104*b + 32400*a + 12785)/4320
+        P[2,3] = (81*b + 675*a + 335)/(540)
+        
+        P[3,0] = P[0,3]
+        P[3,1] = P[1,3]
+        P[3,2] = P[2,3]
+        P[3,3] = -(216*b + 2160*a - 12085)/(12960)
+        
+        Pinv = np.linalg.inv(P)
+        self.pbound = Pinv[:,0]
+        self.Ql = Ql
+        self.Qr = self.Ql[::-1,::-1]
+        
+        super(D43_2_CNG, self).__init__()
+
+################################################################################
+# Unit Test code
+################################################################################
 
 
 def main():
-    D = D43_CNG()
+    D = D43_2_CNG()
     D.save()
 
 from matplotlib.pylab import *
@@ -462,7 +584,7 @@ class diffopTests(unittest.TestCase):
         print np.linalg.inv(H[::-1,::-1])
 
     def setUp(self):
-        self.D = D42()
+        self.D = D43_2_CNG()
 
     def test_pointconvergence(self):
         power2 = (1, 2, 4, 8, 16, 32)

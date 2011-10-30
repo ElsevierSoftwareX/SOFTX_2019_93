@@ -45,8 +45,6 @@ class Grid(np.ndarray):
         self.log = getattr(obj, 'log', None)
         self.step_sizes = getattr(obj, 'step_sizes', None)
         self.comparison = getattr(obj, 'comparison', None)
-        #if self.log is not None and self.log.isEnabledFor(logging.DEBUG):
-        #    self.log.debug("obj = %s"%repr(obj))
         
     def __array_wrap__(self,out_arr,context = None):
         return np.ndarray.__array_wrap__(self, out_arr,context)
@@ -62,6 +60,9 @@ class Grid(np.ndarray):
         
     def collect_data(self,data):
         return data, self
+
+    def __repr__(self): 
+        return "<%s, grid shape = %s>"%(self.name,self.shape)
 
 ################################################################################
 # Constructors for specific cases
@@ -96,32 +97,11 @@ class Interval_2D(Grid):
         
     @property
     def phi(self):
-        return 1
-
-class Periodic_1D(Grid):
-    """A circle grid"""
-    
-    def __new__(cls, shape, bounds,comparison=None, log = None):
-        assert len(bounds) == 1
-        axes = [np.linspace(bounds[0][0],bounds[0][1],shape[0]+1)[:-1]]
-        step_sizes = np.asarray([axis[1]-axis[0] for axis in axes])
-        name = "Periodic_1D"
-        if log is None:
-            log = logging.getLogger(name)
-        else:
-            log = log.getChild(name)
-        obj = Grid.__new__(cls,axes[0],step_sizes,name = name, comparison = comparison,\
-            log = log)
-        return obj
-
-    @property
-    def axes(self):
-        return np.asarray(self)
- 
+        return 1 
  
 class Interval_1D(Grid):
     """A Grid object to represent a 1D interval of coordinates"""
-    
+
     def __new__(cls, shape, bounds, comparison = None, log = None):
         assert len(bounds) == 1
         axes = [np.linspace(bounds[0][0],bounds[0][1],shape[0]+1)]
@@ -190,7 +170,67 @@ class Interval_2D_polar_mpi(Grid):
     def phi(self):
         return 1
 
-
+class Interval_2D_polar_mpi_PT(Grid):
+    """A Grid object to represent a 2D interval of polar coordinates with
+    mpi splitting of domains on the first axis using a penalty boundary
+    method to implement the parallelization."""
+    
+    def __new__(cls,gridshape,bounds,comparison,log=None,mpi=True):
+        # Get step sizes
+        axes = [np.linspace(bounds[0][0],bounds[0][1],gridshape[0]+1),\
+            np.linspace(bounds[1][0],bounds[1][1],gridshape[1]+1)]
+        step_sizes = np.asarray([axis[1]-axis[0] for axis in axes])
+        # If using mpi divide up axes
+        mpiinter = None
+        if mpi:
+            mpiinter = mpiinterfaces.PT_2D_1D(axes[0].shape[0])
+            axes = [axes[0][mpiinter.domain],axes[1]]
+        # Set name and log
+        name = "Interval_2D_polar_mpi_%s"%repr(comparison)
+        if log is None:
+            log = logging.getLogger(name)
+        else:
+            log = log.getChild(name)
+        # Calculate grid
+        mesh = np.meshgrid(axes[1],axes[0])
+        grid = np.dstack((mesh[1],mesh[0]))
+        obj = Grid.__new__(cls,grid,step_sizes,name = name, comparison = comparison,\
+            log = log)
+        obj.mpiinter = mpiinter
+        obj.gridshape = gridshape
+        obj.bounds = bounds
+        obj.comparison = comparison
+        obj.log = log        
+        return obj
+    
+    def __array_finalize__(self,obj):
+        if obj is None: return
+        self.mpiinter = getattr(obj, 'mpiinter', None)
+        self.gridshape = getattr(obj, 'gridshape',None)
+        self.bounds = getattr(obj, 'bounds',None)
+        self.comparison = getattr(obj, 'comparison',None)
+        self.log = getattr(obj, 'log',None)
+    
+    def get_edge(self,data):
+        return self.mpiinter.get_edge(data)
+   
+    def collect_data(self,data):
+        rdata = self.mpiinter.collect_data(data)
+        rgrid = Interval_2D_polar_mpi_PT(self.gridshape,self.bounds,self.comparison,
+            log = self.log,mpi=False)
+        return rdata,rgrid
+   
+    @property
+    def axes(self):
+        return [np.asarray(self[:,0,0]),np.asarray(self[0,:,1])]
+        
+    @property
+    def r(self):
+        return 0
+        
+    @property
+    def phi(self):
+        return 1
 
            
 ################################################################################
@@ -282,7 +322,7 @@ class IntervalZero(Grid):
                 boundMinIndex +=1
             if scri[scriMinIndex]>0:
                 scriMinIndex -=1
-            if self.log.isEnabledFor(logging.DEBUG):
+            if __debug__:
                 self.log.debug("bound is = %s"%repr(bound))
                 self.log.debug("boundMinIndex = %i"%boundMinIndex)
                 self.log.debug("scriMinIndex = %i"%scriMinIndex)
@@ -299,8 +339,9 @@ class IntervalZero(Grid):
                    +boundMinIndex
             else:
                 rIndex = 0
-            if self.log.isEnabledFor(logging.DEBUG):
+            if __debug__:
                 self.log.debug("Cut off index is %i"%rIndex)
+
             return rIndex
 
     def __repr__(self):

@@ -124,7 +124,7 @@ class RFFT_scipy(object):
     
     name = "RFFT_scipy"
     
-    def __init__(self,order):
+    def __init__(self,order,period):
         self.order = order        
     
     def __call__(self,u,dx):
