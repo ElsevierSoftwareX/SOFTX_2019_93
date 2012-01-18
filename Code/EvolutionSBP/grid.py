@@ -71,12 +71,12 @@ class Grid(np.ndarray):
 class Interval_2D(Grid):
     """A Grid object to represent a 2D interval of coordinates"""
     
-    def __new__(cls, shape, bounds, **kwds):
+    def __new__(cls, shape, bounds, comparison = None,log = None):
         assert len(bounds) == len(shape)
         axes = [np.linspace(bounds[i][0],bounds[i][1],shape[i]+1)\
             for i in range(len(bounds))]
         step_sizes = np.asarray([axis[1]-axis[0] for axis in axes])
-        name = "Interval_2D"
+        name = "Interval_2D_%s_%s"%(repr(shape),repr(bounds))
         if log is None:
             log = logging.getLogger(name)
         else:
@@ -106,7 +106,7 @@ class Interval_1D(Grid):
         assert len(bounds) == 1
         axes = [np.linspace(bounds[0][0],bounds[0][1],shape[0]+1)]
         step_sizes = np.asarray([axis[1]-axis[0] for axis in axes])
-        name = "Interval_1D"
+        name = "Interval_1D_%s_%s"%(repr(shape),repr(bounds))
         if log is None:
             log = logging.getLogger(name)
         else:

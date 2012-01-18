@@ -68,11 +68,6 @@ class Sim(object):
         self.simHDF = simHDF
         self.name = simName
         existing_items = self.simHDF[systemD+"/"+self.name].keys()
-#        for key, item in sysDTypes.items():
-#            if item in existing_items:
-#                setattr(self,key,cPickle.loads(\
-#                    self.simHDF[systemD+"/"+self.name][item].value\
-#                    ))
         for key, item in sysDTypes.items():
             if item in existing_items:
                 setattr(self,key,\
@@ -83,10 +78,6 @@ class Sim(object):
         for key, item in dgTypes.items():
             if item in existing_items:
                 if self.name in self.simHDF[item].keys():
-#                    setattr(self,key,\
-#                        Sim.dsReturnValue(\
-#                            DataGroup(self.simHDF[item+"/"+self.name])
-#                        ))
                     setattr(self,key,\
                       DataGroup(self.simHDF[item+"/"+self.name],\
                         returnValue=True\
@@ -287,15 +278,15 @@ class SimulationHDF(object):
                 dt = times_dg[i+1].value-time_dg.value
                 if t-dt/2<time_dg.value<t+dt/2:
                     return i
-            return -1
+            return None
         
-    def indexOfDomain(self,d,time_index,sim):
-        domain_dg = DataGroup(self.file[dgTypes["domain"]+"/"+sim])[time_index]
-        dr = domain_dg[1] - domain_dg[0]
-        for i,pos in enumerate(domain_dg):
-            if d-dr/2<=pos<d+dr/2:
-                return i
-        return -1    
+#    def indexOfDomain(self,d,time_index,sim):
+#        domain_dg = DataGroup(self.file[dgTypes["domain"]+"/"+sim])[time_index]
+#        dr = domain_dg[1] - domain_dg[0]
+#        for i,pos in enumerate(domain_dg):
+#            if d-dr/2<=pos<d+dr/2:
+#                return i
+#        return -1    
     
     def write(self,dgType,sim,it,data,name = None,derivedAttrs = None,
         overwrite = True):
@@ -339,8 +330,7 @@ class SimulationHDF(object):
         # add data and derived attrs
         dg[it] = data
         for key,value in self.derivedAttrs.items():
-            v = value(it,u,self.parent.system)
-            self.data_group[it].attrs[key] = v
+            dg[it].attrs[key] = value
 
 # A utility class to write to SimulationHDF via the
 # actions.py framework.
@@ -582,6 +572,20 @@ class DataGroup():
                 break
         return index
     
+#    def index_of(self,value):
+#        min_v = self[0]
+#        max_v = self[-1]
+#        if value <= min_v:
+#            return 0
+#        elif value>= max_v:
+#            return len(times_dg)-1
+#        else:
+#            for i,v in enumerate(self):
+#                dt = times_dg[i+1].value-time_dg.value
+#                if t-dt/2<time_dg.value<t+dt/2:
+#                    return i
+#            return None
+    
     def __init__(self, grp,returnValue=False):
         """The group to behave like an array. It is assumed that
         the group has/will have a number of datasets with the labels
@@ -631,44 +635,96 @@ def binarysearch(a,low,high,value):
     elif value>a[mid]:
         return binarysearch(a,mid+1,high,value)
     else:
-        return mid
-        
-        
+        return mid  
         
 # array_value_index_mapping takes two arrays and returns a list of pairs
 # of indices (index1,index2) so that correct[index1] = comparison[index2]
 # this is very useful when performing error calculations
-def array_value_index_mapping(\
-    correct,\
-    comparison,\
-    compare_function= lambda x, y:x==y\
-    ):
+def array_value_index_mapping(correct,comparison,\
+    compare_function= lambda x, y:x==y,\
+    compare_on_axes = 1):
     index_mapping = []
-    _list_comparor_recursive([],  correct, [], comparison, index_mapping,\
-        compare_function)
+    cor_dims = len(correct.shape)
+    com_dims = len(comparison.shape)
+    if compare_on_axes == 0:
+        cor_ind = [0 for i in range(cor_dims)]
+        com_ind = [0 for i in range(com_dims)]
+    else:
+        cor_ind = [0 for i in range(cor_dims-1)]
+        com_ind = [0 for i in range(com_dims-1)]
+    return _array_value_index_mapping_recursive(correct,cor_ind,\
+        comparison,com_ind,index_mapping,compare_on_axes,0)
+
+def _array_value_index_mapping_recursive(correct,cor_ind,\
+    comparison,com_ind,\
+    index_mapping,compare_on_axes,depth):
+    while cor_ind[depth] < correct.shape[depth] and\
+         com_ind[depth] < comparison.shape[depth]:
+         if compare_on_axes == 0:
+             com = comparison[tuple(com_ind)]
+             cor = correct[tuple(cor_ind)]
+         else:
+             com = comparison[tuple(com_ind)][depth]
+             cor = correct[tuple(cor_ind)][depth]
+         if com < cor:
+            com_ind[depth] = com_ind[depth]+1
+         elif com > cor:
+            cor_ind[depth] = cor_ind[depth]+1
+         elif com == cor:
+            if depth == len(correct.shape)-1-compare_on_axes:
+                index_mapping += [(tuple(cor_ind),tuple(com_ind))]
+                com_ind[depth] = com_ind[depth]+1
+                cor_ind[depth] = cor_ind[depth]+1
+            else:
+                index_mapping = _array_value_index_mapping_recursive(\
+                    correct,cor_ind,\
+                    comparison,com_ind,index_mapping,compare_on_axes,depth+1)
+                com_ind[depth] = com_ind[depth]+1
+                cor_ind[depth] = cor_ind[depth]+1
+                com_ind[depth+1] = 0
+                cor_ind[depth+1] = 0
+         else:
+            raise Exception("Unable to compare %s and %s"%\
+                                    (com,cor))
     return index_mapping
 
-def _list_comparor_recursive(correct_index,  correct_axes, comparison_index,\
-        comparison_axes, reduced_comparison_axes, compare_function):
-    if correct_axes.shape==() and comparison_axes.shape==():
-        if compare_function(correct_axes, comparison_axes):
-            if len(correct_index) == 1:
-                reduced_comparison_axes.append((correct_index[0], \
-                    comparison_index[0]))
-            else:
-                reduced_comparison_axes.append((tuple(correct_index), \
-                    tuple(comparison_index)))
-    elif not correct_axes.shape == ():
-        for i, row in enumerate(correct_axes):
-            correct_index.append(i)
-            _list_comparor_recursive(correct_index, row, comparison_index, \
-                comparison_axes,  reduced_comparison_axes, compare_function)
-            correct_index.pop()
-    elif not comparison_axes.shape == ():
-        for i, row in enumerate(comparison_axes):
-            comparison_index.append(i)
-            _list_comparor_recursive(correct_index,  correct_axes, \
-                comparison_index,\
-                row, reduced_comparison_axes, compare_function)
-            comparison_index.pop()
 
+#def array_value_index_mapping(\
+#    correct,\
+#    comparison,\
+#    compare_function= lambda x, y:x==y,\
+#    compare_last_axes = 0,\
+#    ):
+#    index_mapping = []
+#    _list_comparor_recursive([],  correct, [], comparison, index_mapping,\
+#        compare_function,compare_last_axes = compare_last_axes)
+#    return index_mapping
+#
+#def _list_comparor_recursive(correct_index,  correct_axes, comparison_index,\
+#        comparison_axes, reduced_comparison_axes, compare_function,\
+#        compare_last_axes = 0):
+#    if len(correct_axes.shape) == compare_last_axes and\
+#        len(comparison_axes.shape) == compare_last_axes:
+#        if compare_last_axes == 0 and compare_function(correct_axes, comparison_axes)\
+#            or compare_last_axes !=0 and all(compare_function(correct_axes, comparison_axes)):
+#            if len(correct_index) == 1:
+#                reduced_comparison_axes.append((correct_index[0], \
+#                    comparison_index[0]))
+#            else:
+#                reduced_comparison_axes.append((tuple(correct_index), \
+#                    tuple(comparison_index)))
+#    elif not len(correct_axes.shape) == compare_last_axes:
+#        for i, row in enumerate(correct_axes):
+#            correct_index.append(i)
+#            _list_comparor_recursive(correct_index, row, comparison_index, \
+#                comparison_axes,  reduced_comparison_axes, compare_function, \
+#                compare_last_axes = compare_last_axes)
+#            correct_index.pop()
+#    elif not len(comparison_axes.shape) == compare_last_axes:
+#        for i, row in enumerate(comparison_axes):
+#            comparison_index.append(i)
+#            _list_comparor_recursive(correct_index,  correct_axes, \
+#                comparison_index,\
+#                row, reduced_comparison_axes, compare_function,\
+#                compare_last_axes = compare_last_axes)
+#            comparison_index.pop()
