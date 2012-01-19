@@ -9,10 +9,10 @@
 *.hdf
 *.ps
 *.gp
+*.eps
 
-# tex auxillary files
+# tex auxiliary files
 *.aux
-*.bbl
 *.blg
 *.log
 *.synctex.gz
@@ -21,3 +21,5 @@
 
 # for MacOSX
 .DS_Store
+
+*.backup
