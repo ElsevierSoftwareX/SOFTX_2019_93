@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 import argparse
 import subprocess
+import sys
 
 # Initialise parser
 parser = argparse.ArgumentParser(description=\
@@ -9,6 +10,10 @@ parser = argparse.ArgumentParser(description=\
 # Parse files
 parser.add_argument('-f','-file', help=\
 """The name of the hdf file to be produced. If not given the file default from main.py will be used.""")
+
+parser.add_argument('-nc','-no-computation', action='store_true',default = False, help=\
+"""A flag to indicated that no computation of data is needed. If specified the setting '-f' must be used.""")
+
 
 # Parse times
 parser.add_argument('-terr','-times-error',nargs='+',help=\
@@ -23,15 +28,28 @@ parser.add_argument('-dg','-dgTypes',nargs='+',help=\
 """A list of the data group types for error calculation and visulisation. Currently only implemented for "raw".""")
 
 # Collect args and set up defaults
+if len(sys.argv) == 1:
+    parser.print_usage()
+    sys.exit(1)
+
 args = parser.parse_args()
+if args.nc and args.f is None:
+    print "If the -nc flag is used -f must be set."
+    parser.print_usage()
+    sys.exit(1)
+
 if args.dg is None:
     args.dg = ['raw']
 
 if args.tani is not None:
     args.tani = [eval(tani) for tani in args.tani]
+else:
+    args.tani = []
     
 if args.tplo is None:
     args.tplo = args.terr
+else:
+    args.tplo = []
 
 # Do conversions for commands that can take multiple times and dgs.
 def bash_string(sarray,prefix):
@@ -43,14 +61,16 @@ def bash_string(sarray,prefix):
 args.dg = bash_string(args.dg,'-dg')
 args.terr_bash = bash_string(args.terr,'-t')
 
-## Run main.py. Need to do this to get file name if it wasn't specified
-#main_run = "python -O ../Computation/main.py"
-#print "MAIN CALCULATION: "+main_run
-#args.mfile =  subprocess.Popen(main_run,\
-#    shell=True,stdout=subprocess.PIPE).communicate()[0]
-#
-#if args.f is None:
-#    args.f = args.mfile
+# Run main.py. Need to do this to get file name if it wasn't specified
+if not args.nc:
+    if args.f is None:
+        main_run = "python -O ../Computation/main.py"
+    else:
+        main_run = "python -O ../Computation/main.py -f "+args.f
+    print "MAIN CALCULATION: "+main_run
+    args.mfile =  subprocess.Popen(main_run,\
+        shell=True,stdout=subprocess.PIPE).communicate()[0]
+    args.f = args.mfile
 
 errorNum_run = []
 errorNum_run += ["python ./errorNumerical.py %s %s %s"%\
@@ -61,15 +81,15 @@ for time in args.terr:
     hdfvis_error += ['python ./hdfvis.py %s err -t %s %s'%\
         (args.dg,time,args.f)]
 
-#hdfvis_plot = []
-#for time in args.tplo:
-#    hdfvis_plot  += ['python ./hdfvis.py %s plot -t %s %s'%\
-#        (args.dg,time,args.f)]
-#        
-#hdfvis_ani = []
-#for tani in args.tani:
-#        hdfvis_ani  += ['python ./hdfvis.py %s ani -t0 %s -t1 %s %s'%\
-#            (args.dg,tani[0],tani[1],args.f)]
+hdfvis_plot = []
+for time in args.tplo:
+    hdfvis_plot  += ['python ./hdfvis.py %s plot -t %s %s'%\
+        (args.dg,time,args.f)]
+        
+hdfvis_ani = []
+for tani in args.tani:
+        hdfvis_ani  += ['python ./hdfvis.py %s ani -t0 %s -t1 %s %s'%\
+            (args.dg,tani[0],tani[1],args.f)]
 
 
 for s in errorNum_run:

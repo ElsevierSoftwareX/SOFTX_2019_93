@@ -300,7 +300,7 @@ class SimulationHDF(object):
     
     def write(self,dgType,sim,it,data,name = None,derivedAttrs = None,
         overwrite = True):
-        #"""This method allows for writing to SimulationHDF objects. Note that if dgType is an error type data group then name must be given. We recommend that its value be taken as the data group from which the error data was generated."""        
+        """This method allows for writing to SimulationHDF objects. Note that if dgType is an error type data group then name must be given. We recommend that its value be taken as the data group from which the error data was generated."""        
         # Create empy derivedAttrs if no argument is passed
         if derivedAttrs is None:
             self.derivedAttrs = {}
