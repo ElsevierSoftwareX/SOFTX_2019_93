@@ -7,8 +7,20 @@ import argparse
 sys.path.append("../../EvolutionSBP/")
 import simulation_data as sd
 
+
+
+def printTimes(simulationHDF):
+    sims = simulationHDF.getSims()
+    for sim in sims:
+        print "==========================="
+        print sim
+        print "Start Time: %f"%sim.time[0]
+        print "Stop Time:  %f"%sim.time[len(sim.time)-1]
+        print "Time Step:  %f"%sim.dt[0]
+        
+
 def _validate(group):
-    """If group is an instance of sd.SimulationHDF then group.file is return. Otherwise group is returned. This method validates the arguments 
+    """If group is an instance of sd.SimulationHDF then group.file is returned. Otherwise group is returned. This method validates the arguments 
     of exploreKeys() and printHDF() to ensure that they are acting on HDf groups."""
     if isinstance(group,sd.SimulationHDF):
         return group.file
@@ -63,10 +75,19 @@ This script is also designed to be loaded as a module. If done three functions, 
 Remember to appropriately close the hdf file, otherwise corruption can result.""")
     parser.add_argument('file',help =\
     """The hdf file whose contents is to be printed to stdout.""")
+    
+    parser.add_argument('-t','-time',action="store_true", default = False,help =\
+    """Prints the start time, stop time and time step of each run.""")
+    
+    parser.add_argument('-g','-groups',action="store_true", default = False,help =\
+    """Prints keys and group names.""")
 
     args = parser.parse_args()
 
     with sd.SimulationHDF(args.file) as file:
-        printHDF(file.file)
+        if args.t:
+            printTimes(file)
+        if args.g:
+            printHDF(file.file)
 
 

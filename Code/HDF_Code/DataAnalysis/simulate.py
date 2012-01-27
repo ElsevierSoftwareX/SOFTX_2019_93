@@ -70,7 +70,8 @@ if not args.nc:
     print "MAIN CALCULATION: "+main_run
     args.mfile =  subprocess.Popen(main_run,\
         shell=True,stdout=subprocess.PIPE).communicate()[0]
-    args.f = args.mfile
+    if args.f is None:
+        args.f = args.mfile
 
 errorNum_run = []
 errorNum_run += ["python ./errorNumerical.py %s %s %s"%\

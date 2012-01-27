@@ -53,19 +53,26 @@ class IBVP:
         self.log.info("Using spacestep dx=%f"%(u.dx,))
         advance = self.theSolver.advance
         validate = self.theGrid.validate
-        while(True):
+        computation_valid = True
+        while(computation_valid):
             if (self.iteration > self.maxIteration):
                 self.log.info("Maximum number of iterations exceeded")
-                break
+                computation_valid = False
             
             if (math.fabs(t-tstop) < dt/2):
                 self.log.info("Maximum time reached at %f for iterations: %d"%\
                     (t, self.iteration))
-                break
+                computation_valid = False
             
             if self.theActions is not None:
                 for action in self.theActions:
-                    action(self.iteration, u)
+                    try:
+                        action(self.iteration, u)
+                    except Exception as error:
+                        if error.__str__() == "Function values are above the cutoff":
+                            self.log.info("Function values are above the cutoff")
+                        self.log.exception(repr(error))
+                        computation_valid = False
             try:
                 t, u = advance(t, validate(u,t+dt), dt)
             except ValueError as error:
@@ -75,15 +82,15 @@ class IBVP:
                     self.log.info("Limit of computational domain reached at"\
                         "time: %f and iteration: %i"%(t,self.iteration))
                 self.log.exception(repr(error))
-                break
+                computation_valid = False
             except IndexError as error:
                 if error.__str__() == 'index out of bounds':
                     self.log.info("Limit of computational domain reached at"\
                         "time: %f and iteration: %i"%(t,self.iteration))
                 self.log.exception(repr(error))
-                break
+                computation_valid = False
             self.iteration+=1
-        self.log.info("Finished computation")
+        self.log.info("Finished computation at time %f for iteration %i"%(t,self.iteration))
         self.log.info("stopped =============================")
         return u
 
