@@ -23,3 +23,6 @@
 .DS_Store
 
 *.backup
+*.bbl
+Docs/Papers/spin2cylinder.pdf
+*.dvi
