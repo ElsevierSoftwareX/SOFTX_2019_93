@@ -26,3 +26,4 @@
 *.bbl
 Docs/Papers/spin2cylinder.pdf
 *.dvi
+*.rel
