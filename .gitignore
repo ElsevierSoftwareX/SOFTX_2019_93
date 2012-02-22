@@ -18,14 +18,17 @@
 *.log
 *.synctex.gz
 *.out
+*.bbl
+*.dvi
 *.tex~
 
 # for MacOSX
 .DS_Store
 
+# Miscillaneous
 *.backup
-*.bbl
-
 Docs/Papers/spin2cylinder.pdf
-*.dvi
 *.rel
+*.rel
+Docs/Spin2Notes/spin2.pdf
+
