@@ -15,7 +15,8 @@ hdfvis_gnuplot_error = [\
     'set y2tics',\
     'set style data lines',\
     'set grid',\
-    'set key left'\
+    'set nokey'\
+    #'set key left'\
     ]
 
 # Defaults for gnuplot output

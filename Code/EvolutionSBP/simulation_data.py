@@ -392,7 +392,7 @@ class SimOutput(actions.UserAction):
                     ).create_group(parent.name))
             self.parent = parent
             self.data_group.attrs['cmp'] = parent.cmp
-            self.log = parent.log.getChild(self.groupname)
+            self.log = logging.getLogger(self.groupname)
         
         def __call__(self,it,u):
             for key,value in self.derivedAttrs.items():
