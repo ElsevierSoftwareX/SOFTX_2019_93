@@ -10,6 +10,7 @@
 *.ps
 *.gp
 *.eps
+*.gnup
 
 # tex auxiliary files
 *.aux
@@ -24,6 +25,7 @@
 
 *.backup
 *.bbl
+
 Docs/Papers/spin2cylinder.pdf
 *.dvi
 *.rel
