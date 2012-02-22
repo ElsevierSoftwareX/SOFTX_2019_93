@@ -13,7 +13,8 @@ hdfvis_gnuplot_error = [\
     'set y2tics',\
     'set style data lines',\
     'set grid',\
-    'set key left'\
+    'set nokey'\
+    #'set key left'\
     ]
 hdfvis_gnuplot_error2D = [\
     'set xlabel "r"',\
