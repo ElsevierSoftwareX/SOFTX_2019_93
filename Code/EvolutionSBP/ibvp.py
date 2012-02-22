@@ -60,15 +60,16 @@ class IBVP:
             self.log.debug("Initial data is = %s"%repr(u))
         advance = self.theSolver.advance
         validate = self.theGrid.validate
-        while(True):
+        computation_valid = True
+        while(computation_valid):
             if (self.iteration > self.maxIteration):
                 self.log.info("Maximum number of iterations exceeded")
-                break
+                computation_valid = False
             
             if (math.fabs(t-tstop) < dt/2):
                 self.log.info("Maximum time reached at %f for iterations: %d"%\
                     (t, self.iteration))
-                break
+                computation_valid = False
             
             if self.theActions is not None:
                 actions_do_actions = [action.will_run(self.iteration,u) \
@@ -81,7 +82,6 @@ class IBVP:
                                 self.log.debug("Running action %s at iteration %i"%(str(action),\
                                     self.iteration))
                             action(self.iteration, tslice)
-                        
             try:
                 #t, u = advance(t, validate(u,t+dt), dt,self.boundary)
                 if __debug__:
@@ -98,14 +98,15 @@ class IBVP:
                     self.log.info("Limit of computational domain reached at"\
                         "time: %f and iteration: %i"%(t,self.iteration))
                 self.log.exception(repr(error))
-                raise error
+                computation_valid = False
             except IndexError as error:
                 if error.__str__() == 'index out of bounds':
                     self.log.info("Limit of computational domain reached at"\
                         "time: %f and iteration: %i"%(t,self.iteration))
                 self.log.exception(repr(error))
-                raise error
-        self.log.info("Finished computation")
+                computation_valid = False
+            self.iteration+=1
+        self.log.info("Finished computation at time %f for iteration %i"%(t,self.iteration))
         self.log.info("stopped =============================")
         return u
 

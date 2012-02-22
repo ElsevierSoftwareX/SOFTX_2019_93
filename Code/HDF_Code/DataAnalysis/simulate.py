@@ -45,9 +45,17 @@ def bash_string(sarray,prefix):
 args.dg = bash_string(args.dg,'-dg')
 args.terr_bash = bash_string(args.terr,'-t')
 
-
-## Run main.py. Need to do this to get file name if it wasn't specified
-main_run = "python -O %s -o %s"%(args.s,args.o)
+# Run main.py. Need to do this to get file name if it wasn't specified
+if not args.nc:
+    if args.f is None:
+        main_run = "python -O ../Computation/main.py"
+    else:
+        main_run = "python -O ../Computation/main.py -f "+args.f
+    print "MAIN CALCULATION: "+main_run
+    args.mfile =  subprocess.Popen(main_run,\
+        shell=True,stdout=subprocess.PIPE).communicate()[0]
+    if args.f is None:
+        args.f = args.mfile
 
 errorNum_run = []
 errorNum_run += ["python ./errorNumerical.py %s %s %s"%\
