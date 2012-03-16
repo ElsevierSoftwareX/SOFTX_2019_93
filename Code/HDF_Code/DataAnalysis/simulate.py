@@ -74,7 +74,7 @@ if not args.nc:
         args.f = args.mfile
 
 errorNum_run = []
-errorNum_run += ["python ./errorNumerical.py %s %s %s"%\
+errorNum_run += ["python ./error.py %s %s -Lp '2' numer %s"%\
         (args.terr_bash,args.dg,args.f)]
         
 hdfvis_error = []
