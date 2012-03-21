@@ -284,10 +284,16 @@ class SimulationHDF(object):
         elif t>= max_time:
             return len(times_dg)-1
         else:
-            for i,time_dg in enumerate(times_dg):
+            for i in range(len(times_dg)-1):
+                time_dg = times_dg[i]
                 dt = times_dg[i+1].value-time_dg.value
                 if t-dt/2<time_dg.value<t+dt/2:
                     return i
+            i = len(times_dg)-1
+            time_dg = times_dg[i-1]
+            dt = times_dg[i].value-time_dg.value
+            if t-dt/2<time_dg.value<=t:
+                return i
             return -1
         
     def indexOfDomain(self,d,time_index,sim):
@@ -300,7 +306,10 @@ class SimulationHDF(object):
     
     def write(self,dgType,sim,it,data,name = None,derivedAttrs = None,
         overwrite = True):
-        """This method allows for writing to SimulationHDF objects. Note that if dgType is an error type data group then name must be given. We recommend that its value be taken as the data group from which the error data was generated."""        
+        """This method allows for writing to SimulationHDF objects. Note that 
+        if dgType is an error type data group then name must be given. We 
+        recommend that its value be taken as the data group from which the 
+        error data was generated."""        
         # Create empy derivedAttrs if no argument is passed
         if derivedAttrs is None:
             self.derivedAttrs = {}
