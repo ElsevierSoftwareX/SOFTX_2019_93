@@ -6,14 +6,14 @@ ibvp.py
 Created by Jörg Frauendiener on 2010-12-24.
 Copyright (c) 2010 University of Otago. All rights reserved.
 
-Editted by Ben Whale and George Doulis.
+Edited by Ben Whale and George Doulis.
 """
 
 import sys
 import os
 import unittest
 import math
-import numpy as np
+#import numpy as np
 import logging
 
 from solvers import Solver
@@ -27,8 +27,9 @@ class IBVP:
     maxIteration = None
     
     def __init__(self, sol, eqn, grid = None, action = None,\
-        maxIteration = 10000,debug_parent = "main"):
+        maxIteration = 10000, minTimestep = 1e-8, debug_parent = "main"):
         sol.useSystem(eqn)
+        self.minTimestep = minTimestep
         self.theSolver = sol
         self.theSystem = eqn
         self.maxIteration = maxIteration
@@ -45,8 +46,9 @@ class IBVP:
         """Go for it"""
         t = tstart
         self.log.info("starting =============================")
+        # set the initial values
         u = self._ic(tstart)
-        dt = self.theSystem.timestep(u)
+        # compute the initial time step from the current time slice
         self.log.info("Running system %s"%str(self.theSystem))
         self.log.info("Grid = %s"%str(self.theGrid))
         self.log.info("Using timestep dt=%f"%(dt,))
@@ -62,6 +64,11 @@ class IBVP:
             if (math.fabs(t-tstop) < dt/2):
                 self.log.info("Maximum time reached at %f for iterations: %d"%\
                     (t, self.iteration))
+                computation_valid = False
+            
+            dt = self.theSystem.timestep(u)
+            if dt < self.minTimestep:
+                self.log.info('Timestep too small: dt = %f\n Finishing ...' % dt)
                 computation_valid = False
             
             if self.theActions is not None:

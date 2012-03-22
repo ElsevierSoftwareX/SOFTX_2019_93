@@ -97,6 +97,7 @@ class CD4(diffop):
         self.Ql = np.array([[1,0],[0,1]])
         self.Qr = self.Ql
         self.A = np.array([-1./12.,2./3.,0.,-2./3.,1./12.])
+        self.w = 2
         super(CD4, self).__init__()
 
 class D42(diffop):
@@ -117,6 +118,7 @@ class D42(diffop):
     
     def __init__(self):
         self.name = "D42"
+        self.w = 2
         self.A = np.array([-1./12.,2./3.,0.,-2./3.,1./12.])
         self.Ql = np.array( \
             [[-24.0/17.0, 59.0/34.0, -4.0/17.0, -3.0/34.0,         0,         0 ],\
@@ -139,7 +141,7 @@ class D43_Tiglioetal(diffop):
     
     The operator corresponds to the operator with minimum error.
     
-    From Stand, page 75, we know that the norm is restricted full, as is also
+    From Strand, page 75, we know that the norm is restricted full, as is also
     mentioned in DDST. It appears that, without perhaps staring at Cactus
     code, the values of the three parameters are not given. This is
     needed as the numerical values of the norm used depends on these values.
@@ -153,6 +155,7 @@ class D43_Tiglioetal(diffop):
     """
     def __init__(self):
         self.name = "D43_Tiglioetal"
+        self.w = 2
         self.A = np.array([-1./12.,2./3.,0.,-2./3.,1./12.])
         self.Ql = np.array( \
         [\
@@ -178,6 +181,7 @@ class D43_CNG(diffop):
     r2 = (66195.*math.sqrt(53.*5573.) - 35909375.)/101952.
     A = np.array([-1./12.,2./3.,0.,-2./3.,1./12.])
     name = "D43_CNG"
+    w = 2
 
     def __init__(self):
         
@@ -264,6 +268,7 @@ class D43_Strand(diffop):
     """
     A = np.array([-1./12.,2./3.,0.,-2./3.,1./12.])
     name = "D43_Strand"
+    w = 2
     def __init__(self):
         Q = np.mat(np.zeros((5,7)))
         Q[0,0] = -1.83333333333333333333333333333
@@ -328,6 +333,7 @@ class D65_min_err(diffop):
     """
        
     name = "D65"
+    w = 3
     A = np.array([1./60.,-3./20.,3./4.,0.,-3./4.,3./20.,-1./60.])
     Ql = np.mat(np.zeros((7,10)))
 
