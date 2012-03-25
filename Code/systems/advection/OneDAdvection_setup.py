@@ -2,46 +2,50 @@ from __future__ import division
 
 #import python libraries
 import sys
-import time
+import os
 import numpy as np
 import logging
 import h5py
 import math
-
-#imports for debug
-from scipy import fftpack
+import argparse
 
 #Import standard code base
 from skyline import ibvp, actions, solvers, grid
 from skyline.diffop import fd, fft, sbp
-#from skyline.io import simulation_data
 
 #import system to use
 import OneDAdvection
 
-#for file naming
-year = str(time.localtime()[0])
-month = str(time.localtime()[1])
-day = str(time.localtime()[2])
+################################################################################
+# Parser settings 
+################################################################################
+# Initialise parser
+parser = argparse.ArgumentParser(description=\
+"""This program contains the necessary code for initialization of
+the EvolutionSBP code.""")
 
+# Parse files
+parser.add_argument('-f','-file', help=\
+"""The name of the hdf file to be produced. Defaults to test.""")
+args = parser.parse_args()
 ################################################################################  
 # These are the commonly altered settings
 ################################################################################
 
-#file settings
-#file_location = "/localhome/bwhale/"
-file_location = "../../../Output/"
-file_name = "1DAdvection_sin"
-
 #output settings
 store_output = True
-display_output = True
+display_output = False
+if store_output and args.f is None:
+    print "OneDAdvection_setup.py: error: argument -f/-file is required"
+    
+# log file settings
+if store_output:
+    args.logf = os.path.splitext(args.f)[0]+".log"
 
 # Set up logger
-file_log_level = logging.DEBUG
+file_log_level = logging.INFO
 if store_output and not display_output:
-    logging.basicConfig(filename =\
-        file_location+file_name+"-%s-%s-%s.log"%(year,month,day),\
+    logging.basicConfig(filename=args.logf,\
         filemode='w',\
         level=file_log_level,\
         format = '%(filename)s:%(lineno)d - %(levelname)s:%(message)s')
@@ -50,9 +54,9 @@ if store_output and not display_output:
     console.setLevel(logging.INFO)
     log.addHandler(console)
 elif store_output and display_output:
-    logging.basicConfig(filename =\
-        file_location+file_name+"-%s-%s-%s.log"%(year,month,day),\
-        filemode='w',format = '%(filename)s:%(lineno)d - %(levelname)s:%(message)s',\
+    logging.basicConfig(filename=args.logf,\
+        filemode='w', \
+        format = '%(filename)s:%(lineno)d - %(levelname)s:%(message)s',\
         level=file_log_level)
     log = logging.getLogger("main")
     console = logging.StreamHandler()
@@ -66,28 +70,29 @@ else:
 log.info("Starting configuration.")
 
 # How many systems?
-num_of_grids = 1
+num_of_grids = 6
 
 # How many grid points?
-N = 50
+N = 100
 
 # What grid to use?
 xstart = 0
-xstop = 5
+xstop = 2
 
 # Times to run between
 tstart = 0.0
-tstop = 10
+tstop = 3.1
 
 # Configuration of System
 CFLs = [0.5 for i in range(num_of_grids)]
+tau = 1
 
 # Select diffop
-#raxis_1D_diffop = sbp.D43_Strand()
+raxis_1D_diffop = sbp.D43_Strand()
 #raxis_1D_diffop = fd.FD12()
 #raxis_1D_diffop = fd.FD14()
 #raxis_1D_diffop = sbp.D42()
-raxis_1D_diffop = fft.FFT_diff_scipy(1,xstop-xstart)
+#raxis_1D_diffop = fft.FFT_diff_scipy(1,xstop-xstart)
 #raxis_1D_diffop = fft.FFTW(1,xstop-xstart)
 #raxis_1D_diffop = fft.FFTW_real(1,xstop-xstart)
 #raxis_1D_diffop = fft.FFTW_convolve(1,xstop-xstart)
@@ -106,7 +111,7 @@ maxIteration = 1000000
 ################################################################################
 
 # Grid point data      
-raxis_gdp = [[N*2**i] for i in range(num_of_grids)]
+raxis_gdp = [N*2**i for i in range(num_of_grids)]
 
 # Calcualte number of ghost points. I assume that number required on the right
 # and left are the same.
@@ -115,7 +120,7 @@ ghost_points = ghp
 
 # Build grids
 grids = [grid.Interval_1D(raxis_gdp[i], [[xstart,xstop]],\
-    comparison = i) for i in range(num_of_grids)]
+    comparison = raxis_gdp[i]) for i in range(num_of_grids)]
 
 ################################################################################
 # Print logging information
@@ -136,9 +141,8 @@ if log.isEnabledFor(logging.DEBUG):
     log.debug("Initialising systems.")
 for i in range(num_of_grids):
     systems += [OneDAdvection.OneDAdvection(\
-        raxis_1D_diffop,\
-        CFL = CFLs[i],\
-        log_parent=log\
+        raxis_1D_diffop,
+        CFL = CFLs[i], tau = tau
         )]
 if log.isEnabledFor(logging.DEBUG):
     log.debug("Initialisation of systems complete.")
@@ -146,10 +150,8 @@ if log.isEnabledFor(logging.DEBUG):
 ################################################################################
 # Set up hdf file to store output
 ################################################################################
-#hdf_file = h5py.H5pyArray(file_location + file_name +"-%s-%s-%s.hdf"\
-#  %(year,month,day))
-full_file_name = file_location + file_name +"-%s-%s-%s.hdf"%(year,month,day)
-hdf_file = h5py.File(full_file_name)
+if store_output:
+    hdf_file = h5py.File(args.f)
 
 
 ################################################################################
@@ -183,7 +185,6 @@ gnu_plot_settings = [\
 # Perform computation
 ################################################################################
 log.info("Simulation configuration complete.")
-log.info("Starting simulation.")
 for i,system in enumerate(systems):
         #Construct Actions
         actionList = []
@@ -204,8 +205,9 @@ for i,system in enumerate(systems):
                 name = grids[i].name,\
                 cmp_ = grids[i].comparison\
                 )]
+        log.info("Starting simulation %i with system %s"%(i,repr(system)))
         problem = ibvp.IBVP(solver, system, grid = grids[i],\
                 maxIteration = 1000000, action = actionList)
         problem.run(tstart, tstop)
-log.info("Simulation complete")
-print full_file_name
+        log.info("Simulation complete")
+log.info("Calculations complete")

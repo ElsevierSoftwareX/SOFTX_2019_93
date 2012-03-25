@@ -29,9 +29,9 @@ class OneDAdvection(System):
     ############################################################################
     # Constructor
     ############################################################################
-    def __init__(self, D, CFL, tau = None, log_parent = None ):
+    def __init__(self, D, CFL, tau = None):
         super(OneDAdvection, self).__init__(CFL)
-        self.log = log_parent.getChild("OneDAdvection")
+        self.log = logging.getLogger("OneDAdvection")
         self.D = D
         self.tau = tau
         self.name = """<OneDAdvection D = %s, CLF = %f, tau = %s>"""%\
@@ -44,15 +44,16 @@ class OneDAdvection(System):
     def initialValues(self,t0,r):
         #self.log.info("Initial value routine = central bump")
         #return self.centralBump(t0,r)
-        self.log.info("Initial value routine = exp_bump")
-        return self.exp_bump(t0,r)
+        #self.log.info("Initial value routine = exp_bump")
+        #return self.exp_bump(t0,r)
         #self.log.info("Initial value routine = sin")
-        #return self.sin(t0,r)
+        return self.sin(t0,r)
         #self.log.info("Initial value routine = data")
         #return self.data(t0,r)
     
     def boundaryRight(self,t,Psi):
-        return 0.5*math.sin(2*math.pi*(t+2)/(Psi.domain.axes[-1]-Psi.domain.axes[0]))
+        return 0.5 * math.sin( 2*math.pi*(t+2) / 
+            ( Psi.domain.axes[-1] - Psi.domain.axes[0] ) )
         
     def boundaryLeft(self,t,Psi):
         return 0.0
@@ -75,38 +76,35 @@ class OneDAdvection(System):
         ########################################################################
         Dxf = np.real(self.D(f0,dx))
         Dtf = Dxf
+        
+        #Dtf -= tau * ( f0[-1] - self.boundaryRight(t,Psi) ) \
+        #    * self.D.penalty_boundary(1, dx, f0.shape)
                 
-        if self.log.isEnabledFor(logging.DEBUG):
+        if __debug__:
             self.log.debug("""Derivatives are:
                 Dtf = %s"""%\
                 (repr(Dtf)))
-        #if t == 0:
-        #    print '{',
-        #    for x in Dtf:
-        #        print '%.8f,'%x
-        #    print '}'
+
         ########################################################################
         # Impose boundary conditions 
         ########################################################################
-        Dtf[-1]= 0.#self.boundaryRight(t,Psi)
+        #Dtf[-1]= 0.#self.boundaryRight(t,Psi)
         #Dtf[0]= self.boundaryLeft(t,Psi)
         #Dtf[-1] = Dtf[0]
                 
         # now all time derivatives are computed
         # package them into a time slice and return
         rtslice = tslices.timeslice([Dtf],Psi.domain,time=t)
-        if self.log.isEnabledFor(logging.DEBUG):
-            self.log.debug("Exiting evaluation with timeslice = %s"%repr(rtslice))
+        if __debug__:
+            self.log.debug("Exiting evaluation with timeslice = %s"%
+                repr(rtslice))
         return rtslice
     
     ############################################################################
     # Boundary functions
     ############################################################################
     def dirichlet_boundary(self, u, intStep = None):
-        #u.fields[0][-1]=u.fields[0][0]
-        #u.fields[0][0] = 0
-        #u.fields[0][-1] = 0
-        #u.fields[0][-1] = self.boundaryRight(u.time,u)
+        u.fields[0][-1] = self.boundaryRight(u.time,u)
         return u
     
     ############################################################################
@@ -133,7 +131,7 @@ class OneDAdvection(System):
     def sin(self,t0,grid):
         r = grid.axes
         rv = np.sin(2*math.pi*r/(grid[-1]-grid[0]))
-        rtslice = tslices.timeslice([0.5*rv,np.zeros_like(rv)],grid,t0)
+        rtslice = tslices.timeslice([0.5*rv],grid,t0)
         return rtslice
         
     def data(self,t0,grid):

@@ -36,7 +36,8 @@ class OneDwave(System):
         self.tau = tau
         self.name = """<OneDwave D = %s, CLF = %f, tau = %s>"""%\
         (D.name, CFL, repr(tau))
-        self.log.debug("Costruction of %s successful"%self.name)
+        if __debug__:
+            self.log.debug("Costruction of %s successful"%self.name)
         
     ############################################################################
     # Initial Conditions
@@ -44,7 +45,8 @@ class OneDwave(System):
     def initialValues(self,t0,r):
         #self.log.info("Initial value routine = central bump")
         #return self.centralBump(t0,r)
-        self.log.info("Initial value routine = exp_bump")
+        if __debug__:
+            self.log.info("Initial value routine = exp_bump")
         return self.exp_bump(t0,r)
         #self.log.info("Initial value routine = sin")
         #return self.sin(t0,r)
@@ -68,7 +70,8 @@ class OneDwave(System):
     # Evolution Routine
     ############################################################################
     def evaluate(self, t, Psi, intStep = None):
-        self.log.debug("Entered evaluation: t = %f, Psi = %s, intStep = %s"%\
+        if __debug__:
+            self.log.debug("Entered evaluation: t = %f, Psi = %s, intStep = %s"%\
             (t,Psi,intStep))
          
         # Define useful variables
@@ -81,19 +84,13 @@ class OneDwave(System):
         ########################################################################
         # Calculate derivatives
         ########################################################################
-        if self.log.isEnabledFor(logging.DEBUG):
+        if __debug__:
             self.log.debug("f0.shape = %s"%repr(f0.shape))
         
         DxDxf = np.real(self.D(f0,dx))
         DtDtf = DxDxf
-        
-        #DtDtf = DtDtf + \
-        #        tau*(f0[0] - self.boundaryLeft(t,Psi))*\
-        #            self.D.penalty_boundary(1,dx[0],DtDtf.shape) + \
-        #        tau*(f0[-1] - self.boundaryRight(t,Psi))*\
-        #            self.D.penalty_boundary(-1,dx[0],DtDtf.shape)
                 
-        if self.log.isEnabledFor(logging.DEBUG):
+        if __debug__:
             self.log.debug("""Derivatives are:
                 DtDtf = %s"""%\
                 (repr(DtDtf)))
@@ -102,14 +99,20 @@ class OneDwave(System):
         # Impose boundary conditions 
         ########################################################################
                 
-        DtDtf[-1] = DtDtf[0] #self.boundaryRight(t,Psi)
-        #DtDtf[0] = self.boundaryLeft(t,Psi)       
+        DtDtf[-1] =  0 #DtDtf[0] #self.boundaryRight(t,Psi)
+        DtDtf[0] =  0 #self.boundaryLeft(t,Psi)       
+                
+        #DtDtf = DtDtf + \
+        #        tau*(f0[0] - self.boundaryLeft(t,Psi))*\
+        #            self.D.penalty_boundary(1,dx[0],DtDtf.shape) + \
+        #        tau*(f0[-1] - self.boundaryRight(t,Psi))*\
+        #            self.D.penalty_boundary(-1,dx[0],DtDtf.shape)
                 
                 
         # now all time derivatives are computed
         # package them into a time slice and return
         rtslice = tslices.timeslice([Dtf0,DtDtf],Psi.domain,time=t)
-        if self.log.isEnabledFor(logging.DEBUG):
+        if __debug__:
             self.log.debug("Exiting evaluation with timeslice = %s"%repr(rtslice))
         return rtslice
     
