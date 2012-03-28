@@ -33,8 +33,9 @@ class Grid(object):
     
 class Interval(Grid):
     """docstring for Interval"""
-    def __init__(self, shape, bounds):
-        super(Interval, self).__init__(shape)
+    def __init__(self, shape, bounds, debug_parent='main'):
+        super(Interval, self).__init__(shape,\
+            logging.getLogger(debug_parent+".Interval"))
         self._x = np.linspace(bounds[0],bounds[1],shape[0]+1)
         self.name = "1D Interval: %s" % str(self.shape)
     

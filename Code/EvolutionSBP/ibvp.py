@@ -11,7 +11,6 @@ Edited by Ben Whale and George Doulis.
 
 import sys
 import os
-import unittest
 import math
 #import numpy as np
 import logging
@@ -19,7 +18,7 @@ import logging
 from solvers import Solver
 from system import System
 
-class IBVP:
+class IBVP(object):
     theActions  = None
     theGrid = None
     theSolver  = None
@@ -27,9 +26,10 @@ class IBVP:
     maxIteration = None
     
     def __init__(self, sol, eqn, grid = None, action = None,\
-        maxIteration = 10000, minTimestep = 1e-8, debug_parent = "main"):
+        maxIteration = 10000, CFL = 1.0, minTimestep = 1e-8, debug_parent = "main"):
         sol.useSystem(eqn)
         self.minTimestep = minTimestep
+        self.cfl = CFL
         self.theSolver = sol
         self.theSystem = eqn
         self.maxIteration = maxIteration
@@ -40,7 +40,6 @@ class IBVP:
     def _ic(self,t0):
         self.log.debug("Setting up initial data...")
         return self.theSystem.initialValues(t0, self.theGrid.domain(t0))
-        self.log.debug("Intial data constructed.")
     
     def run(self, tstart, tstop = float('inf')):
         """Go for it"""
@@ -51,7 +50,6 @@ class IBVP:
         # compute the initial time step from the current time slice
         self.log.info("Running system %s"%str(self.theSystem))
         self.log.info("Grid = %s"%str(self.theGrid))
-        self.log.info("Using timestep dt=%f"%(dt,))
         self.log.info("Using spacestep dx=%f"%(u.dx,))
         advance = self.theSolver.advance
         validate = self.theGrid.validate
@@ -60,13 +58,15 @@ class IBVP:
             if (self.iteration > self.maxIteration):
                 self.log.info("Maximum number of iterations exceeded")
                 computation_valid = False
-            
-            if (math.fabs(t-tstop) < dt/2):
+            print('Computing the timestep')
+            dt = self.cfl*self.theSystem.timestep(u)
+            print('Timestep: %f' % dt)
+            if (math.fabs(t-tstop) < dt/2.):
                 self.log.info("Maximum time reached at %f for iterations: %d"%\
                     (t, self.iteration))
                 computation_valid = False
             
-            dt = self.theSystem.timestep(u)
+            self.log.info("Using timestep dt=%f"%(dt,))
             if dt < self.minTimestep:
                 self.log.info('Timestep too small: dt = %f\n Finishing ...' % dt)
                 computation_valid = False
@@ -102,16 +102,6 @@ class IBVP:
         return u
 
 
-###############################################################################
-class IBVPTests(unittest.TestCase):
-    def setUp(self):
-        eqn = System()
-        euler = Solver()
-        self.ode = IBVP(euler,eqn)
-    
-    def test_run(self):
-        self.ode.run(1.0)
-        self.assertTrue(True)
 
 if __name__ == '__main__':
-    unittest.main()
+    pass
