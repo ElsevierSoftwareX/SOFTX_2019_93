@@ -1,0 +1,30 @@
+THINGS TO DO:
+
+1) Allow for the implementation of boundary conditions from different 
+processors.
+- The idea here is to allow the system.py to call grid.py to collect the 
+  relevant boundary condition. i.e. grid knows about the discretisation of the 
+  domain, but system does not. Therefore system must request the correct values
+  for the boundary. --- Perhaps not possible to completely separate this 
+  functionality. If so, must evaluate if domain splitting using grid.py is a
+  good idea.
+  
+2) Currently the code stores the domain for each timeslice. When the domain is not changing
+this is not needed. Code could be introduced to reduce this overhead
+
+3) The most significant delay in error calculation is the construction of the mapping.
+Either write code to store this calculation, or find a better algorithm (preferably one
+that does not require input from the user).
+
+4) Using the HDF chunking algorithm to allow all processes to output data when
+using mpi.
+
+5) change all current systems to use free_data
+
+6) implement abstract base classes for solvers, systems, grids, timeslices.
+
+7) implement intermediate steps within solver? Doesn't this require knowledge of the boundary conditions? So perhaps this should be done in system?
+
+8) sort out symantic confusion of timeslices. They are used both to store data at a slice and derivatives at a slice. In particular the time contained in slice used during RK4 evaluation is different from the time passed to the evaluate method. This could be a big source of confustion and should be changed.
+
+9) Talk to Jorg about move the timestep calculation to IBVP. System can provide information about the egienvalues. In Jorg's words, "System shouldn't know anything about the numerics".
