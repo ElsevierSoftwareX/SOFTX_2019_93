@@ -15,8 +15,8 @@ import numpy as np
 import math
 
 # import our modules
-from skyline.tslices import tslices
-from skyline.systems.system import System
+from coffee.tslices import tslices
+from coffee.system import System
 
 class OneDwave(System):
 
@@ -30,10 +30,11 @@ class OneDwave(System):
     # Constructor
     ############################################################################
     def __init__(self, D, CFL, tau = None, log_parent = None ):
-        super(OneDwave, self).__init__(CFL)
+#        super(OneDwave, self).__init__(CFL)
         self.log = log_parent.getChild("OneDwave")
         self.D = D
         self.tau = tau
+        self.CFL = CFL
         self.name = """<OneDwave D = %s, CLF = %f, tau = %s>"""%\
         (D.name, CFL, repr(tau))
         if __debug__:
@@ -42,7 +43,7 @@ class OneDwave(System):
     ############################################################################
     # Initial Conditions
     ############################################################################
-    def initialValues(self,t0,r):
+    def initial_data(self,t0,r):
         #self.log.info("Initial value routine = central bump")
         #return self.centralBump(t0,r)
         if __debug__:

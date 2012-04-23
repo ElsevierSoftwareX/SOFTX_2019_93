@@ -15,8 +15,8 @@ import numpy as np
 import math
 
 # import our modules
-from skyline.tslices import tslices
-from skyline.systems.system import System
+from coffee.tslices import tslices
+from coffee.system import System
 
 class OneDAdvection(System):
 
@@ -30,10 +30,11 @@ class OneDAdvection(System):
     # Constructor
     ############################################################################
     def __init__(self, D, CFL, tau = None):
-        super(OneDAdvection, self).__init__(CFL)
+#        super(OneDAdvection, self).__init__()
         self.log = logging.getLogger("OneDAdvection")
         self.D = D
         self.tau = tau
+        self.CFL = CFL
         self.name = """<OneDAdvection D = %s, CLF = %f, tau = %s>"""%\
         (D.name, CFL, repr(tau))
         self.log.debug("Costruction of %s successful"%self.name)
@@ -41,7 +42,7 @@ class OneDAdvection(System):
     ############################################################################
     # Configuration for initial conditions and boundary conditions.
     ############################################################################
-    def initialValues(self,t0,r):
+    def initial_data(self,t0,r):
         #self.log.info("Initial value routine = central bump")
         #return self.centralBump(t0,r)
         #self.log.info("Initial value routine = exp_bump")

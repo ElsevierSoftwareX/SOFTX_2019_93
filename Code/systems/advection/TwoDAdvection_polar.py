@@ -15,8 +15,8 @@ import numpy as np
 import math
 
 # import our modules
-from skyline.tslices import tslices
-from skyline.systems.system import System
+from coffee.tslices import tslices
+from coffee.systems.system import System
 
 class TwoDadvection(System):
 

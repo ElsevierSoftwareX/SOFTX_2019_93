@@ -9,9 +9,12 @@ import math
 import argparse
 
 #Import standard code base
-from skyline import ibvp, actions, solvers, grid
-from skyline.diffop import fd, fft, sbp
-from skyline.io import simulation_data
+from coffee import ibvp, actions, solvers, grid
+from coffee import ibvp, actions, solvers, grid
+from coffee.diffop import fd, fft, sbp
+from coffee.diffop import fd, fft, sbp
+from coffee.io import simulation_data
+from coffee.io import simulation_data
 
 #import system to use
 import OneDwave
@@ -25,19 +28,23 @@ parser = argparse.ArgumentParser(description=\
 the EvolutionSBP code.""")
 
 # Parse files
-parser.add_argument('-f','-file', required=True, help=\
+parser.add_argument('-f','-file', help=\
 """The name of the hdf file to be produced. Defaults to test.""")
 args = parser.parse_args()
 ################################################################################  
 # These are the commonly altered settings
 ################################################################################
 
-# file settings
-args.logf = os.path.splitext(args.f)[0]+".log"
-
 #output settings
-store_output = True
-display_output = False
+store_output = False
+display_output = True
+if store_output and args.f is None:
+    print "OneDAdvection_setup.py: error: argument -f/-file is required"
+    sys.exit(1)
+    
+# log file settings
+if store_output:
+    args.logf = os.path.splitext(args.f)[0]+".log"
 
 # Set up logger
 file_log_level = logging.INFO
@@ -67,7 +74,7 @@ else:
 log.info("Starting configuration.")
 
 # How many systems?
-num_of_grids = 6
+num_of_grids = 1
 
 # How many grid points?
 N = 200
@@ -142,7 +149,8 @@ if log.isEnabledFor(logging.DEBUG):
 ################################################################################
 # Set up hdf file to store output
 ################################################################################
-hdf_file = h5py.File(args.f)
+if store_output:
+    hdf_file = h5py.File(args.f)
 
 
 ################################################################################
