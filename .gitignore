@@ -14,15 +14,18 @@
 # tex auxiliary files
 *.aux
 *.blg
+*.bbl
 *.log
 *.synctex.gz
 *.out
 *.tex~
+*.fls
+*.fdb_latexmk
+*.rel
 
 # for MacOSX
 .DS_Store
-
 *.backup
-Docs/Spin2Notes/spin2.rel
-spin2cylinder.bbl
+
+# dynamic library
 libspinsfast.so
