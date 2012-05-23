@@ -9,9 +9,12 @@ import h5py
 import math
 
 #Import standard code base
-from skyline import ibvp, actions, solvers, grid
-from skyline.diffop import fd, fft, sbp
-#from skyline.io import simulation_data
+from coffee import ibvp, actions, solvers, grid
+from coffee import ibvp, actions, solvers, grid
+from coffee.diffop import fd, fft, sbp
+from coffee.diffop import fd, fft, sbp
+#from coffee.io import simulation_data
+#from coffee.io import simulation_data
 
 #import system to use
 import TwoDwave_polar

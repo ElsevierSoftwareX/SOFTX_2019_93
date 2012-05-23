@@ -12,8 +12,8 @@ from mpi4py import MPI
 import argparse
 
 #Import standard code base
-from skyline import ibvp, actions, solvers, grid
-from skyline.diffop import fd, fft, sbp
+from coffee import ibvp, actions, solvers, grid
+from coffee.diffop import fd, fft, sbp
 
 #import system to use
 import TwoDAdvection_polar

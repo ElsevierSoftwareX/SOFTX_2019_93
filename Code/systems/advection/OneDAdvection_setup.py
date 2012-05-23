@@ -10,8 +10,8 @@ import math
 import argparse
 
 #Import standard code base
-from skyline import ibvp, actions, solvers, grid
-from skyline.diffop import fd, fft, sbp
+from coffee import ibvp, actions, solvers, grid
+from coffee.diffop import fd, fft, sbp
 
 #import system to use
 import OneDAdvection
@@ -33,10 +33,11 @@ args = parser.parse_args()
 ################################################################################
 
 #output settings
-store_output = True
-display_output = False
+store_output = False
+display_output = True
 if store_output and args.f is None:
     print "OneDAdvection_setup.py: error: argument -f/-file is required"
+    sys.exit(1)
     
 # log file settings
 if store_output:
@@ -70,7 +71,7 @@ else:
 log.info("Starting configuration.")
 
 # How many systems?
-num_of_grids = 6
+num_of_grids = 1
 
 # How many grid points?
 N = 100

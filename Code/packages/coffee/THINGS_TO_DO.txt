@@ -28,3 +28,6 @@ using mpi.
 8) sort out symantic confusion of timeslices. They are used both to store data at a slice and derivatives at a slice. In particular the time contained in slice used during RK4 evaluation is different from the time passed to the evaluate method. This could be a big source of confustion and should be changed.
 
 9) Talk to Jorg about move the timestep calculation to IBVP. System can provide information about the egienvalues. In Jorg's words, "System shouldn't know anything about the numerics".
+
+SHORT TERM
+1) update advect and wave for free_data
