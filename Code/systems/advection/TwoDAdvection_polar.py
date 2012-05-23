@@ -16,7 +16,7 @@ import math
 
 # import our modules
 from coffee.tslices import tslices
-from coffee.systems.system import System
+from coffee.system import System
 
 class TwoDadvection(System):
 
@@ -29,17 +29,20 @@ class TwoDadvection(System):
     ############################################################################
     # Constructor
     ############################################################################
-    def __init__(self, xdirec, ydirec, D1, DFFT, CFL, tau = None, equation_coords = 'Polar',\
+    def __init__(self, xdirec, ydirec, D1, DFFT, CFL, tau = None, 
+        equation_coords = 'Polar',
         log_parent = None ):
-        super(TwoDadvection, self).__init__(CFL)
+        super(TwoDadvection, self).__init__()
+        self.CFL = CFL
         self.xcoef = xdirec
         self.ycoef = ydirec
-        self.log = log_parent.getChild("TwoDwave")
+        self.log = log_parent.getChild("TwoDAdvection")
         self.D1 = D1
         self.DFFT = DFFT
         self.tau = tau
         self.equation_coords = equation_coords
-        self.name = """<TwoDadvection xdirec = %f, ydirec = %f, D1 = %s, DFFT = %s, CLF = %f, tau = %s>"""%\
+        self.name = """<TwoDadvection xdirec = %f, ydirec = %f, D1 = %s, 
+        DFFT = %s, CLF = %f, tau = %s>"""%\
         (xdirec,ydirec,D1.name, DFFT.name, CFL, repr(tau))
         if __debug__:
             self.log.debug("Costruction of %s successful"%self.name)
@@ -47,14 +50,14 @@ class TwoDadvection(System):
     ############################################################################
     # Configuration for initial conditions and boundary conditions.
     ############################################################################
-    def initialValues(self,t0,r):
+    def initial_data(self,t0,r):
         self.log.info("Initial value routine = central bump")
         return self.centralBump(t0,r)
     
-    def boundaryRight(self,t,Psi):
-        return (0.0,0.0)
+    def first_right(self,t,Psi):
+        return np.zeros_like(Psi.domain.axes[0])
         
-    def boundaryLeft(self,t,Psi):
+    def first_left(self,t,Psi):
         return (0.0,0.0)
         
     ############################################################################
@@ -77,16 +80,31 @@ class TwoDadvection(System):
         phi_period = (2*math.pi)/(theta[-1]-theta[0])
         
         ########################################################################
-        # Calculate derivatives
+        # Calculate derivatives and impose boundary conditions
         ########################################################################
         if self.equation_coords is 'Polar':
             Drf = np.apply_along_axis(lambda x:self.D1(x,dr),Psi.domain.r,f0)
+#            penalty_term = np.lib.stride_tricks.as_strided(
+#                self.D.penaly_boundary(dr,"left")
+#            n = penalty_term.shape[1]
+#            Drf[:n] -= self.tau * (f0[0] - self.right(t, Psi)) * penalty_term
+            
             Dphif = np.apply_along_axis(lambda x: self.DFFT(x,dphi),Psi.domain.phi,f0)
             Dtf = (self.xcoef*np.cos(theta)+self.ycoef*np.sin(theta))*Drf+\
                 (self.ycoef*np.cos(theta)-self.xcoef*np.sin(theta))*\
                     (((phi_period/r)*Dphif.swapaxes(0,1)).swapaxes(0,1))
         else:
-            Dxf = np.apply_along_axis(lambda x:self.D1(x,dr),Psi.domain.r,f0)
+            Dxf = np.apply_along_axis(lambda x:self.D1(x,dr), Psi.domain.r, f0)
+            oned_pt = self.D1.penalty_boundary(dr, "left")
+            oned_pt_shape = oned_pt.size
+            penalty_term = np.lib.stride_tricks.as_strided(
+                oned_pt,
+                shape = (oned_pt_shape, r.size),
+                strides = (oned_pt.itemsize, 0)
+                )
+            Dxf[:oned_pt_shape] -= self.tau * \
+                (f0[:oned_pt_shape] - self.first_right(t, Psi)) * \
+                penalty_term
             #if __debug__:
             #    self.log.debug("Dxf is %s"%repr(Dxf))
             Dyf = np.apply_along_axis(lambda x:self.DFFT(x,dphi),\
@@ -121,11 +139,11 @@ class TwoDadvection(System):
     # Boundary functions
     ############################################################################
     def dirichlet_boundary(self,u,intStep = None):
-        #r boundary
-        from mpi4py import MPI
-        rank = MPI.COMM_WORLD.rank
-        if rank == 0:
-            u.fields[0][0,:] = 0 # u.fields[0][-1,:]
+#        #r boundary
+#        from mpi4py import MPI
+#        rank = MPI.COMM_WORLD.rank
+#        if rank == 0:
+#            u.fields[0][0,:] = 0 # u.fields[0][-1,:]
         #phi boundary
         u.fields[0][:,0] = u.fields[0][:,-1]
         return u

@@ -84,7 +84,7 @@ else:
 log.info("Starting configuration.")
 
 # How many systems?
-num_of_grids = 4
+num_of_grids = 1
 
 # How many grid points?
 Nr = 50
@@ -98,7 +98,7 @@ phistop = 2
 
 # Times to run between
 tstart = 0.0
-tstop = 2
+tstop = 3
 
 # Configuration of System
 CFLs = [0.5 for i in range(num_of_grids)]
@@ -176,7 +176,7 @@ for i in range(num_of_grids):
         phiaxis_diffop,\
         CFL = CFLs[i],\
         log_parent=log,\
-        equation_coords = 'Polarasd',\
+        equation_coords = 'Cartesian',\
         tau = tau,\
         )]
 if __debug__:

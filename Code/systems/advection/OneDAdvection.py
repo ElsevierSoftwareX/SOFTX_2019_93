@@ -45,16 +45,17 @@ class OneDAdvection(System):
     def initial_data(self,t0,r):
         #self.log.info("Initial value routine = central bump")
         #return self.centralBump(t0,r)
-        #self.log.info("Initial value routine = exp_bump")
-        #return self.exp_bump(t0,r)
+        self.log.info("Initial value routine = exp_bump")
+        return self.exp_bump(t0,r)
         #self.log.info("Initial value routine = sin")
-        return self.sin(t0,r)
+        #return self.sin(t0,r)
         #self.log.info("Initial value routine = data")
         #return self.data(t0,r)
     
     def boundaryRight(self,t,Psi):
         return 0.5 * math.sin( 2*math.pi*(t+2) / 
             ( Psi.domain.axes[-1] - Psi.domain.axes[0] ) )
+        #return 0.0
         
     def boundaryLeft(self,t,Psi):
         return 0.0
@@ -78,8 +79,10 @@ class OneDAdvection(System):
         Dxf = np.real(self.D(f0,dx))
         Dtf = Dxf
         
-        #Dtf -= tau * ( f0[-1] - self.boundaryRight(t,Psi) ) \
-        #    * self.D.penalty_boundary(1, dx, f0.shape)
+        penalty_term = self.D.penalty_boundary(dx, 1)
+        
+        Dtf[-penalty_term.shape[0]:] -= tau * (f0[-1] - self.boundaryRight(t,Psi)) \
+            * penalty_term
                 
         if __debug__:
             self.log.debug("""Derivatives are:
@@ -105,7 +108,7 @@ class OneDAdvection(System):
     # Boundary functions
     ############################################################################
     def dirichlet_boundary(self, u, intStep = None):
-        u.fields[0][-1] = self.boundaryRight(u.time,u)
+        #u.fields[0][-1] = self.boundaryRight(u.time,u)
         return u
     
     ############################################################################

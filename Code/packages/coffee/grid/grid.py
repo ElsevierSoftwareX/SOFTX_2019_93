@@ -25,18 +25,15 @@ class Grid(np.ndarray):
     """The base class for Grid objects. Not that the log.getChild is not called
     on the passed log."""
     def __new__(cls, grid, axes_step_sizes, \
-        name = "Grid",  comparison = None, log = None):
+        name = "Grid", comparison = None):
         obj = np.asarray(grid).view(cls)
         obj.dim = len(grid.shape)
         obj.name = name
-        obj.comparison = comparison
         if axes_step_sizes is None:
             axes_step_sizes = np.asarray([axis[1]-axis[0] for axis in axes])
         obj.step_sizes = axes_step_sizes
-        if log is None:
-            obj.log = logging.getLogger(name)
-        else:
-            obj.log = log
+        obj.log = logging.getLogger(name)
+        obj.comparison = comparison
         return obj
         
     def __array_finalize__(self,obj):
@@ -78,11 +75,10 @@ class Interval_2D(Grid):
             for i in range(len(bounds))]
         step_sizes = np.asarray([axis[1]-axis[0] for axis in axes])
         name = "Interval_2D_%s_%s"%(repr(shape),repr(bounds))
-        log = logging.getLogger(name)
         mesh = np.meshgrid(axes[1],axes[0])
         grid = np.dstack((mesh[1],mesh[0]))
         obj = Grid.__new__(cls, grid, step_sizes, name = name, 
-            comparison = comparison, log = log)
+            comparison = comparison)
         return obj
 
     @property
@@ -96,6 +92,7 @@ class Interval_2D(Grid):
     @property
     def phi(self):
         return 1 
+        
  
 class Interval_1D(Grid):
     """A Grid object to represent a 1D interval of coordinates"""

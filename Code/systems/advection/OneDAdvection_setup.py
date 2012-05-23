@@ -82,17 +82,19 @@ xstop = 2
 
 # Times to run between
 tstart = 0.0
-tstop = 3.1
+tstop = 10.0
 
 # Configuration of System
 CFLs = [0.5 for i in range(num_of_grids)]
 tau = 1
 
 # Select diffop
-raxis_1D_diffop = sbp.D43_Strand()
+#raxis_1D_diffop = sbp.D43_Strand()
 #raxis_1D_diffop = fd.FD12()
 #raxis_1D_diffop = fd.FD14()
-#raxis_1D_diffop = sbp.D42()
+raxis_1D_diffop = sbp.D42()
+#raxis_1D_diffop = sbp.D43_Tiglioetal()
+#raxis_1D_diffop = sbp.D43_CNG()
 #raxis_1D_diffop = fft.FFT_diff_scipy(1,xstop-xstart)
 #raxis_1D_diffop = fft.FFTW(1,xstop-xstart)
 #raxis_1D_diffop = fft.FFTW_real(1,xstop-xstart)
