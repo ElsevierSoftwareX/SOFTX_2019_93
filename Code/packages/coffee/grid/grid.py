@@ -107,7 +107,7 @@ class Interval_1D(Grid):
         else:
             log = log.getChild(name)
         obj = Grid.__new__(cls, axes[0], step_sizes, name = name, 
-            comparison = comparison, log = log)
+            comparison = comparison)
         return obj
 
     def axes(self):
