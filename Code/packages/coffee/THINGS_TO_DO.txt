@@ -29,5 +29,12 @@ using mpi.
 
 9) Talk to Jorg about move the timestep calculation to IBVP. System can provide information about the egienvalues. In Jorg's words, "System shouldn't know anything about the numerics".
 
+10) Change RK routines to access a list of the derivatives rather than a tslice.
+Also change evolve routines to return a list of the derivatives rather than
+a tslice.
+
+11) grid objects changed to no longer subclass nd.array and use mesh type arrays for
+multi dimensional processing.
+
 SHORT TERM
 1) update advect and wave for free_data
