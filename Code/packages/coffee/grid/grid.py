@@ -6,6 +6,7 @@ import sys
 import os
 import math
 import numpy as np
+import abc
 import logging
 
 from ..mpi import mpiinterfaces
@@ -22,16 +23,16 @@ RIGHT = 1
 ################################################################################
 
 class Grid(np.ndarray):
-    """The base class for Grid objects. Not that the log.getChild is not called
-    on the passed log."""
-    def __new__(cls, grid, axes_step_sizes, \
+    """The base class for Grid objects."""
+    def __new__(cls, grid, mesh, axes_step_sizes, \
         name = "Grid", comparison = None):
         obj = np.asarray(grid).view(cls)
+        obj.mesh = mesh
         obj.dim = len(grid.shape)
         obj.name = name
-        if axes_step_sizes is None:
-            axes_step_sizes = np.asarray([axis[1]-axis[0] for axis in axes])
-        obj.step_sizes = axes_step_sizes
+#        if axes_step_sizes is None:
+#            axes_step_sizes = np.asarray([axis[1]-axis[0] for axis in axes])
+#        obj.step_sizes = axes_step_sizes
         obj.log = logging.getLogger(name)
         obj.comparison = comparison
         return obj
@@ -41,8 +42,9 @@ class Grid(np.ndarray):
         self.dim = getattr(obj, 'dim', None)
         self.name = getattr(obj, 'name', None)
         self.log = getattr(obj, 'log', None)
-        self.step_sizes = getattr(obj, 'step_sizes', None)
+        #self.step_sizes = getattr(obj, 'step_sizes', None)
         self.comparison = getattr(obj, 'comparison', None)
+        self.mesh = getattr(obj, "mesh", None)
         
     def __array_wrap__(self,out_arr,context = None):
         return np.asarray(out_arr)
@@ -75,9 +77,9 @@ class Interval_2D(Grid):
             for i in range(len(bounds))]
         step_sizes = np.asarray([axis[1]-axis[0] for axis in axes])
         name = "Interval_2D_%s_%s"%(repr(shape),repr(bounds))
-        mesh = np.meshgrid(axes[1],axes[0])
+        meshes = np.meshgrid(axes[1],axes[0])
         grid = np.dstack((mesh[1],mesh[0]))
-        obj = Grid.__new__(cls, grid, step_sizes, name = name, 
+        obj = Grid.__new__(cls, grid, meshes, step_sizes, name = name, 
             comparison = comparison)
         return obj
 
@@ -86,12 +88,8 @@ class Interval_2D(Grid):
         return [np.asarray(self[:,0,0]),np.asarray(self[0,:,1])]
         
     @property
-    def r(self):
-        return 0
-        
-    @property
-    def phi(self):
-        return 1 
+    def mesh(self):
+        return self.mesh
         
  
 class Interval_1D(Grid):
