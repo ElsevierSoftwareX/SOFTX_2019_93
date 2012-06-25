@@ -1,7 +1,9 @@
+from __future__ import division
 import math
 import os
+import numpy as np
 
-import spinsfast as sfpy
+from coffee.swsh import spinsfastpy as sfpy
 
 class eth(object):
     
@@ -12,23 +14,34 @@ class eth(object):
         """
 
     def __call__(self, u, spins = None, lmax = None):
+        Ntheta = None
         if spins is not None and lmax is not None:
             Ntheta, Nphi = u.shape
             salm = sfpy.forward(u, spins, lmax)
+            print salm
         else:
             salm = u
             spins = u.spins
             lmax = u.lmax
-        r_salm = alm.salm(np.empty_like(u), spins + 1, lmax)
+        r_salm = sfpy.sfpy_salm(np.empty_like(salm, dtype=np.typeDict['complex']), spins + 1, lmax)
+        r_salm[:,0] = 2
+        print r_salm
         for j in range(lmax):
             sm_values = salm[:,j]
             eigenvalues = -np.sqrt(j*(j+1)-spins*(spins+1))
-            r_sm_values r_salm[:,j] = eigenvalues * sm_values
-        if not spectral:
+            eigenvalues = np.lib.stride_tricks.as_strided(
+                eigenvalues,
+                sm_values.shape,
+                (eigenvalues.itemsize, 0)
+                )
+            r_salm[:,j] = eigenvalues * sm_values
+        print r_salm
+        if Ntheta is not None:
             r_u = sfpy.backward(r_salm, Ntheta, Nphi)
             return r_u
         else:
             return r_salm
+        
   
     def __repr__(self):
         return "eth"
@@ -64,12 +77,11 @@ class ethp(object):
             salm = u
             spins = u.spins
             lmax = u.lmax
-        r_salm = alm.salm(np.empty_like(u), spins, lmax)
+        r_salm = alm.salm(np.empty_like(u), spins - 1, lmax)
         for j in range(lmax):
-            sm_values = salm.l(j)
-            eigenvalues = np.sqrt(j*(j+1)-spins*(spins-1))
-            r_salm.l(j) = eigenvalues * sm_values
-        r_salm.spins = spins - 1
+            sm_values = salm[:,j]
+            eigenvalues = np.sqrt(j*(j+1)-spins*(spins+1))
+            r_salm[:,j] = eigenvalues * sm_values
         if not spectral:
             r_u = sfpy.backward(r_salm, Ntheta, Nphi)
             return r_u
@@ -84,13 +96,13 @@ if __name__ == "__main__":
     Ntheta = 50
     spins = np.array([0])
     lmax = 3
-    f = np.empty(Ntheta,Nphi)
-    f = 0.5 * (1/math.sqrt(math.pi))
+    f = np.empty((Ntheta, Nphi))
+    f[:] = 0.5 * (1/math.sqrt(math.pi))
     eth_test = eth()
     eth_f = eth_test(f, spins, lmax)
     print "f = %s"%repr(f)
     print "eth_f = %s"%repr(eth_f)
-    f_salm =  sfpy.forward(u, spins, lmax)
+    f_salm =  sfpy.forward(f, spins, lmax)
     eth_f_salm = eth_test(f_salm)
     print "f_salm = %s"%repr(f_salm)
     print "eth_f_salm = %s"%repr(eth_f_salm)
