@@ -1,8 +1,8 @@
 import Gnuplot
 import time
-import pylab
+from pylab import *
 import numpy as np
-import logging 
+import logging
 
 class Prototype(object):
     """The prototype of all actions. 
@@ -173,7 +173,7 @@ class Plotter(Prototype):
         if findex is not None:
             self.index = findex
             self.delay = delay
-            self.colors = ('b','g','r','c','m','y','k','w') 
+            self.colors = ('b','g','r','c','m','y','k','coral') 
             from numpy import asarray
             ion()
             fig = figure(1)
@@ -191,8 +191,8 @@ class Plotter(Prototype):
         mx = np.max(f.flat)
         mn = np.min(f.flat)
         self.axes.set_title("Iteration: %d, Time: %f" % (it,u.time))
-        self.axes.set_xlim(x[0],x[-1])
-        self.axes.set_ylim(mn,mx,auto=True)
+        #self.axes.set_xlim(x[0],x[-1])
+        #self.axes.set_ylim(mn,mx,auto=True)
 
         l = len(self.index)
         ioff()
