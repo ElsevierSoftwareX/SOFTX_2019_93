@@ -30,9 +30,9 @@ class Grid(np.ndarray):
         obj.mesh = mesh
         obj.dim = len(grid.shape)
         obj.name = name
-#        if axes_step_sizes is None:
-#            axes_step_sizes = np.asarray([axis[1]-axis[0] for axis in axes])
-#        obj.step_sizes = axes_step_sizes
+        if axes_step_sizes is None:
+            axes_step_sizes = np.asarray([axis[1]-axis[0] for axis in axes])
+        obj.step_sizes = axes_step_sizes
         obj.log = logging.getLogger(name)
         obj.comparison = comparison
         return obj
@@ -104,7 +104,7 @@ class Interval_1D(Grid):
             log = logging.getLogger(name)
         else:
             log = log.getChild(name)
-        obj = Grid.__new__(cls, axes[0], step_sizes, name = name, 
+        obj = Grid.__new__(cls, axes[0], None, step_sizes, name = name, 
             comparison = comparison)
         return obj
 
