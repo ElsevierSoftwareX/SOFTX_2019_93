@@ -1,5 +1,6 @@
 import Gnuplot
 import time
+import os
 from pylab import *
 import numpy as np
 import logging
@@ -32,10 +33,9 @@ class Prototype(object):
     def _doit(self, it, u):
         pass
 
-
 class BlowupCutoff(Prototype):
 
-    def __init__(self,cutoff = 10,frequency =1, start = -float('infinity'),\
+    def __init__(self, cutoff = 10, frequency = 1, start = -float('infinity'),\
         stop = float('infinity') ):
         super(BlowupCutoff,self).__init__(frequency,start,stop)
         self.cutoff = cutoff
@@ -49,122 +49,6 @@ class BlowupCutoff(Prototype):
     def _doit(self, it,u):
         if self.above_cutoff(u):
             raise Exception("Function values are above the cutoff")
-
-class GNUPlotter1D(Prototype):
-    
-    DEFAULT_SETTINGS = ['set yrange [-2:2]', 'set style data linespoints']
-    
-    def __init__(self, *args, **kwds):
-        if 'start' in kwds:
-            start = kwds.pop('start')
-        else:
-            start = -float('Infinity')
-        if 'frequency' in kwds:
-            frequency = kwds.pop('frequency')
-        else:
-            frequency = 1
-        super(GNUPlotter1D,self).__init__(frequency = frequency, start = start)
-        if 'delay' in kwds:
-            self.delay = kwds.pop('delay')
-        else:
-            self.delay = 0.0
-        self.system = kwds.pop('system')
-        try:
-            debug_parent = kwds.pop("debug_parent")
-        except:
-            debug_parent = "main"
-        self.log = logging.getLogger("GNUplotter")
-        try:
-            if kwds['data_function'] is not None:
-                self.datafunc = kwds.pop('data_function') 
-            else:
-                self.datafunc = lambda y,x,z:x.fields
-        except:
-            self.datafunc = lambda y,x,z:x.fields
-#        if __debug__:
-#            self.log.debug("Initialising plotter...")
-        self.Device = Gnuplot.Gnuplot()
-        g = self.Device
-        for arg in args:
-            g(arg)
-#        if __debug__:
-#            self.log.debug("Done.-")
-
-    def _doit(self, it, u):
-        g = self.Device
-        x = u.x
-#        if __debug__:
-#            self.log.debug("Plotting iteration %i with data %s"%(it,str(u)))
-        f = np.atleast_2d(self.datafunc(it,u,self.system))
-#        if __debug__:
-#            self.log.debug("Data after processing by self.datafunc is %s"%f)
-        graphs = []
-        g('set title "Advection equation time = %f" enhanced'%u.time)
-        for i,val in enumerate(f):
-            graphs += [Gnuplot.Data(x, val,\
-                title = "Component %i"%i)]
-        g.plot(*graphs)
-        time.sleep(self.delay)
-    
-    def __del__(self):
-        del self.Device
-
-class GNUPlotter2D(Prototype):
-    
-    def __init__(self, *args, **kwds):
-        if 'start' in kwds:
-            start = kwds.pop('start')
-        else:
-            start = -float('Infinity')
-        if 'frequency' in kwds:
-            frequency = kwds.pop('frequency')
-        else:
-            frequency = 1
-        super(GNUPlotter2D,self).__init__(frequency = frequency, start = start)
-        if 'delay' in kwds:
-            self.delay = kwds.pop('delay')
-        else:
-            self.delay = 0.0
-        self.system = kwds.pop('system')
-        try:
-            debug_parent = kwds.pop("debug_parent")
-        except:
-            debug_parent = "main"
-        self.log = logging.getLogger("GNUPlotter2D")
-        try:
-            if kwds['data_function'] is not None:
-                self.datafunc = kwds.pop('data_function') 
-            else:
-                self.datafunc = lambda y,x,z:x.fields
-        except:
-            self.datafunc = lambda y,x,z:x.fields
-#        if __debug__:
-#            self.log.debug("Initialising plotter...")
-        self.Device = Gnuplot.Gnuplot()
-        g = self.Device
-        for arg in args:
-            g(arg)
-#        if __debug__:
-#            self.log.debug("Done.-")
-
-    def _doit(self, it, u):
-        g = self.Device
-        x = u.x
-#        if __debug__:
-#            self.log.debug("Plotting iteration %i with data %s"%(it,str(u)))
-        f = np.atleast_2d(self.datafunc(it,u,self.system))
-#        if __debug__:
-#            self.log.debug("Data after processing by self.datafunc is %s"%f)
-        graphs = []
-        g('set title "Advection equation time = %f" enhanced'%u.time)
-        for i in range(1):
-            graphs += [Gnuplot.GridData(f[i,:,:],xvals = x.axes[0],yvals = x.axes[1],\
-                filename="deleteme.gp",title = "Component %i"%i,binary = 0)]
-        g.splot(*graphs)
-        time.sleep(self.delay)
-    
-    def __del__(self):
-        del self.Device
 
 class Plotter(Prototype):
     """docstring for Plotter"""
