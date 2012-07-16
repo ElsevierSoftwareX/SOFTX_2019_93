@@ -37,13 +37,16 @@ class IBVP:
         #Get initial data and configure timeslices for multiple processors
         u = self.theSystem.initial_data(t, self.theGrid)
         self.log.info("Running system %s"%str(self.theSystem))
+        
         if __debug__:
             self.log.info("Grid = %s"%str(self.theGrid))
             self.log.info("Using spacestep dx=%s"%repr(u.dx))
             self.log.debug("Initial data is = %s"%repr(u))
+        
         advance = self.theSolver.advance
         validate = self.theGrid.validate
         computation_valid = True
+        
         while(computation_valid):
             dt = self.cfl * self.theSystem.timestep(u)
             if __debug__: self.log.debug("Using timestep dt=%f"%(dt,))
@@ -57,10 +60,15 @@ class IBVP:
                 self.log.warning("Maximum number of iterations exceeded")
                 break
             
-            if (math.fabs(t-tstop) < dt/2):
-                self.log.warning("Maximum time reached at %f for iterations: %d"
-                    %(t, self.iteration))
-                break
+            # if (math.fabs(t-tstop) < dt/2):
+            #     self.log.warning("Maximum time reached at %f for iterations: %d"
+            #         %(t, self.iteration))
+            #     break
+            
+            if ((tstop-t) < dt):
+                dt = tstop - t
+                self.log.warning("Final time step: adjusting to dt = %f" % dt)
+                computation_valid = False
             
             actions_do_actions = [action.will_run(self.iteration,u) 
                 for action in self.theActions]
