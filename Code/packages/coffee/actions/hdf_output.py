@@ -141,7 +141,10 @@ class SimOutput(Prototype):
         
         def __call__(self,it,u):
             dg = self.data_group
-            dg[it] = u.x
+            dg[it] = np.asarray(u.grid.meshes)
+            dg[it].attrs["shape"] = u.grid.shape
+            dg[it].attrs["bounds"] = u.grid.bounds
+            dg[it].attrs["comparison"] = u.grid.comparison
             super(SimOutput.Domains,self).__call__(it,u)
 
     class Constraints(SimOutputType):

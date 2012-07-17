@@ -22,52 +22,90 @@ RIGHT = 1
 # Base Grid class
 ################################################################################
 
-class Grid(np.ndarray):
-    """The base class for Grid objects."""
-    def __new__(cls, grid, mesh, axes_step_sizes, \
-        name = "Grid", comparison = None):
-        obj = np.asarray(grid).view(cls)
-        obj.mesh = mesh
-        obj.dim = len(grid.shape)
-        obj.name = name
-        if axes_step_sizes is None:
-            axes_step_sizes = np.asarray([axis[1]-axis[0] for axis in axes])
-        obj.step_sizes = axes_step_sizes
-        obj.log = logging.getLogger(name)
-        obj.comparison = comparison
-        return obj
-        
-    def __array_finalize__(self,obj):
-        if obj is None: return
-        self.dim = getattr(obj, 'dim', None)
-        self.name = getattr(obj, 'name', None)
-        self.log = getattr(obj, 'log', None)
-        #self.step_sizes = getattr(obj, 'step_sizes', None)
-        self.comparison = getattr(obj, 'comparison', None)
-        self.mesh = getattr(obj, "mesh", None)
-        
-    def __array_wrap__(self,out_arr,context = None):
-        return np.asarray(out_arr)
+class Grid(object):
+    """The abstract base class for Grid objects."""
+    
+    __metaclass__ = abc.ABCMeta
+    
+    def __init__(self, shape, bounds, name = "Grid", comparison = None):
+        self.dim = len(shape)
+        self.name = name
+        self.log = logging.getLogger(name)
+        self.comparison = comparison
+        self.shape = shape
+        self.bounds = bounds
         
     def validate(self,u,time):
         return self
         
-    # These methods allow for integration with mpi enabled code for
-    # grid classes that are not mpi enabled.
+    @abc.abstractproperty
+    def axes(self): pass
+    
+    @abc.abstractproperty
+    def step_sizes(self): pass
+    
+    @property
+    def meshes(self):
+        grid_shape = np.array(self.shape) + 1
+        mesh = []
+        for i, axis in enumerate(self.axes):
+            strides = np.zeros((len(self.shape), ))
+            strides[i] = axis.itemsize
+            mesh += [np.lib.stride_tricks.as_strided(
+                axis,
+                grid_shape,
+                strides)
+                ]
+        return mesh
+
+class GridMpi(Grid):
+    """The abstract base class for Grid objects with mpi implementation."""
+    
+    def __init__(self, shape, bounds, name = "GridMpi", comparison = None):
+        super(GridMpi, self).__init__(shape, bounds, name, comparison)
+        
+    @abc.abstractmethod
     def send(self,data): pass
         
+    @abc.abstractmethod
     def recv(self,data): pass
         
-    def collect_data(self,data):
+    @abc.abstractmethod    
+    def collect_data(self, data):
         return data, self
-
-#    def __repr__(self): 
-#        return "<%s, grid shape = %s>"%(self.name,self.shape)
 
 ################################################################################
 # Constructors for specific cases
 ################################################################################
 
+class UniformCart(Grid):
+    """A Grid object to represent an ND interval of coordinates"""
+    
+    def __init__(self, shape, bounds, comparison = None):
+        assert len(bounds) == len(shape)
+        super(UniformCart, self).__init__(shape, bounds, name = "UniformCart", 
+            comparison = comparison)
+            
+    @property
+    def axes(self):
+        axes = [
+            np.linspace(
+                self.bounds[i][0], self.bounds[i][1], self.shape[i]+1
+            )
+            for i in range(len(self.bounds))
+            ]
+        return axes
+        
+    @property
+    def step_sizes(self):
+        step_sizes = [axis[1]-axis[0] for axis in self.axes]
+        return step_sizes
+            
+            
+################################################################################
+# Obsoleat constructors
+################################################################################
+            
 class Interval_2D(Grid):
     """A Grid object to represent a 2D interval of coordinates"""
     

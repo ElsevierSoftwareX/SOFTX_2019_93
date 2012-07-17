@@ -7,8 +7,7 @@ import argparse
 import numpy as np
 import math
 
-sys.path.append("../../EvolutionSBP/")
-from skyline.io import simulation_data as sd
+from coffee.io import simulation_data as sd
 
 # load default file
 from hdfvis_gnuplot_defaults import *

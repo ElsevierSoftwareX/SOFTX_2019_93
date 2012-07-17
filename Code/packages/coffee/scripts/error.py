@@ -6,7 +6,7 @@ import argparse
 import os
 import numpy as np
 
-from skyline.io import simulation_data as sd
+from coffee.io import simulation_data as sd
 
 def exact(args):
     if args.dg != ['raw']:

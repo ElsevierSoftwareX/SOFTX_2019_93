@@ -16,9 +16,10 @@ Info -- Prints information to std_out regarding the simulation
 SimOutput -- Writes time_slices to HDD using h5py
 """
 
-from actions import Prototype, BlowupCutoff, GNUPlotter1D, GNUPlotter2D, \
-    Plotter, Info
+from actions import Prototype, BlowupCutoff, Plotter, Info
+from gnuplot import GNUPlotter1D, GNUPlotter2D
 from hdf_output import SimOutput
 
 del hdf_output
 del actions
+del gnuplot

@@ -42,7 +42,6 @@ class IBVP:
             self.log.info("Grid = %s"%str(self.theGrid))
             self.log.info("Using spacestep dx=%s"%repr(u.dx))
             self.log.debug("Initial data is = %s"%repr(u))
-        
         advance = self.theSolver.advance
         validate = self.theGrid.validate
         computation_valid = True

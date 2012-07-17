@@ -29,3 +29,6 @@
 
 # dynamic library
 libspinsfast.so
+
+#tilde backup files
+*~

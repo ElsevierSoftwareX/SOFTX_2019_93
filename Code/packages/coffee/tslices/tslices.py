@@ -28,7 +28,7 @@ class timeslice(np.ndarray):
     def __new__(cls, data, domain, time):
         obj = np.asarray(data).view(cls)
         obj.log = logging.getLogger('timeslice')
-        obj.domain = domain
+        obj.grid = domain
         obj.time = time        
         obj.mpicomm = MPI.COMM_WORLD
         obj.mpirank = obj.mpicomm.rank
@@ -37,7 +37,7 @@ class timeslice(np.ndarray):
         
     def __array_finalize__(self,obj):
         if obj is None: return obj
-        self.domain = getattr(obj, 'domain', None)
+        self.grid = getattr(obj, 'grid', None)
         self.time = getattr(obj, 'time', None)
         self.mpicomm = getattr(obj, 'mpicomm', None)
         self.mpirank = getattr(obj, 'mpirank', None)
@@ -54,7 +54,7 @@ class timeslice(np.ndarray):
       
     @property
     def step_sizes(self):
-        return self.domain.step_sizes
+        return self.grid.step_sizes
         
     @property
     def fields(self):
@@ -62,15 +62,15 @@ class timeslice(np.ndarray):
 
     @property        
     def x(self):
-        return self.domain
+        return self.grid
 
     def communicate(self):
         if self.mpisize == 1:
 #            if __debug__:
 #                self.log.debug("no data swap")
             return
-        self.domain.send(self)
-        self.domain.recv(self)
+        self.grid.send(self)
+        self.grid.recv(self)
 #        if __debug__:
 #            self.log.debug("time slice after data swapping = %s"%repr(self))
         return
@@ -78,6 +78,6 @@ class timeslice(np.ndarray):
     def collect_data(self):
         if self.mpisize == 1:
             return self
-        data,domain = self.domain.collect_data(self)
+        data,domain = self.grid.collect_data(self)
         if data is None: return None
         return timeslice(data,domain,self.time)

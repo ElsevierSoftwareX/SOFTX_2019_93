@@ -93,7 +93,7 @@ class sfpy_salm(np.ndarray):
         s = "spins = %s,\n"
         for spin in self.spins:
             for l in range(self.lmax):
-                s +="(%f, %f): %s\n"%(spin, l, self[spin,l].view(np.ndarray))
+                s +="(%f, %f): %s\n"%(spin, l, repr(self[spin,l].view(np.ndarray)))
         return s 
        
     def __repr__(self):
@@ -105,6 +105,13 @@ class sfpy_salm(np.ndarray):
             repr(self.view(np.ndarray))
             )
         return s
+
+    @property
+    def coefs(self):
+        if self.shape[0] == 1:
+            return self.view(np.ndarray)[0]
+        else:
+            return self.view(np.ndarray)[0]
 
     def multiplication_bandlimit(self, bool):
         self.bl_mult = bool
@@ -170,63 +177,50 @@ class sfpy_salm(np.ndarray):
 #        if math.abs(m)> l:
 #            raise ValueError('|m| must be less than or equal to l')
 
-    def __add__(self,other):
+    def _addsub(self, other, add):
         if not isinstance(other, sfpy_salm):
-            a = sfpy_salm(self.view(np.ndarray)*other, self.spins, self.lmax,
+            return sfpy_salm(self.view(np.ndarray)*other, self.spins, self.lmax,
               self.cg, self.bl_mult)
-            return a
         lmax = max(self.lmax, other.lmax)
+        bl_mult = self.bl_mult or other.bl_mult
+        cg = self.cg
+        if self.cg is None and other.cg is not None:
+            cg = other.cg
         spins = np.union1d(self.spins, other.spins)
-        array = np.empty((spins.shape[0], _lmax_Nlm(lmax)),dtype=np.typeDict["complex"])
+        array = np.zeros((spins.shape[0], _lmax_Nlm(lmax)), dtype=np.typeDict["complex"])
+        s_len = self.shape[1]
+        o_len = other.shape[1]
         for i, spin in enumerate(spins):
             self_spins = self.spins==spin
             self_has_spin = any(self_spins)
             other_spins = other.spins==spin
             other_has_spin = any(other_spins)
             if self_has_spin:
+                self_index = np.where(self_spins)[0][0]
+                array[i][:s_len] = self.view(np.ndarray)[self_index]
                 if other_has_spin:
-                    self_index = np.where(self_spins)[0][0]
                     other_index = np.where(other_spins)[0][0]
-                    array[i] = self.array[self_index] + other.array[other_index]
-                else:
-                    self_index = np.where(self_spins)[0][0]
-                    array[i] = self.array[self_index]
+                    if add:
+                        array[i][:o_len] += other.view(np.ndarray)[other_index]
+                    else:
+                        array[i][:o_len] -= other.view(np.ndarray)[other_index]
             elif other_has_spin:
                 other_index = np.where(other_spins)[0][0]
-                array[i] = other.array[other_index]
+                if add:
+                    array[i][:o_len] += other.view(np.ndarray)[other_index]
+                else:
+                    array[i][:o_len] -= other.view(np.ndarray)[other_index]
             else:
                 raise Exception("A spin has been encountered that is not in \
                 either summand.")
-        return sfpy_salm(array, spins, lmax)
+        return sfpy_salm(array, spins, lmax, cg, bl_mult)
+
+
+    def __add__(self,other):
+        return self._addsub(other, True)
 
     def __sub__(self,other):
-        if not isinstance(other, sfpy_salm):
-            a = sfpy_salm(self.view(np.ndarray)*other, self.spins, self.lmax,
-              self.cg, self.bl_mult)
-            return a
-        lmax = max(self.lmax, other.lmax)
-        spins = np.union1d(self.spins, other.spins)
-        array = np.empty((spins.shape[0], _lmax_Nlm(lmax)),dtype=np.typeDict["complex"])
-        for i, spin in enumerate(spins):
-            self_spins = self.spins==spin
-            self_has_spin = any(self_spins)
-            other_spins = other.spins==spin
-            other_has_spin = any(other_spins)
-            if self_has_spin:
-                if other_has_spin:
-                    self_index = np.where(self_spins)[0][0]
-                    other_index = np.where(other_spins)[0][0]
-                    array[i] = self.array[self_index] - other.array[other_index]
-                else:
-                    self_index = np.where(self_spins)[0][0]
-                    array[i] = self.array[self_index]
-            elif other_has_spin:
-                other_index = np.where(other_spins)[0][0]
-                array[i] = -other.array[other_index]
-            else:
-                raise Exception("A spin has been encountered that is not in \
-                either summand.")
-        return sfpy_salm(array, spins, lmax)              
+        return self._addsub(other, False)             
 
     def __mul__(self, other):
         if not isinstance(other, sfpy_salm):
