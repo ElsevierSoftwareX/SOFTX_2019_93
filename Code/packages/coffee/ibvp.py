@@ -20,14 +20,14 @@ class IBVP:
     
     
     def __init__(self, sol, eqn, grid, action = [], 
-        maxIteration = 10000, minTimestep = 1e-8, CFL = 1.0):
+        maxIteration = 10000, minTimestep = 1e-8):  #, CFL = 1.0):
         sol.useSystem(eqn)
         self.theSolver = sol
         self.theSystem = eqn
         self.maxIteration = maxIteration
         self.theGrid = grid
         self.theActions = action
-        self.cfl = CFL
+#        self.cfl = CFL
         self.log = logging.getLogger("IBVP")
         self.minTimestep = minTimestep
              
@@ -47,7 +47,7 @@ class IBVP:
         computation_valid = True
         
         while(computation_valid):
-            dt = self.cfl * self.theSystem.timestep(u)
+            dt = self.theSystem.timestep(u)
             if __debug__: self.log.debug("Using timestep dt=%f"%(dt,))
      
             if dt < self.minTimestep:
@@ -64,11 +64,14 @@ class IBVP:
             #         %(t, self.iteration))
             #     break
             
-            if ((tstop-t) < dt):
-                dt = tstop - t
+            
+            timeleft = tstop - t
+            
+            if (timeleft < dt):
+                dt = timeleft
                 self.log.warning("Final time step: adjusting to dt = %f" % dt)
                 computation_valid = False
-            
+             
             actions_do_actions = [action.will_run(self.iteration,u) 
                 for action in self.theActions]
             if any(actions_do_actions):
@@ -89,6 +92,22 @@ class IBVP:
             self.iteration+=1
             if __debug__:
                 self.log.debug("time slice after advance = %s"%repr(u))
+        # end (while)
+        
+        # do the last round of actions
+        actions_do_actions = [action.will_run(self.iteration,u) 
+            for action in self.theActions]
+        if any(actions_do_actions):
+            tslice = u.collect_data()
+            for i, action in enumerate(self.theActions):
+                if actions_do_actions[i]:
+                    if __debug__:
+                        self.log.debug(
+                            "Running action %s at iteration %i"%\
+                             (str(action), self.iteration)
+                             )
+                    action(self.iteration, tslice)
+
             
         self.log.info("Finished computation at time %f for iteration %i"%(t,self.iteration))
         return u
