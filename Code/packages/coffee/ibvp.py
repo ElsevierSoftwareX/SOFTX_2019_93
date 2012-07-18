@@ -37,10 +37,9 @@ class IBVP:
         #Get initial data and configure timeslices for multiple processors
         u = self.theSystem.initial_data(t, self.theGrid)
         self.log.info("Running system %s"%str(self.theSystem))
-        
-        if __debug__:
-            self.log.info("Grid = %s"%str(self.theGrid))
-            self.log.info("Using spacestep dx=%s"%repr(u.dx))
+        self.log.info("Grid = %s"%str(self.theGrid))
+        self.log.info("Using spacestep dx=%s"%repr(u.dx))
+        if __debug__:    
             self.log.debug("Initial data is = %s"%repr(u))
         advance = self.theSolver.advance
         validate = self.theGrid.validate
@@ -48,8 +47,9 @@ class IBVP:
         
         while(computation_valid):
             dt = self.theSystem.timestep(u)
-            if __debug__: self.log.debug("Using timestep dt=%f"%(dt,))
-     
+            if __debug__: 
+                self.log.debug("Using timestep dt=%f"%(dt,))
+
             if dt < self.minTimestep:
                 self.log.warning('Timestep too small: dt = %f\nFinishing ...'%
                     dt)
