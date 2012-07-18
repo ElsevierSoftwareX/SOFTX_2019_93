@@ -92,7 +92,7 @@ class sfpy_salm(np.ndarray):
     def __str__(self):
         s = "spins = %s,\n"
         for spin in self.spins:
-            for l in range(self.lmax):
+            for l in range(self.lmax + 1):
                 s +="(%f, %f): %s\n"%(spin, l, repr(self[spin,l].view(np.ndarray)))
         return s 
        
@@ -140,13 +140,13 @@ class sfpy_salm(np.ndarray):
         if len(key) == 1:
             r_key = spin_key,
         elif len(key) == 2:
-            if key[1] >= self.lmax or key[1] < 0:
+            if key[1] > self.lmax or key[1] < 0:
                 raise IndexError("order out of bounds")
             l_ind = _lm_ind(key[1],-key[1])
             order_key = slice(l_ind, l_ind + 2*key[1] +1)
             r_key = spin_key, order_key
         elif len(key) == 3:
-            if abs(key[2]) >= self.lmax:
+            if abs(key[2]) > self.lmax:
                 raise IndexError("degree out of bounds")
             order_key = _lm_ind(key[1],key[2])
             r_key = spin_key, order_key

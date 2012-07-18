@@ -114,7 +114,7 @@ def _backward_Gmm(Ntheta, Nphi, lmax, Nmaps, Gmm):
          section 2.3
     """
     f = np.empty((Nmaps,Ntheta*Nphi), dtype = typeDict['complex'])
-    Nm = 2 * lmax +1
+    Nm = 2 * lmax + 1
     NGmm = Nm * Nm
     for i in range(Nmaps):
         sf.spinsfast_backward_transform(f[i], Ntheta, Nphi, lmax, Gmm[i*NGmm:(i+1)*NGmm])

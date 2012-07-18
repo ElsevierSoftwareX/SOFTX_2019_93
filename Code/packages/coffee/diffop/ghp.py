@@ -29,15 +29,15 @@ class eth(object):
             lmax
             )
         #print "salm = %s"%salm
-        for j in range(lmax):
+        for j in range(lmax + 1):
             sm_values = salm[:,j]
             eigenvalues = np.vectorize(_eth_eigen)(spins, j)
-            eigenvalues = np.lib.stride_tricks.as_strided(
-                eigenvalues,
-                sm_values.shape,
-                (eigenvalues.itemsize, 0)
-                )
-            r_salm[:,j] = eigenvalues * sm_values
+#            eigenvalues = np.lib.stride_tricks.as_strided(
+#                eigenvalues,
+#                sm_values.shape,
+#                (eigenvalues.itemsize, 0)
+#                )
+            r_salm[:,j] = eigenvalues[:, np.newaxis] * sm_values
         #print "r_salm = %s"%r_salm
         if Ntheta is not None:
             r_u = sfpy.backward(r_salm, Ntheta, Nphi)
@@ -81,15 +81,16 @@ class ethp(object):
             lmax = u.lmax
         r_salm = sfpy.sfpy_salm(np.empty_like(salm, dtype=np.typeDict['complex']), spins - 1, lmax)
         #print "salm = %s"%salm
-        for j in range(lmax):
+        for j in range(lmax + 1):
             sm_values = salm[:,j]
             eigenvalues = np.vectorize(_ethp_eigen)(spins, j)
-            eigenvalues = np.lib.stride_tricks.as_strided(
-                eigenvalues,
-                sm_values.shape,
-                (eigenvalues.itemsize, 0)
-                )
-            r_salm[:,j] = eigenvalues * sm_values
+#            eigenvalues = np.lib.stride_tricks.as_strided(
+#                eigenvalues,
+#                sm_values.shape,
+#                (eigenvalues.itemsize, 0)
+#                )
+#            r_salm[:,j] = eigenvalues * sm_values
+            r_salm[:,j] = eigenvalues[:, np.newaxis] * sm_values
         #print "r_salm = %s"%r_salm
         if Ntheta is not None:
             r_u = sfpy.backward(r_salm, Ntheta, Nphi)
