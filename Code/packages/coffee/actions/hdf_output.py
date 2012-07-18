@@ -182,7 +182,7 @@ class SimOutput(Prototype):
             pcmp = np.asarray(repr(parent.cmp_))
             g.require_dataset(sysDTypes['system'],\
                 psystem.shape, psystem.dtype, \
-                data=psystem)
+                data = psystem)
             g.require_dataset(sysDTypes['grid'], \
                 pgrid.shape, pgrid.dtype, data=pgrid)
             g.require_dataset(sysDTypes['solver'], \
