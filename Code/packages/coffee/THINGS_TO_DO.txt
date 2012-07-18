@@ -36,5 +36,8 @@ a tslice.
 11) grid objects changed to no longer subclass nd.array and use mesh type arrays for
 multi dimensional processing.
 
+12) Documents interdependencies on hdf files between simulate.py and the system file being run. Included documentation in scripts that require hdf files. Mention that the hdf file must have been constructed using
+the actions.hdf_output module.
+
 SHORT TERM
 1) update advect and wave for free_data
