@@ -78,11 +78,18 @@ class Sim(object):
         for key, item in dgTypes.items():
             if item in existing_items:
                 if self.name in self.simHDF[item].keys():
-                    setattr(self,key,\
-                      DataGroup(self.simHDF[item+"/"+self.name],\
-                        returnValue=True\
-                        )\
-                      )
+                    if key == "domain":
+                        setattr(self,key,
+                          DomainDataGroup(self.simHDF[item+"/"+self.name],
+                            returnValue=True
+                            )
+                          )
+                    else:      
+                        setattr(self,key,
+                          DataGroup(self.simHDF[item+"/"+self.name],
+                            returnValue=True
+                            )
+                          )
 
     
     def tslice(self,i):
@@ -412,6 +419,27 @@ class DataGroup():
         
     def __repr__(self):
         return r"<H5pyArray datagroup %s (%d)>"% (self.name, len(self))       
+        
+class DomainDataGroup(DataGroup):
+
+    def __setitem__(self, i, value):
+        value = np.array(value)
+        dataset = self.group.require_dataset(str(i), value.shape,  value.dtype)
+        dataset[:] = value
+        dataset.attrs['index'] = i
+    
+    def __getitem__(self, i):
+        dataset = self.group[str(i)]
+        shape = dataset.attrs['shape']
+        axes = []
+        start = 0
+        for i in range(len(shape)):
+            axes += [dataset.value[start:start + shape[i]]]
+            start = start + shape[i]
+        return axes
+        
+    def __repr__(self):
+        return r"<H5pyArray domaindatagroup %s (%d)>"% (self.name, len(self)) 
         
 def binarysearch(a,low,high,value):
     if high<low:
