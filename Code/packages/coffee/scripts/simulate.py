@@ -6,7 +6,7 @@ import os
 
 # Initialise parser
 parser = argparse.ArgumentParser(description=\
-"""This program runs a complete simulation: the numerical calculations, the error caculations and the visulations.""")
+"""This program runs a complete simulation: the numerical calculations, the error caculations and the visulations. This requires the simulation to output data in to an hdf file using actions.hdf_output.""")
 
 # Parse files
 parser.add_argument('-f','-file', required=True, help=\
