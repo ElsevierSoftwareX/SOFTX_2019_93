@@ -46,9 +46,10 @@ class Grid(object):
     
     @property
     def meshes(self):
-        grid_shape = np.array(self.shape) + 1
+        axes = self.axes
+        grid_shape = tuple([axis.size for axis in axes])
         mesh = []
-        for i, axis in enumerate(self.axes):
+        for i, axis in enumerate(axes):
             strides = np.zeros((len(self.shape), ))
             strides[i] = axis.itemsize
             mesh += [np.lib.stride_tricks.as_strided(
@@ -83,7 +84,8 @@ class UniformCart(Grid):
     
     def __init__(self, shape, bounds, comparison = None):
         assert len(bounds) == len(shape)
-        super(UniformCart, self).__init__(shape, bounds, name = "UniformCart", 
+        name = "UniformCart%s%s%s"%(shape,bounds,comparison)
+        super(UniformCart, self).__init__(shape, bounds, name=name, 
             comparison = comparison)
             
     @property
@@ -100,7 +102,35 @@ class UniformCart(Grid):
     def step_sizes(self):
         step_sizes = [axis[1]-axis[0] for axis in self.axes]
         return step_sizes
+         
+class S2(Grid):
+    """A Grid object representing the sphere. Note that
+    theta is in [0, pi) and phi is in [0, 2*pi)."""
+    
+    def __init__(self, shape, comparison = None):
+        assert len(shape) == 2
+        name = "S2%s%s"%(shape,comparison)
+        super(S2, self).__init__(shape, 
+            [[0, math.pi], [0, 2*math.pi]], 
+            name=name, 
+            comparison = comparison
+            )
             
+    @property
+    def axes(self):
+        axes = [
+            np.linspace(
+                self.bounds[i][0], self.bounds[i][1], self.shape[i],
+                endpoint=False
+            )
+            for i in range(len(self.bounds))
+            ]
+        return axes
+        
+    @property
+    def step_sizes(self):
+        step_sizes = [axis[1]-axis[0] for axis in self.axes]
+        return step_sizes   
             
 ################################################################################
 # Obsoleat constructors
