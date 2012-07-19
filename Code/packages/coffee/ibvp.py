@@ -20,14 +20,13 @@ class IBVP:
     
     
     def __init__(self, sol, eqn, grid, action = [], 
-        maxIteration = 10000, minTimestep = 1e-8, CFL = 1.0):
+        maxIteration = 10000, minTimestep = 1e-8):
         sol.useSystem(eqn)
         self.theSolver = sol
         self.theSystem = eqn
         self.maxIteration = maxIteration
         self.theGrid = grid
         self.theActions = action
-        self.cfl = CFL
         self.log = logging.getLogger("IBVP")
         self.minTimestep = minTimestep
              
@@ -48,7 +47,7 @@ class IBVP:
         computation_valid = True
         
         while(computation_valid):
-            dt = self.cfl*self.theSystem.timestep(u)
+            dt = self.theSystem.timestep(u)
             if __debug__: self.log.debug("Using timestep dt=%f"%(dt,))
      
             if dt < self.minTimestep:
