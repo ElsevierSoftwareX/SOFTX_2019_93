@@ -75,10 +75,10 @@ else:
 log.info("Starting configuration.")
 
 # How many systems?
-num_of_grids = 4
+num_of_grids = 6
 
 # How many grid points?
-Ntheta = 12
+Ntheta = 24
 Nphi = 24
 
 # What grid to use?
