@@ -34,7 +34,7 @@ def exact(args):
                 print "Index for simulation %s is %i at time %f"%(sim.name,it,time)
                 error = sim.raw[it]-sim.exact[it]
                 domain = sim.domain[it]
-                if args.O:
+                if __debug__:
                     print "Errors are: %s"%repr(error)
                     print "Domain is: %s"%repr(domain)
                 sim.write(sd.dgTypes["errorExa"],it,np.absolute(error))
@@ -69,23 +69,23 @@ def numer(args):
         subtrahend = sims[-1]
         minuends = sims[:-1]
         
-        # We must now check how the domains have been constructed.
-        # We need to tell the difference between [[i] for i in range]
-        # and [i for i in range].
-        # We make the assumption that the domain type remains the same
-        # throughout the simulation.
-        domain = subtrahend.domain[0]
-        dims = len(domain.shape)
-        if dims is 1:
-            compare_on_axes = 0
-        else:
-            index = tuple([0 for i in domain.shape])
-            if len(np.array(domain[index]).shape) is 0 and np.array(domain[index[:-1]]).shape[0] == dims-1:
-                compare_on_axes = 1
-            elif len(np.array(domain[index])) is dims:
-                compare_on_axes = 0
-            else:
-                raise Exception("Unable to determine domain type")
+#        # We must now check how the domains have been constructed.
+#        # We need to tell the difference between [[i] for i in range]
+#        # and [i for i in range].
+#        # We make the assumption that the domain type remains the same
+#        # throughout the simulation.
+#        meshes = subtrahend.domain[0]
+#        dims = len(subtrahend.domain.group['0'].attrs['shape'])
+#        if dims is 1:
+#            compare_on_axes = 0
+#        else:
+#            index = tuple([0 for i in domain.shape])
+#            if len(np.array(domain[index]).shape) is 0 and np.array(domain[index[:-1]]).shape[0] == dims-1:
+#                compare_on_axes = 1
+#            elif len(np.array(domain[index])) is dims:
+#                compare_on_axes = 0
+#            else:
+#                raise Exception("Unable to determine domain type")
                  
         for time in args.t:
             print "=================================="
@@ -96,12 +96,12 @@ def numer(args):
             print "Subtrahend time = %f at index = %i"%\
                 (subtrahend.time[subtrahend_index],subtrahend_index)
             subtrahend_domain = subtrahend.domain[subtrahend_index]
-            if args.O: 
+            if __debug__: 
                 print "Subtrahend domain = %s"%str(subtrahend_domain)
             
             # Need to collect the same information for each minuend and do the
             # comparison.
-            for i,minuend in enumerate(minuends):
+            for i, minuend in enumerate(minuends):
                 print"Calculating %s - %s" %(minuend.name, subtrahend.name)
                 
                 #Finding index for correct time
@@ -111,16 +111,24 @@ def numer(args):
                     
                 #Comaring domains
                 minuend_domain = minuend.domain[minuend_index]
-                if args.O: print "Minuend domain = %s"%str(minuend_domain)
+                if __debug__: print "Minuend domain = %s"%str(minuend_domain)
                 
-                
-                # Get the mapping between the domains.
-                compare_on_axes = True
-                if len(minuend_domain.shape) == 1:
-                    compare_on_axes = False
-                mapping = sd.array_value_index_mapping(minuend_domain,\
-                    subtrahend_domain,compare_on_axes = compare_on_axes)
-                if args.O: print "Mapping = "+str(mapping)
+#                # Get the mapping between the domains.
+#                compare_on_axes = True
+#                if len(minuend_domain.shape) == 1:
+#                    compare_on_axes = False
+#                mapping = sd.array_value_index_mapping(minuend_domain,\
+#                    subtrahend_domain,compare_on_axes = compare_on_axes)
+                axes_mappings = [
+                    sd.array_value_index_mapping(
+                        minuend_axis,
+                        subtrahend_axis,
+                        compare_on_axes = 0
+                        )
+                    for minuend_axis, subtrahend_axis in
+                    zip(minuend_domain, subtrahend_domain)
+                    ]
+                if __debug__: print "Mapping = "+str(axes_mappings)
                 
                 for dgType in args.dg:
                     print "Calculating error for dgType %s"%dgType
@@ -131,9 +139,10 @@ def numer(args):
                     
                     #Calculating difference in values of common domains
                     diff = np.ones_like(minuend_dg[minuend_index])
-                    for map in mapping:
-                        diff[:, map[0]] = minuend_dg[minuend_index][:,map[0]]-\
-                                subtrahend_dg[subtrahend_index][:,map[1]]
+                    for from_tup, to_tup in map_generator(axes_mappings):
+                        diff[(slice(None),)+from_tup] = \
+                            minuend_dg[minuend_index][(slice(None),)+from_tup]- \
+                            subtrahend_dg[subtrahend_index][(slice(None),)+to_tup]
                         
                     #Storing data
                     minuend.write(sd.dgTypes["errorNum"],\
@@ -144,10 +153,12 @@ def numer(args):
                         )
                     
                     # we assume that dx is constant for each slice
-                    dx = minuend.domain[minuend_index][1] - \
-                        minuend.domain[minuend_index][0]
-                    for j,p in enumerate(args.Lp):
-                        tableE[j][i] = Lp(np.absolute(diff),dx,p)
+                    stepsizes = np.asarray([
+                        axis[1] - axis[0] for axis in minuend_domain
+                        ])
+                    for j, p in enumerate(args.Lp):
+                        tableE[j][i] = Lp(diff, stepsizes, p)
+                #end loop over args.dg
             for j,p in enumerate(args.Lp):
                 rows = _printErrorConv(tSimNames, range(num_of_comps), 
                     tableE[j], stepSizes, time, p)
@@ -155,6 +166,16 @@ def numer(args):
                     for row in rows:
                         file.write(row)
 
+def map_generator(array, i=0):
+    data = array[i]
+    for datum in data:
+        from_res = (datum[0][0],)
+        to_res = (datum[1][0],)
+        if i == len(array)-1: 
+            yield from_res, to_res
+        else:
+            for res in map_generator(array, i+1):
+                yield from_res + res[0], to_res + res[1]
 
 ################################################################################
 # Routines for numerical error estimation and output
@@ -169,12 +190,20 @@ def _sum(gen):
     return rsum
 
 # returns descrete version of lp norms
-def Lp(errors, stepsize, p):
+def Lp(errors, stepsizes, p):
     errors = np.absolute(errors)
     if p == float('infinity'):
         rerrors = np.max(errors)
     else:
-        rerrors = np.power(stepsize*np.sum(np.power(errors,p), axis = -1),1/p)
+        rerrors = np.power(
+            reduce(lambda x,y: x*y, stepsizes) * 
+            np.apply_over_axes(
+                np.sum,
+                np.power(errors,p),
+                range(1,len(errors.shape))
+                ),
+            1/p
+            )
     return rerrors    
 
 # helper method to print error conv data
