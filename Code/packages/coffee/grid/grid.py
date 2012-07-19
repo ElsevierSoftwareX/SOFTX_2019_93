@@ -44,6 +44,9 @@ class Grid(object):
     @abc.abstractproperty
     def step_sizes(self): pass
     
+    @abc.abstractproperty
+    def step_sizes(self): pass
+    
     @property
     def meshes(self):
         axes = self.axes
