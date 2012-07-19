@@ -38,5 +38,9 @@ multi dimensional processing.
 
 12) Move cfl from ibvp to systems.
 
+13) remove extronious references to time in ibvp, system classes and solvers.
+Similary, come up with some way to address the issue of multiple, conflicting, times
+parameters being passed to system evolute routines.
+
 SHORT TERM
 1) update advect and wave for free_data
