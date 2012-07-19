@@ -48,7 +48,7 @@ if store_output:
     args.logf = os.path.splitext(args.f)[0]+".log"
 
 # Set up logger
-file_log_level = logging.INFO
+file_log_level = logging.DEBUG
 if store_output and not display_output:
     logging.basicConfig(filename=args.logf,\
         filemode='w',\
@@ -75,24 +75,24 @@ else:
 log.info("Starting configuration.")
 
 # How many systems?
-num_of_grids = 3
+num_of_grids = 1
 
 # How many grid points?
 Nr = 50
-Ntheta = 24
-Nphi = 12
+Ntheta = 12
+Nphi = 24
 
 # What grid to use?
 rstart = 1
 rstop = 3
 phistart = 0
-phistop = math.pi
+phistop = 2*math.pi
 thetastart = 0
-thetastop = 2*math.pi
+thetastop = math.pi
 
 # Times to run between
 tstart = 0.0
-tstop = 3
+tstop = 0.1
 
 # Configuration of System
 CFLs = [0.5 for i in range(num_of_grids)]
