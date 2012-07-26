@@ -114,7 +114,7 @@ class SimOutput(Prototype):
         def __call__(self,it,u):
             dg = self.data_group
             parent = self.parent
-            dg[it] = parent.system.exactValue(u.time,u.x).fields
+            dg[it] = parent.system.exact_value(u.time,u.x).fields
             super(SimOutput.Exact, self).__call__(it, u)
 
     class Times(SimOutputType):
