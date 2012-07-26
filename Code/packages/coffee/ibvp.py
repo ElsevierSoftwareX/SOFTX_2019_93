@@ -21,7 +21,7 @@ class IBVP:
     
     def __init__(self, sol, eqn, grid, action = [], 
         maxIteration = 10000, minTimestep = 1e-8): #, CFL = 1.0):
-        sol.useSystem(eqn)
+        sol.use_system(eqn)
         self.theSolver = sol
         self.theSystem = eqn
         self.maxIteration = maxIteration
