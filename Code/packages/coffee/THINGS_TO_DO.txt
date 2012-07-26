@@ -42,5 +42,8 @@ multi dimensional processing.
 Similary, come up with some way to address the issue of multiple, conflicting, times
 parameters being passed to system evolute routines.
 
+14) separate the matplotlib dependent modules from other code. Imports of
+mathplot lib and pylab break on vulcan.
+
 SHORT TERM
 1) update advect and wave for free_data
