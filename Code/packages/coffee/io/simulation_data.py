@@ -430,12 +430,12 @@ class DomainDataGroup(DataGroup):
     
     def __getitem__(self, i):
         dataset = self.group[str(i)]
-        shape = dataset.attrs['shape']
+        axes_shape = dataset.attrs['axes_shape']
         axes = []
         start = 0
-        for i in range(len(shape)):
-            axes += [dataset.value[start:start + shape[i]]]
-            start = start + shape[i]
+        for i in range(len(axes_shape)):
+            axes += [dataset.value[start:start + axes_shape[i]]]
+            start = start + axes_shape[i]
         return axes
         
     def __repr__(self):

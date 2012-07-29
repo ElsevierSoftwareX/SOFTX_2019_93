@@ -141,16 +141,18 @@ class SimOutput(Prototype):
         
         def __call__(self,it,u):
             dg = self.data_group
-            shape = u.grid.shape
-            axes = np.empty(
-                (reduce(lambda x,y: x+y, shape),),
+            axes = u.grid.axes
+            axes_shape = tuple([axis.size for axis in axes])
+            axes_flat = np.empty(
+                (reduce(lambda x,y: x+y, axes_shape),),
                 dtype=u.grid.axes[0].dtype
                 )
             start = 0
-            for i, axis in enumerate(u.grid.axes):
-                axes[start: start+shape[i]] = axis
-                start = start + shape[i]
-            dg[it] = axes
+            for i, axis in enumerate(axes):
+                axes_flat[start: start + axes_shape[i]] = axis
+                start = start + axes_shape[i]
+            dg[it] = axes_flat
+            dg[it].attrs["axes_shape"] = axes_shape
             dg[it].attrs["shape"] = u.grid.shape
             dg[it].attrs["bounds"] = u.grid.bounds
             dg[it].attrs["comparison"] = u.grid.comparison

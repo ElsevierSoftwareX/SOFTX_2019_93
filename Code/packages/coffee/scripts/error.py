@@ -201,7 +201,7 @@ def Lp(errors, stepsizes, p):
                 np.sum,
                 np.power(errors,p),
                 range(1,len(errors.shape))
-                ),
+                )[:,0],
             1/p
             )
     return rerrors    
