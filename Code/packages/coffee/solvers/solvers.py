@@ -4,61 +4,125 @@
 solvers.py
 
 Created by Jörg Frauendiener on 2010-12-26.
+Editted by Ben Whale since 2011.
 Copyright (c) 2010 University of Otago. All rights reserved.
 """
 
-#import sys
-#import os
 import math
-#from ..tslices import *
 import logging
+import abc
 
-#############################################################################
-class Solver(object):
-    theEqn = None
-    name = 'Generic Solver'
 
-    def __init__(self, eqn=None):
-        if eqn is not None:
-            self.theEqn = eqn
+################################################################################
+# Solver Abstract Base Class
+################################################################################
+class ABCSolver(object):
 
-    def useSystem(self, eqn):
-        self.theEqn = eqn
-
-    def advance(self, t, u, dt = None):
-#        if __debug__:
-#            self.log.debug("Advancing solution")
-#            self.log.debug("t = %f, u = %s, dt = %f"%(t,repr(u),dt))
-        if dt is None:
-            dt = self.theEqn.timestep(u)
-        eqn = self.theEqn
-        du = eqn.evaluate(t, u)
-#        if __debug__:
-#            self.log.debug("Advanced solution is = %s"%repr((t+dt, u + dt*du)))
-        return (t+dt, u + dt*du)
-
+    def __init__(self, system, **kwds):
+        self.system = system
+        super(ABCSolver, self).__init__(**kwds)
+        self.log = logging.getLogger("solvers")
+        
+    def use_system(self, system):
+        self.system = system
+ 
+    @abc.abstractproperty
+    def name(self):
+        pass
+ 
+    @abc.abstractmethod
+    def advance(self, t, u, dt): 
+        if self.system == None:
+            raise Exception("No system has been set")
+    
     def __repr__(self):
-        return "<%s: equation = %s>"%(self.name,self.theEqn)
+        return "<%s: system = %s>"%(self.name, self.system)
 
+################################################################################
+# First order methods
+################################################################################
+class Euler(ABCSolver):
+    name = 'Euler'
 
-#############################################################################
-class RungeKutta4(Solver):
+    def __init__(self, **kwds):
+        super(Euler, self).__init__(**kwds)
+  
+    def advance(self, t, u, dt):
+        super(Euler, self).advance(t, u, dt)
+        du = self.system.evaluate(t, u)
+        r_time = t + dt        
+        r_slice = u + dt*du
+        r_slice.time = r_time        
+        return (r_time, r_slice)
+
+################################################################################
+# Fourth order methods
+################################################################################
+class RungeKutta4(ABCSolver):
     """docstring for RungeKutta4"""
 
+    name = "RK4"
 
-    def __init__(self, log=None):
-        super(RungeKutta4, self).__init__()
-        self.log = logging.getLogger("rk4")
+    def __init__(self, **kwds):
+        super(RungeKutta4, self).__init__(**kwds)
 
 
     def advance(self, t0, u0, dt):
+        super(RungeKutta4, self).advance(t0, u0, dt)
         """
         Very simple minded implementation of the standard 4th order Runge-Kutta
         method to solve an ODE of the form
         fdot = rhs(t,f)
         """
-#        if __debug__:
-#            self.log.debug("solvers.advance(t0 = %f, u0 = %s, dt = %f"%(t0,repr(u0),dt))
+        eqn = self.system
+        u = u0
+        t = t0
+        k = eqn.evaluate(t, u, intStep = 1)
+        k.communicate()
+        u1 = u0 + (dt/6.0)*k
+
+        u = u0 + dt/2.0*k
+        t = t0 + dt/2.0
+        k = eqn.evaluate(t, u, intStep = 2)
+        k.communicate()
+        u1 += dt/3.0*k
+
+        u = u0 + dt/2.0*k
+        t = t0 + dt/2.0
+        k = eqn.evaluate(t, u, intStep = 3)
+        k.communicate()
+        u1 += dt/3.0*k
+
+        u = u0 + dt*k
+        t = t0 + dt
+        k = eqn.evaluate(t, u, intStep = None)
+        k.communicate()
+        u1 += dt/6.0*k
+        u1.time = t
+        
+        return (t,u1)
+
+class RungeKutta4Dirichlet(ABCSolver):
+    """An implementation of the Runge Kutta 4 routine that calls
+    system.dirichlet_boundary."""
+
+
+    def __init__(self, **kwds):
+        super(RungeKutta4Dirichlet, self).__init__(**kwds)
+        if not hasattr(self.system, "dirichlet_boundary"):
+            raise Exception("%s does not implement dirichlet_boundary method"
+                %self.system)
+
+    def advance(self, t0, u0, dt):
+        """
+        Very simple minded implementation of the standard 4th order Runge-Kutta
+        method to solve an ODE of the form
+        fdot = rhs(t,f) that allows for the implementation of
+        Dirichlet conditions during evaluation.
+        
+        Ensure that the corresponding system file has a method called,
+        "dirichlet_boundary".
+        """
         eqn = self.theEqn
         u = u0
         t = t0
@@ -66,9 +130,6 @@ class RungeKutta4(Solver):
         k.communicate()
         u1 = u0 + (dt/6.0)*k
         u1 = eqn.dirichlet_boundary(u1, intStep = 1)
-#        if __debug__:
-#            self.log.debug("k = %s"%repr(k))
-#            self.log.debug("u1 after intStep = 1 is %s"%repr(u1))  
 
         u = u0 + dt/2.0*k
         t = t0 + dt/2.0
@@ -76,9 +137,6 @@ class RungeKutta4(Solver):
         k.communicate()
         u1 += dt/3.0*k
         u1 = eqn.dirichlet_boundary(u1,intStep = 2)
-#        if __debug__:
-#            self.log.debug("k = %s"%repr(k))
-#            self.log.debug("u1 after intStep = 1 is %s"%repr(u1))  
 
         u = u0 + dt/2.0*k
         t = t0 + dt/2.0
@@ -86,9 +144,6 @@ class RungeKutta4(Solver):
         k.communicate()
         u1 += dt/3.0*k
         u1 = eqn.dirichlet_boundary(u1,intStep = 3)
-#        if __debug__:
-#            self.log.debug("k = %s"%repr(k))
-#            self.log.debug("u1 after intStep = 1 is %s"%repr(u1))  
 
         u = u0 + dt*k
         t = t0 + dt
@@ -97,14 +152,14 @@ class RungeKutta4(Solver):
         u1 += dt/6.0*k
         u1.time = t
         u1 = eqn.dirichlet_boundary(u1,intStep = None)
-#        if __debug__:
-#            self.log.debug("k = %s"%repr(k))
-#            self.log.debug("u1 after intStep = 1 is %s"%repr(u1))  
         
         return (t,u1)
 
-
-class rk45(Solver):
+################################################################################
+# This code has not been updated in some time. It needs to be checked before
+# use.
+################################################################################
+class rk45(ABCSolver):
     """
     Solve a system of ODE using a Runge-Kutta method
 
