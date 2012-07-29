@@ -168,7 +168,8 @@ class GNUPlotter2D(Prototype):
 
 class Plotter(Prototype):
     """docstring for Plotter"""
-    def __init__(self, frequency = 1, xlim = (-1,1), ylim = (-1,1), findex = None, delay = 0.0):
+    def __init__(self, frequency = 1, xlim = (-1,1), ylim = (-1,1), \
+        findex = None, delay = 0.0):
         super(Plotter, self).__init__(frequency)
         if findex is not None:
             self.index = findex
@@ -183,6 +184,7 @@ class Plotter(Prototype):
             ax.set_ylim(ylim)       
             ax.grid(True)
             self.axes = ax
+            fig.show()
     
     def _doit(self, it, u):
         x = u.x
