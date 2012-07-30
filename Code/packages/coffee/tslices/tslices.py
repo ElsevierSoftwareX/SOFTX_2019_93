@@ -48,6 +48,14 @@ class timeslice(np.ndarray):
     def numFields(self):
         return self.shape[0]
     
+    def __repr__(self):
+        s = "timeslice(fields = %s, grid = %s, time = %s)"%(
+            repr(np.asarray(self)), 
+            repr(self.grid), 
+            repr(self.time)
+            )
+        return s
+
     @property
     def dx(self):
         return self.step_sizes
