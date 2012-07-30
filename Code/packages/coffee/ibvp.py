@@ -64,8 +64,8 @@ class IBVP:
                 self.log.debug("Using timestep dt = %f"%dt)
             
             if dt < self.minTimestep:
-                self.log.warning(
-                    'Timestep too small: dt = %.15f\nExiting computation...'%dt
+                self.log.error(
+                    'Exiting computation: timestep too small dt = %.15f'%dt
                 )
                 break
              
