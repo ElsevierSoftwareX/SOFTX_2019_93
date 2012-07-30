@@ -46,31 +46,28 @@ class IBVP:
         computation_valid = True
         
         while(computation_valid):
-            dt = self.theSystem.timestep(u)
-            if __debug__: 
-                self.log.debug("Using timestep dt=%f"%(dt,))
-
-            if dt < self.minTimestep:
-                self.log.warning('Timestep too small: dt = %f\nFinishing ...'%
-                    dt)
-                break
-                
+            
             if (self.iteration > self.maxIteration):
                 self.log.warning("Maximum number of iterations exceeded")
                 break
             
-            # if (math.fabs(t-tstop) < dt/2):
-            #     self.log.warning("Maximum time reached at %f for iterations: %d"
-            #         %(t, self.iteration))
-            #     break
-            
-            
+            dt = self.theSystem.timestep(u)
             timeleft = tstop - t
-            
-            if (timeleft < dt):
+            if timeleft < dt:
                 dt = timeleft
-                self.log.warning("Final time step: adjusting to dt = %f" % dt)
+                self.log.warning(
+                    "Final time step: adjusting to dt = %.15f" % dt
+                    )
                 computation_valid = False
+            
+            if __debug__: 
+                self.log.debug("Using timestep dt = %f"%dt)
+            
+            if dt < self.minTimestep:
+                self.log.warning(
+                    'Timestep too small: dt = %.15f\nExiting computation...'%dt
+                )
+                break
              
             actions_do_actions = [action.will_run(self.iteration,u) 
                 for action in self.theActions]
