@@ -22,7 +22,7 @@ def exact(args):
         # We make the assumption that the number of components for each run
         # is the same and that the values of the components are in the first
         # axis of raw.shape
-        num_of_comps = sims[0].raw[0].shape[0]
+        num_of_comps = sims[0].numvar
         tableE = np.zeros((len(args.Lp),len(tSimNames),num_of_comps),dtype=float)
         
         for time in args.t:
@@ -39,12 +39,21 @@ def exact(args):
                     print "Domain is: %s"%repr(domain)
                 sim.write(sd.dgTypes["errorExa"],it,np.absolute(error))
                 
-                # we assume that dx is constant for each slice
-                dx = sim.domain[it][1]-sim.domain[it][0]
+                # we assume that stepsizes is constant for each slice
+                stepsizes = np.asarray([
+                    axis[1] - axis[0] for axis in domain
+                    ])
                 for j,p in enumerate(args.Lp):
-                    tableE[j][i] = Lp(np.absolute(error),dx,p)
+                    tableE[j][i] = Lp(np.absolute(error), stepsizes, p)
             for j,p in enumerate(args.Lp):
-                rows = _printErrorConv(tSimNames,range(num_of_comps),tableE[j],stepSizes, time, p)
+                rows = _printErrorConv(
+                    tSimNames,
+                    range(num_of_comps),
+                    tableE[j],
+                    stepSizes, 
+                    time, 
+                    p
+                    )
                 with  open('%s-e_L%f_%f.csv'%(args.ofile_base,p,time),'wb') as file:
                     for row in rows:
                         file.write(row)
@@ -60,7 +69,7 @@ def numer(args):
         # We make the assumption that the number of components for each run
         # is the same and that the values of the components are in the first
         # axis of raw.shape
-        num_of_comps = sims[0].raw[0].shape[0]
+        num_of_comps = sims[0].numvar
         tableE = np.zeros((len(args.Lp),len(tSimNames),num_of_comps),dtype=float)
         
         # Seperate them into the one with the best resolution

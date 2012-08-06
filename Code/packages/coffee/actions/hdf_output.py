@@ -36,16 +36,17 @@ class SimOutput(Prototype):
 
     def __init__(self, hdf_file, solver, theSystem, theInterval, 
             actionTypes, 
-            frequency = 1, 
+#            frequency = 1, 
             cmp_ = None, 
             overwrite = True, 
             name = None, 
-            start = -float('infinity'), 
-            stop = float('infinity')):
+#            start = -float('infinity'), 
+#            stop = float('infinity'),
+            **kwds):
         self.log = logging.getLogger("SimOutput")
 #        if __debug__:
 #            self.log.debug("Setting up HDF output...")
-        super(SimOutput,self).__init__(frequency)
+        super(SimOutput,self).__init__(**kwds)
         if name == None:
             hour = str(time.localtime()[3])
             minute = str(time.localtime()[4])
@@ -191,6 +192,7 @@ class SimOutput(Prototype):
             pgrid = np.asarray(repr(parent.grid))
             psolver = np.asarray(repr(parent.solver))
             pcmp = np.asarray(repr(parent.cmp_))
+            pnumvar = np.asarray(repr(parent.system.numvar))
             g.require_dataset(sysDTypes['system'],\
                 psystem.shape, psystem.dtype, \
                 data = psystem)
@@ -199,8 +201,17 @@ class SimOutput(Prototype):
             g.require_dataset(sysDTypes['solver'], \
                 psolver.shape, psolver.dtype, \
                 data = psolver)
-            g.require_dataset(sysDTypes['cmp'], \
-                pcmp.shape, pcmp.dtype, data=pcmp)
-        
+            g.require_dataset(
+                sysDTypes['cmp'], 
+                pcmp.shape, 
+                pcmp.dtype, 
+                data=pcmp
+                )
+            g.require_dataset(
+                sysDTypes['numvar'], 
+                pnumvar.shape, 
+                pnumvar.dtype, 
+                data=pnumvar
+                )
         def __call__(self,it,u):
             pass

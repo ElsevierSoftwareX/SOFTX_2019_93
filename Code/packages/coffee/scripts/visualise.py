@@ -37,7 +37,7 @@ def error(args):
         
         # Setting argument defaults
         if args.c is None:
-            args.c = range(sims[0].raw[0].shape[0])
+            args.c = range(sims[0].numvar)
         
         # Initialise array to calculate abs errors and convergence rates
         tSimNames = [sim.name for sim in sims[:-1]]
