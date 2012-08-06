@@ -65,7 +65,9 @@ def error(args):
         for j, phi_index in enumerate(args.c):
             print "Doing component %i"%phi_index
             plot_data = []
-            for i, sim in enumerate(sims[:-1]):
+            for i, sim in enumerate(sims):
+                if i == len(sims)-1 and not args.e:
+                    break
                 # Get data for plot
                 index = sim.indexOfTime(args.t)
                 if args.e:
