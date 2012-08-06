@@ -54,7 +54,7 @@ def exact(args):
                     time, 
                     p
                     )
-                with  open('%s-e_L%f_%f.csv'%(args.ofile_base,p,time),'wb') as file:
+                with  open('%s-e-exa_L%f_%f.csv'%(args.ofile_base,p,time),'wb') as file:
                     for row in rows:
                         file.write(row)
 
@@ -171,7 +171,7 @@ def numer(args):
             for j,p in enumerate(args.Lp):
                 rows = _printErrorConv(tSimNames, range(num_of_comps), 
                     tableE[j], stepSizes, time, p)
-                with  open('%s-e_L%f_%f.csv'%(args.ofile_base,p,time),'wb') as file:
+                with  open('%s-e-num_L%f_%f.csv'%(args.ofile_base,p,time),'wb') as file:
                     for row in rows:
                         file.write(row)
 
