@@ -16,41 +16,67 @@ def exact(args):
     with sd.SimulationHDF(args.file) as file:
         print "Initialising data."
         sims = file.getSims()
+        smallest_domain = sims[0].domain
         tSimNames = [sim.name for sim in sims]
-        stepSizes = [sim.cmp for sim in sims]
-        
+        stepsizes = []
         # We make the assumption that the number of components for each run
         # is the same and that the values of the components are in the first
         # axis of raw.shape
         num_of_comps = sims[0].numvar
-        tableE = np.zeros((len(args.Lp),len(tSimNames),num_of_comps),dtype=float)
+        tableE = np.zeros(
+            (len(args.Lp), len(tSimNames), num_of_comps),
+            dtype=float
+            )
         
         for time in args.t:
             print "=================================="
             print "Doing calculation for time = %f"%time
-            for i,sim in enumerate(sims):
-                print "Doing calculation for simulation %s"%sim.name
+            for i, sim in enumerate(sims):
+                #print "Doing calculation for simulation %s"%sim.name
                 it = sim.indexOfTime(time)
-                print "Index for simulation %s is %i at time %f"%(sim.name,it,time)
-                error = sim.raw[it]-sim.exact[it]
                 domain = sim.domain[it]
+                if i == 0:
+                    smallest_it = it
+                    smallest_domain = domain 
+                print "Index for simulation %s is %i at time %f"%(sim.name,it,time)
+                if __debug__:
+                    print "Index for smallest_domain is %i at time %f"%(
+                        smallest_it, time)
+                    print "smallest domain is: %s"%repr(smallest_domain)
+                axes_mappings = [
+                    sd.array_value_index_mapping(
+                        smallaxis,
+                        axis,
+                        compare_on_axes = 0
+                        )
+                    for smallaxis, axis in
+                    zip(smallest_domain, domain)
+                    ]
+                if __debug__: print "Mapping = "+str(axes_mappings)
+                
+                #Calculating difference in values of common domains
+                error = np.ones_like(sims[0].raw[smallest_it])
+                for from_tup, to_tup in map_generator(axes_mappings):
+                    error[(slice(None),)+from_tup] = np.absolute(
+                        sim.raw[it][(slice(None), ) + to_tup] - 
+                        sim.exact[it][(slice(None), ) + to_tup]
+                        )
                 if __debug__:
                     print "Errors are: %s"%repr(error)
-                    print "Domain is: %s"%repr(domain)
-                sim.write(sd.dgTypes["errorExa"],it,np.absolute(error))
+                sim.write(sd.dgTypes["errorExa"], it, error)
                 
                 # we assume that stepsizes is constant for each slice
-                stepsizes = np.asarray([
+                stepsizes += [np.asarray([
                     axis[1] - axis[0] for axis in domain
-                    ])
+                    ])]
                 for j,p in enumerate(args.Lp):
-                    tableE[j][i] = Lp(np.absolute(error), stepsizes, p)
+                    tableE[j][i] = Lp(error, stepsizes[-1], p)
             for j,p in enumerate(args.Lp):
                 rows = _printErrorConv(
                     tSimNames,
                     range(num_of_comps),
                     tableE[j],
-                    stepSizes, 
+                    stepsizes, 
                     time, 
                     p
                     )
@@ -64,13 +90,16 @@ def numer(args):
         # Get all the current simulations
         sims = file.getSims()
         tSimNames = [sim.name for sim in sims[:-1]]
-        stepSizes = [sim.cmp for sim in sims[:-1]]
+        stepsizes = []
         
         # We make the assumption that the number of components for each run
         # is the same and that the values of the components are in the first
         # axis of raw.shape
         num_of_comps = sims[0].numvar
-        tableE = np.zeros((len(args.Lp),len(tSimNames),num_of_comps),dtype=float)
+        tableE = np.zeros(
+            (len(args.Lp), len(tSimNames), num_of_comps),
+            dtype=float
+            )
         
         # Seperate them into the one with the best resolution
         # and the others to be compared to this one.
@@ -118,7 +147,7 @@ def numer(args):
                 print "Minuend time = %f at index = %i"%\
                     (minuend.time[minuend_index],minuend_index)
                     
-                #Comaring domains
+                #Comparing domains
                 minuend_domain = minuend.domain[minuend_index]
                 if __debug__: print "Minuend domain = %s"%str(minuend_domain)
                 
@@ -162,15 +191,15 @@ def numer(args):
                         )
                     
                     # we assume that dx is constant for each slice
-                    stepsizes = np.asarray([
+                    stepsizes += [np.asarray([
                         axis[1] - axis[0] for axis in minuend_domain
-                        ])
+                        ])]
                     for j, p in enumerate(args.Lp):
                         tableE[j][i] = Lp(diff, stepsizes, p)
                 #end loop over args.dg
             for j,p in enumerate(args.Lp):
                 rows = _printErrorConv(tSimNames, range(num_of_comps), 
-                    tableE[j], stepSizes, time, p)
+                    tableE[j], stepsizes, time, p)
                 with  open('%s-e-num_L%f_%f.csv'%(args.ofile_base,p,time),'wb') as file:
                     for row in rows:
                         file.write(row)
@@ -190,22 +219,14 @@ def map_generator(array, i=0):
 # Routines for numerical error estimation and output
 ################################################################################
 
-# helper method to sum over generator objects. This allows fast (?) summing
-# over very large arrays without allocating more memory
-def _sum(gen):
-    rsum = 0
-    for v in gen:
-        rsum = rsum+v
-    return rsum
-
 # returns descrete version of lp norms
+
 def Lp(errors, stepsizes, p):
     errors = np.absolute(errors)
     if p == float('infinity'):
         rerrors = np.max(errors)
     else:
         rerrors = np.power(
-            reduce(lambda x,y: x*y, stepsizes) * 
             np.apply_over_axes(
                 np.sum,
                 np.power(errors,p),
@@ -239,13 +260,13 @@ def _printErrorConv(Sims,Indices,errorData,stepSizes,time,p):
     print head4
     rString += [head4+"\n"]
     for i,simName in enumerate(Sims):
-        s = '{0:24} '.format(simName)
-        for j,comp in enumerate(Indices):
+        s = '{0:24} '.format(stepSizes[i])
+        for j, comp in enumerate(Indices):
             if not i == 0:
                 s = s+ "{0:<15.6f}  {1:<10.4f}".format(\
                     np.log2(errorData[i][j]),\
                     _conv(errorData[i-1][j],stepSizes[i-1],errorData[i][j],\
-                        stepSizes[i]))
+                        stepSizes[i])[0])
             else:
                 s = s+ "{0:<15.6f}  {1:10}".format(\
                     np.log2(errorData[i][j]),'')
@@ -254,7 +275,7 @@ def _printErrorConv(Sims,Indices,errorData,stepSizes,time,p):
     return rString
 
 def _conv(old,numSteps1,new,numSteps2):
-    return np.log(old/new)/np.log(numSteps2/numSteps1)
+    return np.log(old/new)/np.log(numSteps1/numSteps2)
 
 ################################################################################
 # Main parser
