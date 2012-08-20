@@ -45,30 +45,31 @@ class IBVP:
         validate = self.theGrid.validate
         computation_valid = True
         
-        while(computation_valid):
+        while(computation_valid and t < tstop):
             
-            if (self.iteration > self.maxIteration):
+            if self.iteration > self.maxIteration:
                 self.log.warning("Maximum number of iterations exceeded")
                 break
             
             dt = self.theSystem.timestep(u)
-            timeleft = tstop - t
-            if timeleft < dt:
-                dt = timeleft
-                self.log.warning(
-                    "Final time step: adjusting to dt = %.15f" % dt
-                    )
-                computation_valid = False
-            
-            if __debug__: 
-                self.log.debug("Using timestep dt = %f"%dt)
             
             if dt < self.minTimestep:
                 self.log.error(
                     'Exiting computation: timestep too small dt = %.15f'%dt
                 )
                 break
-             
+            
+            timeleft = tstop - t
+            if timeleft < dt:
+                dt = timeleft
+                self.log.warning(
+                        "Final time step: adjusting to dt = %.15f" % dt
+                    )
+                computation_valid = False
+            
+            if __debug__: 
+                self.log.debug("Using timestep dt = %f"%dt)
+            
             actions_do_actions = [action.will_run(self.iteration,u) 
                 for action in self.theActions]
             if any(actions_do_actions):
