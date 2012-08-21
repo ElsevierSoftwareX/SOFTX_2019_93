@@ -5,7 +5,7 @@ import h5py
 import argparse
 
 sys.path.append("../../EvolutionSBP/")
-from skyline.io import simulation_data as sd
+from coffee.io import simulation_data as sd
 
 def printTimes(simulationHDF):
     sims = simulationHDF.getSims()
