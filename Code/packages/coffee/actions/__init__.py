@@ -17,7 +17,7 @@ SimOutput -- Writes time_slices to HDD using h5py
 """
 
 from actions import Prototype, BlowupCutoff, GNUPlotter1D, GNUPlotter2D, \
-    Plotter, Info
+    Plotter, Info, C_Plotter
 from hdf_output import SimOutput
 
 del hdf_output

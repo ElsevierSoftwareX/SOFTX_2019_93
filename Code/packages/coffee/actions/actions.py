@@ -207,6 +207,52 @@ class Plotter(Prototype):
         draw()
         time.sleep(self.delay)
 
+class C_Plotter(Prototype):
+    """docstring for C_Plotter"""
+    def __init__(self, frequency = 1, xlim = (-1,1), ylim = (-1,1), \
+        findex = None, delay = 0.0):
+        super(C_Plotter, self).__init__(frequency)
+        if findex is not None:
+            self.index = findex
+            self.delay = delay
+            self.colors = ('b','g','r','c','m','y','k','coral') 
+            from numpy import asarray
+            ion()
+            fig = figure(1)
+            ax = fig.add_subplot(111)
+            self.lines = [ ax.add_line(Line2D(xlim,ylim)) for k in findex ] 
+            self.lines.append(ax.add_line(Line2D(xlim,ylim)))
+            ax.set_xlim(xlim)
+            ax.set_ylim(ylim)       
+            ax.grid(True)
+            self.axes = ax
+            fig.show()
+    
+    def _doit(self, it, u):
+        x = u.x
+        index = np.asarray(self.index)
+        f = u.fields[index]
+        mx = np.max(f.flat)
+        mn = np.min(f.flat)
+        self.axes.set_title("Iteration: %d, Time: %f" % (it,u.time))
+
+        l = len(self.index)
+        ioff()
+        C = f[0]*f[1] + 3.*(((f[4]*f[5]) - (f[3]*f[4]))**2)
+        for k in range(0,6):
+            line = self.lines[k]
+            line.set_xdata(x)
+            line.set_ydata(f[k])
+            line.set_color(self.colors[k])
+        line = self.lines[6]
+        line.set_xdata(x)
+        line.set_ydata(C)
+        line.set_color(self.colors[6])
+        
+        ion()
+        draw()
+        time.sleep(self.delay)
+
 
 class Info(Prototype):
     """docstring for info"""
