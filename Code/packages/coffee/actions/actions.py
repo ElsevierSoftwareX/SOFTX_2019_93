@@ -215,7 +215,7 @@ class C_Plotter(Prototype):
         if findex is not None:
             self.index = findex
             self.delay = delay
-            self.colors = ('b','g','r','c','m','y','k','coral') 
+            self.colors = ('b','g','r','c','m','y','k','coral', 'orange') 
             from numpy import asarray
             ion()
             fig = figure(1)
@@ -238,21 +238,20 @@ class C_Plotter(Prototype):
 
         l = len(self.index)
         ioff()
-        C = f[0]*f[1] + 3.*(((f[4]*f[5]) - (f[3]*f[4]))**2)
-        for k in range(0,6):
+        C = f[0]*f[1] + 3.*(((f[4]*f[5]) - (f[2]*f[3]))**2)
+        for k in range(0,8):
             line = self.lines[k]
             line.set_xdata(x)
             line.set_ydata(f[k])
             line.set_color(self.colors[k])
-        line = self.lines[6]
+        line = self.lines[8]
         line.set_xdata(x)
         line.set_ydata(C)
-        line.set_color(self.colors[6])
+        line.set_color(self.colors[8])
         
         ion()
         draw()
         time.sleep(self.delay)
-
 
 class Info(Prototype):
     """docstring for info"""
