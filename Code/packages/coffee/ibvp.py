@@ -11,6 +11,10 @@ Edited by Ben Whale and George Doulis.
 import math
 import logging
 
+import warnings
+
+warnings.simplefilter('error', RuntimeWarning)
+
 class IBVP:
     theActions  = None
     theGrid = None
@@ -88,7 +92,12 @@ class IBVP:
             if __debug__:
                 self.log.debug("About to advance for iteration = %i"%
                     self.iteration)
-            t, u = advance(t, u, dt)
+            try:
+                t, u = advance(t, u, dt)
+            except OverflowError as e:
+                print "Overflow error({0}): {1}".format(e.errno, e.strerror)
+                computation_valid = False
+
             self.iteration+=1
             if __debug__:
                 self.log.debug("time slice after advance = %s"%repr(u))

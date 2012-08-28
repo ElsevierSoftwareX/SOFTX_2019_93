@@ -4,6 +4,9 @@ from pylab import *
 import numpy as np
 import logging
 
+import os.path
+
+
 class Prototype(object):
     """The prototype of all actions. 
     
@@ -169,13 +172,16 @@ class GNUPlotter2D(Prototype):
 class Plotter(Prototype):
     """docstring for Plotter"""
     def __init__(self, frequency = 1, xlim = (-1,1), ylim = (-1,1), \
-        findex = None, delay = 0.0):
+        findex = None, delay = 0.0, dir = None):
         super(Plotter, self).__init__(frequency)
+        if dir is not None:
+            self.picnum = 0
+            self.path = os.path.expanduser(dir)
         if findex is not None:
             self.index = findex
             self.delay = delay
             self.colors = ('b','g','r','c','m','y','k','coral') 
-            from numpy import asarray
+#            from numpy import asarray
             ion()
             fig = figure(1)
             ax = fig.add_subplot(111)
@@ -204,7 +210,13 @@ class Plotter(Prototype):
             line.set_ydata(f[k])
             line.set_color(self.colors[k])
         ion()
+
         draw()
+
+        if dir is not None:
+            filename = self.path + ('/pic%06d.png'% self.picnum)
+            self.picnum = self.picnum + 1
+            savefig(filename, format = 'png')
         time.sleep(self.delay)
 
 class C_Plotter(Prototype):
@@ -258,3 +270,4 @@ class Info(Prototype):
     
     def _doit(self, it, u):
         print("Iteration: %d, Time: %f" % (it, u.time))
+
