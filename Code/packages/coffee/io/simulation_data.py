@@ -284,10 +284,10 @@ class SimulationHDF(object):
         if indices[1] - indices[0] == 1:
             dt = times_dg[indices[1]].value-time_dg.value
             if t<=time_dg.value<t+dt/2:
-                return i
+                return 0
         else:
-            if t == time.dg.value[0]:
-                return i
+            if t == time_dg.value[0]:
+                return 0
         #Check all other steps except final
         for i in range(1, len(indices)-1):
             time_dg = times_dg[indices[i]]
@@ -296,7 +296,7 @@ class SimulationHDF(object):
                 if t-dt/2<=time_dg.value<t+dt/2:
                     return i
             else:
-                if t == time.dg.value[0]:
+                if t == time_dg.value[0]:
                     return i
         i = len(indices)-1
         time_dg = times_dg[indices[i]]
@@ -305,7 +305,7 @@ class SimulationHDF(object):
             if t-dt/2<=time_dg.value<=t:
                 return i
         else:
-            if t == time.dg.value[0]:
+            if t == time_dg.value[0]:
                 return i
         return -1
         
