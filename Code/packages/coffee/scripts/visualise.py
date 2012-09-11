@@ -142,7 +142,7 @@ def anima(args):
 ################################################################################
 def _plot(args):
     
-    animationLength = 2
+    animationLength = 10
     framesPerSec = 60
         
     #Initialize gnuplot
@@ -181,13 +181,14 @@ def _plot(args):
                 g.reset()
                 for com in args.g:
                     g(com)
+                g('set yrange [-5:5]')
                 if not args.d:
                     g('set output "%s_%s_%s.%s"'%\
                         (args.ofile_base, sim.name, args.t, args.ofile_ext))
                 
                 group = sim.getDgType(dg)
                 # While there is a next frame...
-                while nextFrame_index<numOfFrames:
+                while nextFrame_index<stop_index+1:
                     # plot data
                     i = nextFrame_index
                     y = group[i]
