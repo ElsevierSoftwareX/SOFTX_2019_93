@@ -9,7 +9,7 @@ import numpy as np
 import abc
 import logging
 
-from ..mpi import mpiinterfaces
+#from ..mpi import mpiinterfaces
 #from tslices import timeslice
 #from solvers import Solver
 #from system import System
