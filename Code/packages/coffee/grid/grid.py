@@ -27,7 +27,10 @@ class Grid(object):
     
     __metaclass__ = abc.ABCMeta
     
-    def __init__(self, shape, bounds, name = "Grid", comparison = None):
+    def __init__(self, 
+        shape, bounds, name = "Grid", comparison = None
+        mpi = None):
+        self.mpi = mpi
         self.dim = len(shape)
         self.name = name
         self.log = logging.getLogger(name)
@@ -38,6 +41,22 @@ class Grid(object):
     def validate(self,u,time):
         return self
         
+    def send(self, data):
+        if self.mpi is None:
+            return NotImplemented("mpi not set")
+        self.mpi.send(data)
+        
+    def recv(self,data):
+        if self.mpi is None:
+            return NotImplemented("mpi not set")
+        self.mpi.recv(data)
+        return data
+        
+    def collect_data(self, data):
+        if self.mpi is None:
+            return NotImplemented("mpi not set")
+        return self.mpi.collet_data(self, data)
+    
     @abc.abstractproperty
     def axes(self): pass
     
@@ -62,22 +81,6 @@ class Grid(object):
                 ]
         return mesh
 
-class GridMpi(Grid):
-    """The abstract base class for Grid objects with mpi implementation."""
-    
-    def __init__(self, shape, bounds, name = "GridMpi", comparison = None):
-        super(GridMpi, self).__init__(shape, bounds, name, comparison)
-        
-    @abc.abstractmethod
-    def send(self,data): pass
-        
-    @abc.abstractmethod
-    def recv(self,data): pass
-        
-    @abc.abstractmethod    
-    def collect_data(self, data):
-        return data, self
-
 ################################################################################
 # Constructors for specific cases
 ################################################################################
@@ -85,11 +88,9 @@ class GridMpi(Grid):
 class UniformCart(Grid):
     """A Grid object to represent an ND interval of coordinates"""
     
-    def __init__(self, shape, bounds, comparison = None):
-        assert len(bounds) == len(shape)
+    def __init__(self, *args, **kwds):
         name = "UniformCart%s%s%s"%(shape,bounds,comparison)
-        super(UniformCart, self).__init__(shape, bounds, name=name, 
-            comparison = comparison)
+        super(UniformCart, self).__init__(*args, name=name, **kwds) 
             
     @property
     def axes(self):
@@ -110,13 +111,15 @@ class S2(Grid):
     """A Grid object representing the sphere. Note that
     theta is in [0, pi) and phi is in [0, 2*pi)."""
     
-    def __init__(self, shape, comparison = None):
-        assert len(shape) == 2
-        name = "S2%s%s"%(shape,comparison)
+    def __init__(self, shape, *args, **kwds):
+        if len(shape) != 2:
+            return Exception("Shape length is not 2")
+        name = "S2%s%s"%(shape, comparison)
         super(S2, self).__init__(shape, 
-            [[0, math.pi], [0, 2*math.pi]], 
+            [[0, math.pi], [0, 2*math.pi]],
+            *args,
             name=name, 
-            comparison = comparison
+            **kwds
             )
             
     @property
@@ -265,7 +268,12 @@ class Interval_2D_polar_mpi_PT(Grid):
         # Calculate grid
         mesh = np.meshgrid(axes[1],axes[0])
         grid = np.dstack((mesh[1],mesh[0]))
-        obj = Grid.__new__(cls,grid,step_sizes,name = name, comparison = comparison,\
+        obj = Grid.__new__(
+            cls,
+            grid,
+            step_sizes,
+            name = name,
+            comparison = comparison,
             log = log)
         obj.mpiinter = mpiinter
         obj.gridshape = gridshape
@@ -302,3 +310,4 @@ class Interval_2D_polar_mpi_PT(Grid):
     @property
     def phi(self):
         return 1
+
