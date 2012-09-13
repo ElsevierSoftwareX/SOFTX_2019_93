@@ -4,16 +4,13 @@ import numpy as np
 
 class OneD_even:
 
-    def __init__(self,array_length,ghost_points,log = None):
+    def __init__(self, array_length, ghost_points, log = None):
         self.comm = MPI.COMM_WORLD
         self.rank = self.comm.rank
         self.size = self.comm.size
         self.boundary, self.communicate, self.rebuild, self.domain = \
-            self._mpi_domain_slices(ghost_points,array_length)
-        if log is None:
-            self.log = logging.getLogger("OneD_even")
-        else:
-            self.log = log.getChild("OneD_even")
+            self._mpi_domain_slices(ghost_points, array_length)
+        self.log = logging.getLogger("OneD_even")
     
     def send(self,data):
         if self.communicate is None: return
