@@ -8,6 +8,9 @@ then.
 Additional development by Ben Whale.
 Copyright (c) 2010 University of Otago. All rights reserved.
 """
+
+import abc
+
 ###############################################################################
 # TimeSlice Abstract Base Class
 ##############################################################################
@@ -21,14 +24,14 @@ class ABCTimeSlice(object):
         self.time = time
         super(ABCTimeSlice, self).__init__(*args, **kwds)
 
-    @property
-    def numFields(self):
-        return len(self.data)
+    #@property
+    #def numFields(self):
+        #return len(self.data)
     
     def __repr__(self):
-        s = "TimeSlice(fields = %s, grid = %s, time = %s)"%(
+        s = "TimeSlice(data = %s, domain = %s, time = %s)"%(
             repr(self.data), 
-            repr(self.grid), 
+            repr(self.domain), 
             repr(self.time)
             )
         return s
@@ -37,13 +40,13 @@ class ABCTimeSlice(object):
     #def dx(self):
         #return self.step_sizes
       
-    @property
-    def step_sizes(self):
-        return self.domain.step_sizes
+    #@property
+    #def step_sizes(self):
+        #return self.domain.step_sizes
         
-    @property
-    def fields(self):
-        return self.data
+    #@property
+    #def fields(self):
+        #return self.data
 
     #@property        
     #def x(self):
@@ -61,29 +64,23 @@ class TimeSlice(ABCTimeSlice):
 
     def __add__(self, other):
         try:
-            rv = self.fields + other
+            rv = self.data + other
         except:
-            return NotImplemented(
+            return NotImplementedError(
                 "Addition of %s and %s is not implemented"
                 %(self, other)
                 )
         return TimeSlice(rv, self.domain, self.time)
 
     def __iadd__(self, other):
-        try:
-            self.fields += other
-        except:
-            return NotImplemented(
-                "In place addition of %s and %s is not implemented"
-                %(self, other)
-                )
+        self.data += other
         return self
 
     def __radd__(self, other):
         try:
-            rv = other + self.fields
+            rv = other + self.data
         except:
-            return NotImplemented(
+            return NotImplementedError(
                 "Reflected addition of %s and %s is not implemented"
                 %(other, self)
                 )
@@ -91,9 +88,9 @@ class TimeSlice(ABCTimeSlice):
 
     def __sub__(self, other):
         try:
-            rv = self.fields - other
+            rv = self.data - other
         except:
-            return NotImplemented(
+            return NotImplementedError(
                 "Subtraction of %s and %s is not implemented"
                 %(self, other)
                 )
@@ -101,9 +98,9 @@ class TimeSlice(ABCTimeSlice):
 
     def __isub__(self, other):
         try:
-            self.fields -= other
+            self.data -= other
         except:
-            return NotImplemented(
+            return NotImplementedError(
                 "In place subraction of %s and %s is not implemented"
                 %(self, other)
                 )
@@ -111,9 +108,9 @@ class TimeSlice(ABCTimeSlice):
 
     def __rsub__(self, other):
         try:
-            rv = other - self.fields
+            rv = other - self.data
         except:
-            return NotImplemented(
+            return NotImplementedError(
                 "Reflected subtraction of %s and %s is not implemented"
                 %(other, self)
                 )
@@ -121,9 +118,9 @@ class TimeSlice(ABCTimeSlice):
     
     def __mul__(self, other):
         try:
-            rv = self.fields * other
+            rv = self.data * other
         except:
-            return NotImplemented(
+            return NotImplementedError(
                 "Multiplicatio of %s and %s is not implemented"
                 %(self, other)
                 )
@@ -131,9 +128,9 @@ class TimeSlice(ABCTimeSlice):
 
     def __imul__(self, other):
         try:
-            self.fields *= other
+            self.data *= other
         except:
-            return NotImplemented(
+            return NotImplementedError(
                 "In place multiplicatio of %s and %s is not implemented"
                 %(self, other)
                 )
@@ -141,9 +138,9 @@ class TimeSlice(ABCTimeSlice):
 
     def __rmul__(self, other):
         try:
-            rv = other * self.fields
+            rv = other * self.data
         except:
-            return NotImplemented(
+            return NotImplementedError(
                 "Reflected multiplicatio of %s and %s is not implemented"
                 %(other, self)
                 )
@@ -151,9 +148,9 @@ class TimeSlice(ABCTimeSlice):
     
     def __div__(self, other):
         try:
-            rv = self.fields / other
+            rv = self.data / other
         except:
-            return NotImplemented(
+            return NotImplementedError(
                 "Division of %s and %s is not implemented"
                 %(self, other)
                 )
@@ -161,23 +158,23 @@ class TimeSlice(ABCTimeSlice):
 
     def __idiv__(self, other):
         try:
-            self.fields /= other
+            self.data /= other
         except:
-            return NotImplemented(
+            return NotImplementedError(
                 "In place division of %s and %s is not implemented"
                 %(self, other)
                 )
         return self
 
-    def __rdiv__(self, other):
-        try:
-            rv = other / self.fields
-        except:
-            return NotImplemented(
-                "Reflected division of %s and %s is not implemented"
-                %(other, self)
-                )
-        return TimeSlice(rv, self.domain, self.time)
+    #def __rdiv__(self, other):
+        #try:
+            #rv = other / self.data
+        #except:
+            #return NotImplementedError(
+                #"Reflected division of %s and %s is not implemented"
+                #%(other, self)
+                #)
+        #return TimeSlice(rv, self.domain, self.time)
     
     def __truediv__(self, other):
         return self.__div__(other)
@@ -190,9 +187,9 @@ class TimeSlice(ABCTimeSlice):
     
     def __pow__(self, other):
         try:
-            rv = self.fields ** other
+            rv = self.data ** other
         except:
-            return NotImplemented(
+            return NotImplementedError(
                 "Exponentiation of %s by %s is not implemented"
                 %(self, other)
                 )
@@ -200,10 +197,26 @@ class TimeSlice(ABCTimeSlice):
 
     def __ipow__(self, other):
         try:
-            self.fields **= other
+            self.data **= other
         except:
-            return NotImplemented(
+            return NotImplementedError(
                 "In place exponentiation of %s by %s is not implemented"
                 %(self, other)
                 )
         return self
+
+if __name__ == "__main__":
+    import numpy as np
+    t = TimeSlice(np.arange(10), np.linspace(0,1,11), 1.4)
+    print t
+    print t+2
+    print t/2
+    print t/2.0
+    print t.__truediv__(2)
+    print t*2
+    t += 2
+    print t
+    t -= 3.0
+    print t
+    t /= 2.0
+    print t
