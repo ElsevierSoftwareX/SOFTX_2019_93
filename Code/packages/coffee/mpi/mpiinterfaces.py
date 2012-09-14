@@ -1,131 +1,102 @@
 from mpi4py import MPI
 import logging
+import abc
 import numpy as np
 
-class OneD_even:
-
-    def __init__(self, array_length, ghost_points, log = None):
-        self.comm = MPI.COMM_WORLD
-        self.rank = self.comm.rank
-        self.size = self.comm.size
-        self.boundary, self.communicate, self.rebuild, self.domain = \
-            self._mpi_domain_slices(ghost_points, array_length)
-        self.log = logging.getLogger("OneD_even")
+###############################################################################
+# Abstract Base Class for MPI Interfaces
+###############################################################################
+class MPIInterface(object):
+     
+    __metaclass__ = abc.ABCMeta
     
-    def send(self,data):
-        if self.communicate is None: return
-        for comm_info in self.communicate:
-            dest_offset, send_slice = comm_info[0]
-            self.comm.send(data[:,send_slice],dest = self.rank+dest_offset)
-            
-    def recv(self,data):
-        if self.communicate is None: return
-        for comm_info in self.communicate:
-            dest_offset, recv_slice = comm_info[1]
-            data[:,recv_slice] = \
-                self.comm.recv(source = self.rank+dest_offset)
-    
-    def collect_data(self,domain,data):
-        #If there are no partitions of the domain we don't need to collect
-        if self.size == 1:
-            return data
-        #First get the data that needs to be sent
-        field = data[:,self.rebuild]
-        #Second gather the data
-        fields = self.mpicomm.gather(field, root = 0)
-        if self.rank == 0:
-            array_shape = reduce(lambda x,y:x+y,[f.shape[1] for f in fields])
-            if __debug__:
-                self.log.debug("Collected array length is %i"%array_shape)
-            rdata = np.zeros((5,array_shape))
-            start_i = 0
-            for i in range(len(fields)):
-                f = fields[i]
-                fshape = f.shape[1]
-                rdata[:,start_i:fshape+start_i] = f
-                start_i = fshape+start_i
-            return rdata
-        else: 
-            return None
-    
-    def _mpi_domain_indices(self,array_length):
-        if __debug__:
-            self.log.debug("Calculating start and end indices for subdomain")
-            self.log.debug("Array_length is %i"%array_length)
-        q,r = divmod(array_length, self.size)
-        if __debug__:
-            self.log.debug("q = %i, r = %i"%(q,r))
-        s = self.rank*q + min(self.rank,r)
-        e = s + q
-        if self.rank < r:
-            if __debug__:
-                self.log.debug("Self.mpirank > r so we add one to end point")
-            e = e + 1
-        if __debug__:
-            self.log.debug("Start index = %i, End index = %i"%(s,e))
-        return s,e
-        
-    def _mpi_domain_slices(self,num_ghost_points,array_length):
-        if self.size == 1:
-            return (None,None,slice(None),slice(None))
-        s,e = self._domain_indices(array_length)
-        if self.mpirank == 0:
-            return (-1,\
-                [[(1,slice(-2*gp,-gp)),(1,slice(-gp,None))]],\
-                slice(s,e),\
-                slice(s,e+gp))
-        elif self.mpirank == self.mpisize-1:
-            return (1,\
-                [[(-1,slice(gp,2*gp)),(-1,slice(None,gp))]],\
-                slice(s,e),\
-                slice(s - gp, e))
-        else:
-            return (0,\
-                [[(1,slice(-2*gp,-gp)),(1,slice(-gp,None))],\
-                    [(-1,slice(gp,2*gp)),(-1,slice(None,gp))]],\
-                slice(s,e),\
-                slice(s-gp, e+gp))
+    def __init__(self, mpi_comm, *args, **kwds):
+        """Arguments:
+        mpi_comm: an MPI_COMM object wrapped by mpi4py."""
+        self.comm = mpi_comm
+        self.log = logging.getLogger("MPIInterface")
+        super(MPIInterface, self).__init__(*args, **kwds)
 
-class PT_2D_1D:
-    """This class implements the mpiinterfaces api for a 2D grid in which
-    only one dimension, the first, has been divided over multiple cpus."""
+    def sendrecv_replace(self, data):
+        neighbours = self._get_neighbours_dataslice(data.shape)
+        for source, dest, data_slice in neighbours:
+            sr_data = data[data_slice]
+            self.comm.Sendrevc_replace(
+                sr_data,
+                dest = dest,
+                source = self.comm.rank
+                )
 
-    def __init__(self,array_length):
-        self.comm = MPI.COMM_WORLD
-        self.rank = self.comm.rank
-        self.size = self.comm.size
-        if __debug__:
-            self.log = logging.getLogger("PT_2D_1D")
-        self.rebuild,self.domain = self._mpi_domain_slices(1,array_length)
+    def send(self, data):
+        neighbours = self._get_neighbours_dataslice(data.shape)
+        for source, dest, data_slice in neighbours:
+            s_data = data[data_slice]
+            self.comm.Send(
+                sr_data,
+                dest = dest,
+                )
+        
+    def recv(self, data):
+        neighbours = self._get_neighbours_dataslice(data.shape)
+        for source, dest, data_slice in neighbours:
+            r_data = data[data_slice]
+            self.comm.Recv(
+                r_data,
+                source = source,
+                )
 
-        
-    def _communication_required(self):
-        return self.size != 1
-            
-    def get_edge(self,data):
-        if self._communication_required():
-            if self.rank == 0:
-                v = np.empty_like(data[-1])
-                self.comm.send(data[-1],dest = 1)
-                v = self.comm.recv(source = 1)
-                rv = [(slice(-1,None),v)]
-            elif self.rank == self.size -1:
-                v = np.empty_like(data[0])
-                self.comm.send(data[0],dest = self.rank-1)
-                v = self.comm.recv(source = self.rank-1)
-                rv = [(slice(0,1),v)]
-            else:
-                v = np.empty_like(data[0])
-                w = np.empty_like(data[-1])
-                self.comm.send(data[0], dest = self.rank-1)
-                self.comm.send(data[-1], dest = self.rank+1)
-                v = self.comm.recv(source = self.rank-1)
-                w = self.comm.recv(source = self.rank+1)
-                rv = [(slice(0,1),v),(slice(-1,None),w)]
-        else:
-            rv = []
-        return rv
-        
+    @abc.abstractmethod
+    def _get_neighbours_dataslice(self, shape):
+        """This method should return a interable of tuples. Each tuple
+        is (source, dest, slice). Source is this process, so in almost all
+        cases it will be self.mpi.rank. dest is the rank of the neighbour.
+        slice is a slice object that extracts the data to be sent, or the
+        portion of data into which data will be written."""
+      
+###############################################################################
+# Concrete implementations
+###############################################################################
+class EvenCart(MPIInterface):
+    """A wrapper for MPI.Cartcomm that manages the selection of the relvant
+    portion of a data field for send/recv mpi commands. data.shape must match
+    with MPI.Cartcomm.dim and MPI.Cartcomm.dims. This class uses
+    MPI.Cartcomm.Shift to ensure that periodicity of grids is accounted for.
+
+    It is recommended that if any dimension is periodic that the sendrecv
+    method is used since this relies on MPI_SENDRECV that will avoid
+    blocking."""
+
+    def __init__(self, ghost_points, *args, **kwds):
+        """Arguments:
+        ghost_points: an integer that describes how many overlapping grid
+        points each grid contains on each boundary.
+        mpi_cart_comm: an MPI_CART object wrapped by mpi4py. This object
+        describes the topology of the processors."""
+        self.gh = ghost_points
+        super(EvenCart, self).__init__(*args, **kwds)
+
+    def _get_neighbours_dataslice(self, shape):
+        dims = self.comm.Get_dim()
+        neighbours = []
+        for d in range(dims):
+            source, dest = self.comm.Shift(d, 1)
+            if dest is not None:
+                data_slice = _get_dataslice(shape, d, 1)  
+                neigbours += [(dest, data_slice)]
+            source, dest = self.comm.Shift(d, -1)
+            if dest is not None:
+                data_slice = _get_dataslice(shape, d, -1)  
+                neigbours += [(dest, data_slice)]
+        return neighbours
+
+    def _get_dataslice(shape, dim, direction):
+        data_slice = [slice(None,None,None) for d in shape]
+        if direction == 1:
+            data_slice[dim] = slice(-self.gh, None, None)
+        elif direction == -1:
+            data_slice[dim] = slice(self.gh, None, None)
+        return tuple(data_slice)
+
     def collect_data(self,data):
         #If there are no partitions of the domain we don't need to collect
         if not self._communication_required():
@@ -158,33 +129,3 @@ class PT_2D_1D:
             return rdata
         else: 
             return None
-        
-        
-    def _mpi_domain_indices(self,array_length):
-        if __debug__:
-            self.log.debug("Calculating start and end indices for subdomain")
-            self.log.debug("Array_length is %i"%array_length)
-        q,r = divmod(array_length, self.size)
-        if __debug__:
-            self.log.debug("q = %i, r = %i"%(q,r))
-        s = self.rank*q + min(self.rank,r)
-        e = s + q
-        if self.rank < r:
-            if __debug__:
-                self.log.debug("Self.mpirank < r so we add one to end point")
-            e = e + 1
-        if __debug__:
-            self.log.debug("Start index = %i, End index = %i"%(s,e))
-        return s,e
-        
-    def _mpi_domain_slices(self,num_ghost_points,array_length):
-        if self._communication_required():
-            s,e = self._mpi_domain_indices(array_length)
-            if self.rank == 0:
-                return [slice(None,None),slice(s,e)]
-            elif self.rank == self.size-1:
-                return [slice(1,None),slice(s-1,e)]
-            else:
-                return [slice(1,None),slice(s-1,e)]
-        else:
-            return [slice(None),slice(None)]
