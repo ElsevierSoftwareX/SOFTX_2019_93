@@ -27,24 +27,26 @@ class Grid(object):
         self.shape = shape
         self.bounds = bounds
         
-    def validate(self,u,time):
-        return self
-       
-    def sendrecv(self, data):
+    def communicate(self, data):
         if self.mpi is None:
             return
-        self.mpi.sendrecv(data)
+        return self.mpi.communicate(self, data)
 
-    def send(self, data):
-        if self.mpi is None:
-            return 
-        self.mpi.send(data)
+    #def sendrecv(self, data):
+        #if self.mpi is None:
+            #return
+        #self.mpi.sendrecv(data)
+
+    #def send(self, data):
+        #if self.mpi is None:
+            #return 
+        #self.mpi.send(data)
         
-    def recv(self,data):
-        if self.mpi is None:
-            return 
-        self.mpi.recv(data)
-        return data
+    #def recv(self,data):
+        #if self.mpi is None:
+            #return 
+        #self.mpi.recv(data)
+        #return data
         
     def collect_data(self, data):
         if self.mpi is None:
@@ -53,9 +55,6 @@ class Grid(object):
     
     @abc.abstractproperty
     def axes(self): pass
-    
-    @abc.abstractproperty
-    def step_sizes(self): pass
     
     @abc.abstractproperty
     def step_sizes(self): pass
@@ -82,24 +81,42 @@ class Grid(object):
 class UniformCart(Grid):
     """A Grid object to represent an ND interval of coordinates"""
     
-    def __init__(self, *args, **kwds):
+    def __init__(self, shape, *args, mpi_comm=None, **kwds):
+        mpi = mpiinterfaces.EvenCart(shape, mpi_comm)
         name = "UniformCart%s%s%s"%(shape,bounds,comparison)
-        super(UniformCart, self).__init__(*args, name=name, **kwds) 
-            
-    @property
-    def axes(self):
+        super(UniformCart, self).__init__(
+            shape, *args,
+            name=name, mpi=mpi, **kwds
+            ) 
         axes = [
             np.linspace(
                 self.bounds[i][0], self.bounds[i][1], self.shape[i]+1
             )
             for i in range(len(self.bounds))
             ]
-        return axes
+        self.step_sizes = [axis[1]-axis[0] for axis in axes]
+        self.axes = [axis[self.mpi.subdomain] for axis in axes]
+
+    #@property
+    #def axes(self):
+        #axes = [
+            #np.linspace(
+                #self.bounds[i][0], self.bounds[i][1], self.shape[i]+1
+            #)[self.mpi.subdomian]
+            #for i in range(len(self.bounds))
+            #]
+        #return axes
         
-    @property
-    def step_sizes(self):
-        step_sizes = [axis[1]-axis[0] for axis in self.axes]
-        return step_sizes
+    #@property
+    #def step_sizes(self):
+        #axes = [
+            #np.linspace(
+                #self.bounds[i][0], self.bounds[i][1], self.shape[i]+1
+            #)
+            #for i in range(len(self.bounds))
+            #]
+        #step_sizes = [axis[1]-axis[0] for axis in axes]
+        #return step_sizes
          
 class S2(Grid):
     """A Grid object representing the sphere. Note that
