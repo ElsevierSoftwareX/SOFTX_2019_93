@@ -42,7 +42,6 @@ class IBVP:
         if __debug__:    
             self.log.debug("Initial data is = %s"%repr(u))
         advance = self.theSolver.advance
-        validate = self.theGrid.validate
         computation_valid = True
         
         while(computation_valid and t < tstop):
