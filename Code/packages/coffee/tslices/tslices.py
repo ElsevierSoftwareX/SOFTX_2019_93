@@ -10,6 +10,8 @@ Copyright (c) 2010 University of Otago. All rights reserved.
 """
 
 import abc
+import logging
+import functools
 
 ###############################################################################
 # TimeSlice Abstract Base Class
@@ -17,11 +19,16 @@ import abc
 class ABCTimeSlice(object):
 
     __metaclass__ = abc.ABCMeta
-    
-    def __init__(self, data, domain, time, *args, **kwds):
+ 
+    def __init__(self, data, domain, time, name=None, *args, **kwds):
         self.data = data
         self.domain = domain
         self.time = time
+        if name is None:
+            self.name = "ABCTimeSlice"
+        else:
+            self.name = name
+        self.log = logging.getLogger(self.name)
         super(ABCTimeSlice, self).__init__(*args, **kwds)
 
     #@property
@@ -29,7 +36,8 @@ class ABCTimeSlice(object):
         #return len(self.data)
     
     def __repr__(self):
-        s = "TimeSlice(data = %s, domain = %s, time = %s)"%(
+        s = "%s(data = %s, domain = %s, time = %s)"%(
+            self.name, 
             repr(self.data), 
             repr(self.domain), 
             repr(self.time)
@@ -53,7 +61,20 @@ class ABCTimeSlice(object):
         #return self.domain
 
     def communicate(self):
-        self.domain.sendrecv(self.data)
+        return self.domain.communicate(self.data)
+
+    def collect_data(self):
+        data_all = self.domain.collect_data(self.data)
+        domain_all = self.domain.full_grid
+        r_tslice = self.__class__(
+            data_all, domain_all, self.time
+            )
+        if __debug__:
+            from mpi4py import MPI
+            self.log.debug(
+                "r_tslice is %s, rank is %s"%
+                (repr(r_tslice), MPI.COMM_WORLD.rank)
+                )
 
 ###############################################################################
 # Concrete implementations
@@ -61,6 +82,24 @@ class ABCTimeSlice(object):
 class TimeSlice(ABCTimeSlice):
     """This implementation assumes that fields is an object that understands
     addtion."""   
+
+    def __init__(self, *args, **kwds):
+        if "name" not in kwds:
+            kwds["name"] = "TimeSlice"
+        super(TimeSlice, self).__init__(*args, **kwds) 
+
+    #def _check_valid(other):
+        #if isinstance(other, ABCTimeSlice):
+            #if other.domian != self.domain and self.time != other.time:
+                #return ValueError("%s and %s cannot be added as they either
+                #have different domains or differnt times"%(
+                #repr(self), repr(other)
+                #)
+
+    #def require_valid_tslice(f):
+        #@functools.wraps
+        #def is_valid_for_arithmatic(f):
+            #def wrapper(*args, **kwds):
 
     def __add__(self, other):
         try:
@@ -70,7 +109,7 @@ class TimeSlice(ABCTimeSlice):
                 "Addition of %s and %s is not implemented"
                 %(self, other)
                 )
-        return TimeSlice(rv, self.domain, self.time)
+        return TimeSlice(rv, self.domain, self.time, name=self.name)
 
     def __iadd__(self, other):
         self.data += other
@@ -78,13 +117,13 @@ class TimeSlice(ABCTimeSlice):
 
     def __radd__(self, other):
         try:
-            rv = other + self.data
+            r_time_slice = other + self.data
         except:
             return NotImplementedError(
                 "Reflected addition of %s and %s is not implemented"
                 %(other, self)
                 )
-        return TimeSlice(rv, self.domain, self.time)
+        return r_time_slice
 
     def __sub__(self, other):
         try:
@@ -108,13 +147,13 @@ class TimeSlice(ABCTimeSlice):
 
     def __rsub__(self, other):
         try:
-            rv = other - self.data
+            r_time_slice = other - self.data
         except:
             return NotImplementedError(
                 "Reflected subtraction of %s and %s is not implemented"
                 %(other, self)
                 )
-        return TimeSlice(rv, self.domain, self.time)
+        return r_time_slice
     
     def __mul__(self, other):
         try:
@@ -138,13 +177,13 @@ class TimeSlice(ABCTimeSlice):
 
     def __rmul__(self, other):
         try:
-            rv = other * self.data
+            r_time_slice = other * self.data
         except:
             return NotImplementedError(
                 "Reflected multiplicatio of %s and %s is not implemented"
                 %(other, self)
                 )
-        return TimeSlice(rv, self.domain, self.time)
+        return r_time_slice
     
     def __div__(self, other):
         try:
@@ -182,8 +221,8 @@ class TimeSlice(ABCTimeSlice):
     def __itruediv__(self, other):
         return self.idiv(other)
 
-    def __rtruediv__(self, other):
-        return self.__rdiv__(other) 
+    #def __rtruediv__(self, other):
+        #return self.__rdiv__(other) 
     
     def __pow__(self, other):
         try:
