@@ -38,14 +38,16 @@ class IBVP:
         u = self.theSystem.initial_data(t, self.theGrid)
         self.log.info("Running system %s"%str(self.theSystem))
         self.log.info("Grid = %s"%str(self.theGrid))
-        self.log.info("Using spacestep dx=%s"%repr(u.dx))
+        self.log.info("Stepsizes = %s"%repr(u.domain.step_sizes))
         if __debug__:    
             self.log.debug("Initial data is = %s"%repr(u))
         advance = self.theSolver.advance
         computation_valid = True
         
         while(computation_valid and t < tstop):
-            
+            if __debug__:
+                self.log.debug("Beginning new iteration")
+
             if self.iteration > self.maxIteration:
                 self.log.warning("Maximum number of iterations exceeded")
                 break
@@ -71,16 +73,21 @@ class IBVP:
             
             actions_do_actions = [action.will_run(self.iteration,u) 
                 for action in self.theActions]
+            #Ideally u.collect_data() should only be executed if there
+            #actions that will run. because of single process access to
+            #actions this causes an issue.
+            #Some thought is required to fix this problem.
+            tslice = u.collect_data()
             if any(actions_do_actions):
-                tslice = u.collect_data()
-                for i, action in enumerate(self.theActions):
-                    if actions_do_actions[i]:
-                        if __debug__:
-                            self.log.debug(
-                                "Running action %s at iteration %i"%\
-                                 (str(action), self.iteration)
-                                 )
-                        action(self.iteration, tslice)
+                if tslice is not None:
+                    for i, action in enumerate(self.theActions):
+                        if actions_do_actions[i]:
+                            if __debug__:
+                                self.log.debug(
+                                    "Running action %s at iteration %i"%\
+                                     (str(action), self.iteration)
+                                     )
+                            action(self.iteration, tslice)
 
             if __debug__:
                 self.log.debug("About to advance for iteration = %i"%
