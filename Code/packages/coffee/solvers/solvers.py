@@ -77,26 +77,22 @@ class RungeKutta4(ABCSolver):
         eqn = self.system
         u = u0
         t = t0
-        k = eqn.evaluate(t, u, intStep = 1)
-        k.communicate()
+        k = eqn.evaluate(t, u)
         u1 = u0 + (dt/6.0)*k
 
         u = u0 + dt/2.0*k
         t = t0 + dt/2.0
-        k = eqn.evaluate(t, u, intStep = 2)
-        k.communicate()
+        k = eqn.evaluate(t, u)
         u1 += dt/3.0*k
 
         u = u0 + dt/2.0*k
         t = t0 + dt/2.0
-        k = eqn.evaluate(t, u, intStep = 3)
-        k.communicate()
+        k = eqn.evaluate(t, u)
         u1 += dt/3.0*k
 
         u = u0 + dt*k
         t = t0 + dt
-        k = eqn.evaluate(t, u, intStep = None)
-        k.communicate()
+        k = eqn.evaluate(t, u)
         u1 += dt/6.0*k
         u1.time = t
         
@@ -127,31 +123,27 @@ class RungeKutta4Dirichlet(ABCSolver):
         u = u0
         t = t0
         k = eqn.evaluate(t, u, intStep = 1)
-        k.communicate()
         u1 = u0 + (dt/6.0)*k
         u1 = eqn.dirichlet_boundary(u1, intStep = 1)
 
         u = u0 + dt/2.0*k
         t = t0 + dt/2.0
         k = eqn.evaluate(t, u, intStep = 2)
-        k.communicate()
         u1 += dt/3.0*k
-        u1 = eqn.dirichlet_boundary(u1,intStep = 2)
+        u1 = eqn.dirichlet_boundary(u1, intStep = 2)
 
         u = u0 + dt/2.0*k
         t = t0 + dt/2.0
         k = eqn.evaluate(t, u, intStep = 3)
-        k.communicate()
         u1 += dt/3.0*k
-        u1 = eqn.dirichlet_boundary(u1,intStep = 3)
+        u1 = eqn.dirichlet_boundary(u1, intStep = 3)
 
         u = u0 + dt*k
         t = t0 + dt
         k = eqn.evaluate(t, u, intStep = None)
-        k.communicate()
         u1 += dt/6.0*k
         u1.time = t
-        u1 = eqn.dirichlet_boundary(u1,intStep = None)
+        u1 = eqn.dirichlet_boundary(u1, intStep = None)
         
         return (t,u1)
 
