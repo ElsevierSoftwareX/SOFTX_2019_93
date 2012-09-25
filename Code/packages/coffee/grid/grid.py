@@ -95,9 +95,13 @@ class UniformCart(ABCGrid):
     
     def __init__(self, 
             shape, bounds, 
-            mpi_comm=None, comparison=None, name=None,
+            mpi_comm=None, comparison=None, name=None, ghost_points=1,
             *args, **kwds):
-        mpi = mpiinterfaces.EvenCart(shape, mpi_comm)
+        mpi = mpiinterfaces.EvenCart(
+            shape, 
+            mpi_comm=mpi_comm, 
+            ghost_points=ghost_points
+            )
         if name is None:
             name = "UniformCart%s%s%s"%(shape, bounds, comparison)
         super(UniformCart, self).__init__(

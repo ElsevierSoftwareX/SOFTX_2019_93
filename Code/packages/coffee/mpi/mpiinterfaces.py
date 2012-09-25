@@ -41,10 +41,11 @@ class MPIInterface(object):
 ###############################################################################
 class EvenCart(MPIInterface):
 
-    def __init__(self, domain, *args, **kwds):
+    def __init__(self, domain, ghost_points=1, *args, **kwds):
         super(EvenCart, self).__init__(*args, **kwds)
         self.log = logging.getLogger("EvenCart")
         self.domain = domain
+        self.gp = ghost_points
         self.domain_mapping = self._make_domain_mappings(domain)
 
     def _make_domain_mappings(self, domain):
@@ -116,15 +117,24 @@ class EvenCart(MPIInterface):
         if __debug__:
             self.log.debug("Calculating start and end indices for  subdomain")
             self.log.debug("Array_length is %i"%array_length)
+        #divide domain into appropriate parts
         q,r = divmod(array_length, num_ranks)
         if __debug__:
             self.log.debug("q = %i, r = %i"%(q,r))
+        #use the rank to details which part is relevant for this process
         s = rank * q + min(rank, r)
         e = s + q
+        #Adjust e to account for min(rank, r) term, which spreads the remainder
+        #over the appropriate number of processes
         if rank < r:
             if __debug__:
                 self.log.debug("rank > r so we add one to end point")
             e = e + 1
+        #add in ghost_points if we can
+        if s>0:
+            s = s-1
+        if e<array_length-1:
+            e = e+1
         if __debug__:
             self.log.debug("Start index = %i, End index = %i"%(s,e))
         return slice(s, e, None)
