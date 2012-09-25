@@ -70,11 +70,10 @@ class ABCTimeSlice(object):
             data_all, domain_all, self.time
             )
         if __debug__:
-            from mpi4py import MPI
             self.log.debug(
-                "r_tslice is %s, rank is %s"%
-                (repr(r_tslice), MPI.COMM_WORLD.rank)
+                "r_tslice is %s"%(repr(r_tslice))
                 )
+        return r_tslice
 
 ###############################################################################
 # Concrete implementations
