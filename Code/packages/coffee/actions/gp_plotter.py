@@ -2,7 +2,7 @@ import Gnuplot
 import time
 import os
 import numpy as np
-#import logging
+import logging
 
 from coffee.actions import Prototype
 
@@ -27,34 +27,43 @@ class Plotter1D(Prototype):
         if self.title is None:
             self.title = r"Time %f"
         self.system = system
-        #self.log = logging.getLogger("GNUplotter")
+        self.log = logging.getLogger("GNUplotter")
         try:
             if kwds['data_function'] is not None:
                 self.datafunc = kwds.pop('data_function') 
             else:
-                self.datafunc = lambda y,x,z:x.fields
+                self.datafunc = lambda y,x,z:x.data
         except:
-            self.datafunc = lambda y,x,z:x.fields
-#        if __debug__:
-#            self.log.debug("Initialising plotter...")
+            self.datafunc = lambda y,x,z:x.data
+        if __debug__:
+            self.log.debug("Initialising plotter...")
         self.Device = Gnuplot.Gnuplot()
         g = self.Device
         for arg in args:
             g(arg)
-#        if __debug__:
-#            self.log.debug("Done.-")
+        if __debug__:
+            self.log.debug("Done.-")
 
     def _doit(self, it, u):
         g = self.Device
-        x = u.grid.axes[0]
+        x = u.domain.axes[0]
 #        if __debug__:
 #            self.log.debug("Plotting iteration %i with data %s"%(it,str(u)))
         f = np.atleast_2d(self.datafunc(it,u,self.system))
-#        if __debug__:
-#            self.log.debug("Data after processing by self.datafunc is %s"%f)
+        if __debug__:
+            self.log.debug("Data after processing by self.datafunc is %s"%f)
+            self.log.debug(
+                "Shape of domain to plot over is %s"%x.shape
+                )
+            self.log.debug("Domain to plot over is %s"%repr(x))
         graphs = []
         g(self.title%u.time)
-        for i,val in enumerate(f):
+        for i, val in enumerate(f):
+            if __debug__:
+                self.log.debug(
+                    "Shape of data to be plotted is %s"%val.shape
+                    )
+                self.log.debug("Data to be plotted is %s"%repr(val))
             graphs += [Gnuplot.Data(x, val,\
                 title = "Component %i"%i)]
         g.plot(*graphs)
@@ -87,9 +96,9 @@ class Plotter2D(Prototype):
             if kwds['data_function'] is not None:
                 self.datafunc = kwds.pop('data_function') 
             else:
-                self.datafunc = lambda y,x,z:x.fields
+                self.datafunc = lambda y,x,z:x.data
         except:
-            self.datafunc = lambda y,x,z:x.fields
+            self.datafunc = lambda y,x,z:x.data
 
 #        if 'start' in kwds:
 #            start = kwds.pop('start')

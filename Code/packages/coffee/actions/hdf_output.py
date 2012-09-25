@@ -16,9 +16,9 @@ class SimOutput(Prototype):
     as an attribute of SimOutput.
     
     The existing subclasses of SimOutputType are:
-    Data -- write tslice.fields to a datagroup
+    Data -- write tslice.data to a datagroup
     Exact -- calls system.exactValue(tslice.time,tslice.domain) and outputs the 
-             fields of the resulting tslice to a datagroup
+            .data of the resulting tslice to a datagroup
     Times -- writes tslice.time to a datagroup
     TimeStep -- writes the time step associated to tslice to a datagroup. This 
                 is currently implemented by calling system.timestep(u)
@@ -56,7 +56,7 @@ class SimOutput(Prototype):
         self.hdf = hdf_file
         self.solver = solver
         self.system = theSystem
-        self.grid = theInterval
+        self.domain = theInterval
         self.actions = actionTypes
         self.overwrite = overwrite
         self.cmp_ = cmp_
@@ -105,7 +105,7 @@ class SimOutput(Prototype):
 
         def __call__(self,it,u):
             dg = self.data_group
-            dg[it] = u.fields
+            dg[it] = u.data
             super(SimOutput.Data,self).__call__(it,u)
 
     class Exact(SimOutputType):
@@ -115,7 +115,7 @@ class SimOutput(Prototype):
         def __call__(self,it,u):
             dg = self.data_group
             parent = self.parent
-            dg[it] = parent.system.exact_value(u.time,u.x).fields
+            dg[it] = parent.system.exact_value(u.time, u.domain).data
             super(SimOutput.Exact, self).__call__(it, u)
 
     class Times(SimOutputType):
@@ -142,11 +142,11 @@ class SimOutput(Prototype):
         
         def __call__(self,it,u):
             dg = self.data_group
-            axes = u.grid.axes
+            axes = u.domain.axes
             axes_shape = tuple([axis.size for axis in axes])
             axes_flat = np.empty(
                 (reduce(lambda x,y: x+y, axes_shape),),
-                dtype=u.grid.axes[0].dtype
+                dtype=u.domain.axes[0].dtype
                 )
             start = 0
             for i, axis in enumerate(axes):
@@ -154,9 +154,9 @@ class SimOutput(Prototype):
                 start = start + axes_shape[i]
             dg[it] = axes_flat
             dg[it].attrs["axes_shape"] = axes_shape
-            dg[it].attrs["shape"] = u.grid.shape
-            dg[it].attrs["bounds"] = u.grid.bounds
-            dg[it].attrs["comparison"] = u.grid.comparison
+            dg[it].attrs["shape"] = u.domain.shape
+            dg[it].attrs["bounds"] = u.domain.bounds
+            dg[it].attrs["comparison"] = u.domain.comparison
             super(SimOutput.Domains,self).__call__(it,u)
 
     class Constraints(SimOutputType):
@@ -185,11 +185,11 @@ class SimOutput(Prototype):
         
         groupname = systemD
         
-        def setup(self,parent):
+        def setup(self, parent):
             super(SimOutput.System,self).setup(parent)
             g = self.data_group.group
             psystem = np.asarray(repr(parent.system))
-            pgrid = np.asarray(repr(parent.grid))
+            pgrid = np.asarray(repr(parent.domain))
             psolver = np.asarray(repr(parent.solver))
             pcmp = np.asarray(repr(parent.cmp_))
             pnumvar = np.asarray(repr(parent.system.numvar))
