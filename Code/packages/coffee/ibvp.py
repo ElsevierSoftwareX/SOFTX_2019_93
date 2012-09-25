@@ -71,15 +71,23 @@ class IBVP:
             if __debug__: 
                 self.log.debug("Using timestep dt = %f"%dt)
             
-            actions_do_actions = [action.will_run(self.iteration,u) 
-                for action in self.theActions]
             #Ideally u.collect_data() should only be executed if there
             #actions that will run. because of single process access to
             #actions this causes an issue.
             #Some thought is required to fix this problem.
             tslice = u.collect_data()
-            if any(actions_do_actions):
-                if tslice is not None:
+            if tslice is not None:
+                if __debug__:
+                    self.log.debug(
+                        "tslice is not None. Computing if actions will run"
+                        )
+                actions_do_actions = [
+                    action.will_run(self.iteration, tslice) 
+                    for action in self.theActions
+                    ]
+                if any(actions_do_actions):
+                    if __debug__:
+                        self.log.debug("Some actions will run")
                     for i, action in enumerate(self.theActions):
                         if actions_do_actions[i]:
                             if __debug__:
