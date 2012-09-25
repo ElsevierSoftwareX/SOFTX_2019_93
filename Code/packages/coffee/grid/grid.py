@@ -97,8 +97,9 @@ class UniformCart(ABCGrid):
             shape, bounds, 
             mpi_comm=None, comparison=None, name=None, ghost_points=1,
             *args, **kwds):
+        _shape = tuple([s+1 for s in shape])
         mpi = mpiinterfaces.EvenCart(
-            shape, 
+            _shape, 
             mpi_comm=mpi_comm, 
             ghost_points=ghost_points
             )
