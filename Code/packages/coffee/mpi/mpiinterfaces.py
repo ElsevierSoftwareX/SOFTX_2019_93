@@ -71,25 +71,46 @@ class EvenCart(MPIInterface):
             source, dest = self.comm.Shift(d, 1)
             if __debug__:
                 self.log.debug("source=%d, dest=%d"%(source, dest))
-            if dest is not None:
-                data_slice = self._get_dataslice(shape, d, 1)  
-                neighbours += [(source, dest, data_slice)]
+            send_slice, recv_slice = self._get_dataslice(
+                source, dest,
+                shape, d, 1
+                )
+            neighbours += [(source, dest, send_slice, recv_slice)]
             source, dest = self.comm.Shift(d, -1)
-            if dest is not None:
-                data_slice = self._get_dataslice(shape, d, -1)  
-                neighbours += [(source, dest, data_slice)]
+            send_slice, recv_slice = self._get_dataslice(
+                source, dest,
+                shape, d, -1
+                )
+            neighbours += [(source, dest, send_slice, recv_slice)]
         if __debug__:
             self.log.debug("neighbour_slices is %s"%neighbours)
         return neighbours
 
-    def _get_dataslice(self, shape, dim, direction):
-        data_slice = [slice(None,None,None) for d in shape]
+    def _get_dataslice(self, source, dest, shape, dim, direction):
+        if dest == -1:
+            rsend_slice = None
+        else:
+            send_slice = [slice(None,None,None) for d in shape]
+        if source == -1:
+            rrecv_slice = None
+        else:
+            recv_slice = [slice(None,None,None) for d in shape]
         dim_index = len(shape) - self.comm.Get_dim() + dim
         if direction == 1:
-            data_slice[dim_index] = slice(-1, None, None)
+            if dest is not -1:
+                send_slice[dim_index] = slice(-1, None, None)
+                rsend_slice = tuple(send_slice)
+            if source is not -1:
+                recv_slice[dim_index] = slice(None, 1, None)
+                rrecv_slice = tuple(recv_slice)
         elif direction == -1:
-            data_slice[dim_index] = slice(None, 1, None)
-        return tuple(data_slice)
+            if dest is not -1:
+                send_slice[dim_index] = slice(None, 1, None)
+                rsend_slice = tuple(send_slice)
+            if source is not -1:
+                recv_slice[dim_index] = slice(-1, None, None)
+                rrecv_slice = tuple(recv_slice)
+        return rsend_slice, rrecv_slice
 
     def _array_slice(self, array_length, rank, num_ranks):
         if __debug__:
@@ -121,25 +142,45 @@ class EvenCart(MPIInterface):
         if __debug__:
             self.log.debug("about to perform communication")
             self.log.debug("rank=%d, nslices = %s"%(rank, repr(nslices)))
+            self.log.debug("data is %s"%repr(data))
         r_data = []
-        for source, dest, dslice in nslices:
-            recv_data = np.empty_like(data[dslice])
+        for source, dest, send_slice, recv_slice in nslices:
+            if __debug__:
+                self.log.debug(
+                    "source=%d, dest=%d, send_slice=%s, recv_slice=%s"%
+                    (source, dest, repr(send_slice), repr(recv_slice))
+                    )
+            if dest is -1:
+                send_data = None
+            else:
+                #I really did not want to copy this view. For large data
+                #sets this feels like an unnecessary delay.
+                #However mpi4py did not seem to work with views and using
+                #self.comm.sendrecv to send and recv arbitrary objects.
+                #Plus self.comm.Sendrecv requires contiguous data
+                #so only in rare cases is it possible to send.
+                #Hence the np.copy statement is required.
+                send_data = np.array(data[send_slice], copy=True, order='C')
+            if source is -1:
+                recv_data = None
+            else:
+                #when testing the above assertion I suggest changing this
+                #line to np.ones_like, rather than np.empty_like
+                recv_data = np.empty_like(data[recv_slice])
             if __debug__:
                 self.log.debug("About to sendrecv")
-                self.log.debug("source=%d, dest=%d, dslice=%s"%
-                    (source, dest, repr(dslice))
-                    )
-                self.log.debug("data to be sent is %s"%repr(data[dslice]))
-            self.comm.sendrecv(
-                sendobj=data[dslice],
+                self.log.debug("data to be sent is %s"%send_data)
+            self.comm.Sendrecv(
+                send_data,
                 dest=dest,
-                recvobj=recv_data,
+                recvbuf=recv_data,
                 source=source
                 )
             if __debug__:
                 self.log.debug("Received data = %s"%recv_data)
                 self.log.debug("Sendrecv completed")
-            r_data += [(dslice, recv_data)]
+            if source is not -1:
+                r_data += [(recv_slice, recv_data)]
         if __debug__:
             self.log.debug("r_data = %s"%repr(r_data))
             self.log.debug("communication complete")
