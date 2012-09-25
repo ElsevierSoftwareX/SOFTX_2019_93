@@ -99,17 +99,17 @@ class EvenCart(MPIInterface):
         dim_index = len(shape) - self.comm.Get_dim() + dim
         if direction == 1:
             if dest is not -1:
-                send_slice[dim_index] = slice(-1, None, None)
+                send_slice[dim_index] = slice(-self.gp, None, None)
                 rsend_slice = tuple(send_slice)
             if source is not -1:
-                recv_slice[dim_index] = slice(None, 1, None)
+                recv_slice[dim_index] = slice(None, self.gp, None)
                 rrecv_slice = tuple(recv_slice)
         elif direction == -1:
             if dest is not -1:
-                send_slice[dim_index] = slice(None, 1, None)
+                send_slice[dim_index] = slice(None, self.gp, None)
                 rsend_slice = tuple(send_slice)
             if source is not -1:
-                recv_slice[dim_index] = slice(-1, None, None)
+                recv_slice[dim_index] = slice(-self.gp, None, None)
                 rrecv_slice = tuple(recv_slice)
         return rsend_slice, rrecv_slice
 
