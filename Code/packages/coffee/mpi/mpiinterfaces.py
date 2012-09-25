@@ -197,6 +197,10 @@ class EvenCart(MPIInterface):
         return r_data
 
     def collect_data(self, data):
+        #Note that this method does not take account of ghost_points in
+        #the domains. This does not cause a problem. It just means
+        #that more data than necessary is passed.
+
         #If there are no partitions of the domain we don't need to collect
         if self.comm is None:
             return data
