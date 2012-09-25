@@ -40,10 +40,10 @@ class IBVP:
         self.log.info("Grid = %s"%str(self.theGrid))
         self.log.info("Stepsizes = %s"%repr(u.domain.step_sizes))
         if __debug__:    
+            self.log.debug("self.actions is %s"%repr(self.theActions))
             self.log.debug("Initial data is = %s"%repr(u))
         advance = self.theSolver.advance
         computation_valid = True
-        
         while(computation_valid and t < tstop):
             if __debug__:
                 self.log.debug("Beginning new iteration")
