@@ -131,7 +131,7 @@ class EvenCart(MPIInterface):
                 self.log.debug("rank > r so we add one to end point")
             e = e + 1
         #add in ghost_points if we can
-        if s - self.gp => 0:
+        if s - self.gp > -1:
             s = s-self.gp
         if e + self.gp < array_length:
             e = e+self.gp
