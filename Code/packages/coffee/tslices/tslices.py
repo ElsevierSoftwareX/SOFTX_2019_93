@@ -60,6 +60,9 @@ class ABCTimeSlice(object):
     #def x(self):
         #return self.domain
 
+    def boundary_slices(self):
+        return self.domain.boundary_slices(self.data.shape)
+    
     def communicate(self):
         return self.domain.communicate(self.data)
 

@@ -45,6 +45,31 @@ class ABCGrid(object):
             return
         return self.mpi.communicate(data)
 
+    def boundary_slices(self, shape):
+        if self.mpi is None:
+            if __debug__:
+                self.log.debug(
+                    "No mpi object. Calculating boundaries in grid object"
+                    )
+            extra_dims = len(shape) - len(self.shape)
+            edims_shape = shape[:extra_dims]
+            edims_slice = tuple([
+                slice(None,None,None)
+                for i in range(extra_dims)
+                ])
+            r_slices = []
+            for i in range(len(self.shape)):
+                r_slice = [
+                    slice(None, None, None)
+                    for d in shape
+                    ]
+                r_slice[i] = slice(None, 1, None)
+                r_slices += [tuple(r_slice)]
+                r_slice[i] = slice(-1, None, None)
+                r_slices += [tuple(r_slice)]
+            return r_slices
+        return self.mpi.boundary_slices(shape)
+
     #def sendrecv(self, data):
         #if self.mpi is None:
             #return
@@ -131,7 +156,7 @@ class UniformCart(ABCGrid):
             self.shape, self.bounds, 
             comparison=self.comparison, name=self.name
             )
-            
+        
     @property
     def step_sizes(self):
         return self._step_sizes

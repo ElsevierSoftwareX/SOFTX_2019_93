@@ -24,17 +24,16 @@ class MPIInterface(object):
 
     @abc.abstractmethod
     def communicate(self, data):
-        """This method takes the data corresponding to the relevant grid,
-        sends it to the right place, recieves the relevant data and performs
-        the correct method to update the original data."""
-    
+        """Returns a list of tuples. The first element of each tuple is a slice
+        representing the portion of data which corresponds to the second
+        element of the tuple. The second element of the tuple is an array of
+        data which are the communicated values that correspond to the 
+        positions described by the slice."""
+
     @abc.abstractmethod
-    def neighbour_slices(self, shape):
-        """This method should return a interable of tuples. Each tuple
-        is (source, dest, slice). Source is this process, so in almost all
-        cases it will be self.mpi.rank. dest is the rank of the neighbour.
-        slice is a slice object that extracts the data to be sent, or the
-        portion of data into which data will be written."""
+    def boundary_slices(self, shape):
+        """Returns slices which represent the portions of the domain which
+        are on a external boundary."""
 
 ###############################################################################
 # Concrete implementations
@@ -47,6 +46,41 @@ class EvenCart(MPIInterface):
         self.domain = domain
         self.gp = ghost_points
         self.domain_mapping = self._make_domain_mappings(domain)
+
+    def boundary_slices(self, shape):
+        if __debug__:
+            self.log.debug("Calculating boundary slices in mpi")
+        extra_dims = len(shape) - len(self.domain)
+        edims_shape = shape[:extra_dims]
+        edims_slice = tuple([
+            slice(None,None,None)
+            for i in range(extra_dims)
+            ])
+        coords = self.comm.Get_coords(self.comm.rank)
+        if __debug__:
+            self.log.debug("coords is %s"%coords)
+        dims = self.comm.dims
+        r_slices = []
+        periods = self.comm.periods
+        for i, dim in enumerate(dims):
+            if periods[i]:
+                continue
+            if coords[i] == 0:
+                r_slice = [
+                    slice(None, None, None)
+                    for d in self.domain
+                    ]
+                r_slice[i] = slice(None, 1, None)
+                r_slices += [(i, -1, edims_slice + tuple(r_slice))]
+            elif coords[i] == dim-1:
+                r_slice = [
+                    slice(None, None, None)
+                    for d in self.domain
+                    ]
+                r_slice[i] = slice(-1, None, None)
+                r_slices += [(i, 1, edims_slice + tuple(r_slice))]
+        return r_slices
+
 
     def _make_domain_mappings(self, domain):
         if self.comm is None:
@@ -63,7 +97,7 @@ class EvenCart(MPIInterface):
             self.log.debug("domain_mapping is %s"%r_map)
         return r_map                
     
-    def neighbour_slices(self, shape):
+    def _neighbour_slices(self, shape):
         if self.comm is None:
             return []
         dims = self.comm.Get_dim()
@@ -146,7 +180,7 @@ class EvenCart(MPIInterface):
         return tuple(self.domain_mapping[self.comm.rank])
             
     def communicate(self, data):
-        nslices = self.neighbour_slices(data.shape)
+        nslices = self._neighbour_slices(data.shape)
         from mpi4py import MPI
         rank = MPI.COMM_WORLD.rank
         if __debug__:
