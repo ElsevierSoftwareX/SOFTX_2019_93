@@ -18,7 +18,7 @@ import abc
 ################################################################################
 class ABCSolver(object):
 
-    def __init__(self, system, **kwds):
+    def __init__(self, system, *args, **kwds):
         self.system = system
         super(ABCSolver, self).__init__(**kwds)
         self.log = logging.getLogger("solvers")
@@ -63,8 +63,8 @@ class RungeKutta4(ABCSolver):
 
     name = "RK4"
 
-    def __init__(self, **kwds):
-        super(RungeKutta4, self).__init__(**kwds)
+    def __init__(self, *args, **kwds):
+        super(RungeKutta4, self).__init__(*args, **kwds)
 
 
     def advance(self, t0, u0, dt):
