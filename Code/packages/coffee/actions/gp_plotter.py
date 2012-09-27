@@ -22,10 +22,9 @@ class Plotter1D(Prototype):
             self.delay = kwds.pop('delay')
         else:
             self.delay = 0.0
+        self.title = r"Time %f"
         if 'title' in kwds:
             self.title = kwds.pop('title')
-        if self.title is None:
-            self.title = r"Time %f"
         self.system = system
         self.log = logging.getLogger("GNUplotter")
         try:
@@ -57,7 +56,7 @@ class Plotter1D(Prototype):
                 )
             self.log.debug("Domain to plot over is %s"%repr(x))
         graphs = []
-        g(self.title%u.time)
+        g("set title '"+self.title%u.time + "'")
         for i, val in enumerate(f):
             if __debug__:
                 self.log.debug(
