@@ -18,10 +18,10 @@ import math
 from coffee.tslices import tslices
 from coffee.system import System
 
-class OneDAdvection(System):
+class OneDAdvectionMpi(System):
 
-    def timestep(self, grid):
-        ssizes = grid.step_sizes
+    def timestep(self, tslice):
+        ssizes = tslice.domain.step_sizes
         spatial_divisor = (1/ssizes[0])
         dt = self.CFL/spatial_divisor
         return dt
@@ -29,12 +29,14 @@ class OneDAdvection(System):
     ############################################################################
     # Constructor
     ############################################################################
-    def __init__(self, D, CFL, tau = None):
+    def __init__(self, D, speed, CFL, tau = None):
 #        super(OneDAdvection, self).__init__()
         self.log = logging.getLogger("OneDAdvection")
         self.D = D
+        self.speed = speed
         self.tau = tau
         self.CFL = CFL
+        self.numvar = 1
         self.name = """<OneDAdvection D = %s, CLF = %f, tau = %s>"""%\
         (D.name, CFL, repr(tau))
         if __debug__:
@@ -44,19 +46,21 @@ class OneDAdvection(System):
     # Configuration for initial conditions and boundary conditions.
     ############################################################################
     def initial_data(self,t0,r):
-        #self.log.info("Initial value routine = central bump")
-        #return self.centralBump(t0,r)
-        self.log.info("Initial value routine = exp_bump")
-        return self.exp_bump(t0,r)
+        return self.centralBump(t0,r)
+        #self.log.info("Initial value routine = exp_bump")
+        #return self.exp_bump(t0,r)
         #self.log.info("Initial value routine = sin")
         #return self.sin(t0,r)
         #self.log.info("Initial value routine = data")
         #return self.data(t0,r)
     
     def boundaryRight(self,t,Psi):
-        return 0.5 * math.sin( 2*math.pi*(t+2) / 
-            ( Psi.domain.axes[-1] - Psi.domain.axes[0] ) )
-        #return 0.0
+        #return 0.5 * math.sin( 
+            #2*math.pi*(t+2) / ( 
+                #Psi.domain.axes[0][-1] - Psi.domain.axes[0][0] 
+                #) 
+            #)
+        return 0.0
         
     def boundaryLeft(self,t,Psi):
         return 0.0
@@ -69,23 +73,72 @@ class OneDAdvection(System):
             (t,Psi,intStep))
          
         # Define useful variables
-        f0 = Psi.fields[0]
-        x   = Psi.domain
-        dx  = Psi.dx
+        f0 = Psi.data[0]
+        x   = Psi.domain.axes[0]
+        dx  = Psi.domain.step_sizes[0]
         tau = self.tau
         
         ########################################################################
         # Calculate derivatives
         ########################################################################
         Dxf = np.real(self.D(f0,dx))
-        Dtf = Dxf
+        Dtf = self.speed * Dxf
         
-        penalty_term = self.D.penalty_boundary(dx, 1)
+        #First do internal boundaries
+        pt_r = self.D.penalty_boundary(dx, "right")
+        pt_r_shape = pt_r.size 
+        pt_l = self.D.penalty_boundary(dx, "left")
+        pt_l_shape = pt_l.size 
+        if __debug__:
+            self.log.debug("Implementing internal boundaries")
+        b_values = Psi.communicate()
+        if __debug__:
+            self.log.debug("b_values = %s"%repr(b_values))
+        for d_slice, data in b_values:
+            if __debug__:
+                self.log.debug("d_slice is %s"%(repr(d_slice)))
+                self.log.debug("recieved_data is %s"%(data))
+            if self.speed < 0:
+                sigma1 = 0.25 
+                sigma3 = sigma1 - 1
+            else:
+                sigma3 = 0.25 
+                sigma1 = sigma3 - 1
+            if d_slice[1] == slice(-1, None, None):
+                if __debug__:
+                    self.log.debug("Calculating right boundary")
+                Dtf[-pt_r_shape:] += sigma1 * self.speed * pt_r * (
+                    f0[d_slice[1]] - data[0]
+                    )
+            else:
+                if __debug__:
+                    self.log.debug("Calculating left boundary")
+                Dtf[:pt_l_shape] += sigma3 * self.speed * pt_l * (
+                    f0[d_slice[1]] - data[0]
+                    )
+
+        #Now do the external boundaries
+        if __debug__:
+            self.log.debug("Implementing external boundary")
+        b_data = Psi.boundary_slices()
+        if __debug__:
+            self.log.debug("b_data = %s"%repr(b_data))
+        for dim, direction, d_slice in b_data:
+            if __debug__:
+                self.log.debug("Boundary slice is %s"%repr(d_slice))
+            if self.speed > 0 and direction == 1:
+                if __debug__:
+                    self.log.debug("Doing external boundary on right")
+                Dtf[-pt_r_shape:] -= tau * self.speed * (
+                    f0[-1] - self.boundaryRight(t,Psi)
+                    ) * pt_r
+            elif self.speed < 0 and direction == -1:
+                if __debug__:
+                    self.log.debug("Doing external boundary on left")
+                Dtf[:pt_r_shape] -= tau * self.speed * (
+                    f0[0] - self.boundaryLeft(t,Psi)
+                    ) * pt_l
         
-        Dtf[-penalty_term.shape[0]:] -= tau * (
-            f0[-1] - self.boundaryRight(t,Psi)
-            ) * penalty_term
-                
         if __debug__:
             self.log.debug("""Derivatives are:
                 Dtf = %s"""%\
@@ -100,7 +153,7 @@ class OneDAdvection(System):
                 
         # now all time derivatives are computed
         # package them into a time slice and return
-        rtslice = tslices.timeslice([Dtf],Psi.domain,time=t)
+        rtslice = tslices.TimeSlice(np.array([Dtf]), Psi.domain, time=t)
         if __debug__:
             self.log.debug("Exiting evaluation with timeslice = %s"%
                 repr(rtslice))
@@ -116,28 +169,25 @@ class OneDAdvection(System):
     ############################################################################
     # Initial Value Routines
     ############################################################################
-    def centralBump(self,t0,grid):
-        r = grid.axes
-        r3ind = int(r.shape[0]/10)
-        r3val = r[4*r3ind]
-        r6val = r[6*r3ind]
-        def bump(p):
-            v = float(max(0.0,(-p + r3val) * (p - r6val)))**8
-            return v
-        rv = np.vectorize(bump)(grid)
+    def centralBump(self, t0, grid):
+        self.log.info("Initial value routine = central bump")
+        r = grid.axes[0]
+        length = grid.bounds[0][1] - grid.bounds[0][0]
+        rv = np.maximum(0.0, (-r + length/3) * (r - 2*length/3))**8
         rv = 0.5*rv/np.amax(rv)
-        rtslice = tslices.timeslice([rv],grid,t0)
+        rtslice = tslices.TimeSlice(np.array([rv]),grid,t0)
         return rtslice
         
-    def exp_bump(self,t0,grid):
-        mid_ind = int(grid.shape[0]/2)
-        rv = 0.5*np.exp(-40*(grid-grid[mid_ind])*(grid-grid[mid_ind]))
-        return tslices.timeslice([rv],grid,t0)
+    def exp_bump(self, t, grid):
+        axes = grid.axes[0]
+        mid_ind = int(axes.shape[0]/2)
+        rv = (1/72.0) * length**2  * np.exp(-40*(axes-axes[mid_ind])*(axes-axes[mid_ind]))
+        return tslices.TimeSlice(np.array([rv]), grid, t)
     
     def sin(self,t0,grid):
         r = grid.axes
         rv = np.sin(2*math.pi*r/(grid[-1]-grid[0]))
-        rtslice = tslices.timeslice([0.5*rv],grid,t0)
+        rtslice = tslices.TimeSlice([0.5*rv],grid,t0)
         return rtslice
         
     def data(self,t0,grid):
@@ -175,4 +225,4 @@ class OneDAdvection(System):
         -0.00000143563257268,  0.00000077349425006, -0.00000096984553866,\
         -0.00000014450388622, -0.00000125698079451, -0.00000141060384138,\
         -0.00000214380180203, -0.0000024309521466 ])
-        return tslices.timeslice([rv],grid,t0)
+        return tslices.TimeSlice(np.array([rv]),grid,t0)

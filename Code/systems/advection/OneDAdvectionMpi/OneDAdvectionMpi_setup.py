@@ -11,8 +11,9 @@ import argparse
 from mpi4py import MPI
 
 #Import standard code base
-from coffee import ibvp, actions, solvers, grid
+from coffee import ibvp, solvers, grid, actions
 from coffee.diffop import fd, fft, sbp
+from coffee.actions import gp_plotter
 
 #import system to use
 import OneDAdvectionMpi
@@ -31,6 +32,11 @@ parser.add_argument('-f','-file', help=\
 parser.add_argument('-d','-display', default=False, 
     action='store_true', help=\
 """A flag to indicate if visual display is required.""")
+parser.add_argument('-s', '-speed', default=-1, type=float, help="""The
+characteristic speed of the system, defaults to -1 (i.e. the wave travels to
+the right at a speed of 1.""")
+parser.add_argument('-npoints', default=100, type=int, help="""The number of
+grid points in the total simulation, defaults to 100.""")
 args = parser.parse_args()
 ################################################################################
 # These are the commonly altered settings
@@ -77,7 +83,7 @@ log.info("Starting configuration.")
 num_of_grids = 1
 
 # How many grid points?
-N = 100
+N = args.npoints
 
 # What grid to use?
 xstart = 0
@@ -86,6 +92,9 @@ xstop = 2
 # Times to run between
 tstart = 0.0
 tstop = 10.0
+
+# speed of system
+speed = args.s
 
 # Configuration of System
 CFLs = [0.5 for i in range(num_of_grids)]
@@ -109,7 +118,6 @@ raxis_1D_diffop = sbp.D42()
 #raxis_1D_diffop = fft.FFT_lagrange1(N,xstop-xstart)
 
 # Configuration of IBVP
-solver = solvers.RungeKutta4()
 maxIteration = 1000000
 
 ###############################################################################
@@ -137,7 +145,7 @@ ghost_points = ghp
 # Build grids
 grids = [
     grid.UniformCart(
-        raxis_gdp[i], 
+        (raxis_gdp[i],), 
         [[xstart, xstop]], 
         comparison=raxis_gdp[i],
         mpi_comm=mpi_comm,
@@ -153,12 +161,17 @@ systems = []
 if __debug__:
     log.debug("Initialising systems.")
 for i in range(num_of_grids):
-    systems += [OneDAdvection.OneDAdvection(\
-        raxis_1D_diffop,
+    systems += [OneDAdvectionMpi.OneDAdvectionMpi(\
+        raxis_1D_diffop, speed,
         CFL = CFLs[i], tau = tau
         )]
 if __debug__:
     log.debug("Initialisation of systems complete.")
+
+###############################################################################
+# Construction of solver
+###############################################################################
+solvers = [solvers.RungeKutta4(sys) for sys in systems]
 
 ################################################################################
 # Set up hdf file to store output
@@ -200,12 +213,11 @@ if __debug__:
     if store_output:
         log.debug("HDF file = %s"%args.f)
         log.debug("Logging file = %s"%args.logf)
-    log.debug("HDF file location = %s"%file_location)
-    log.debug("HDF file root name = %s"%file_name)
     log.debug("Start time = %f"%tstart)
     log.debug("Stop time = %f"%tstop)
     log.debug("CFLs are = %s"%repr(CFLs))
     log.debug("grids = %s"%repr(grids))
+    log.debug("speed = %s"%repr(speed))
 
 ################################################################################
 # Perform computation
@@ -215,24 +227,24 @@ for i,system in enumerate(systems):
         #Construct Actions
         actionList = []
         if display_output and mpi_comm.rank == 0:
-            actionList += [actions.GNUPlotter1D(\
-                *gnu_plot_settings,frequency = 1,\
-                system = system,\
-                delay = 0.\
+            actionList += [gp_plotter.Plotter1D(
+                system,
+                *gnu_plot_settings,frequency = 1,
+                delay = 0.
                 )]
         if store_output and mpi_comm.rank == 0:
             actionList += [actions.SimOutput(\
-                hdf_file,\
-                solver, \
-                system, \
-                grids[i], \
-                output_actions,\
-                overwrite = True,\
-                name = grids[i].name,\
-                cmp_ = grids[i].comparison\
+                hdf_file,
+                solvers[i],
+                system,
+                grids[i],
+                output_actions,
+                overwrite = True,
+                name = grids[i].name,
+                cmp_ = grids[i].comparison
                 )]
         log.info("Starting simulation %i with system %s"%(i,repr(system)))
-        problem = ibvp.IBVP(solver, system, grid = grids[i],\
+        problem = ibvp.IBVP(solvers[i], system, grid = grids[i],
                 maxIteration = 1000000, action = actionList)
         problem.run(tstart, tstop)
         log.info("Simulation complete")
