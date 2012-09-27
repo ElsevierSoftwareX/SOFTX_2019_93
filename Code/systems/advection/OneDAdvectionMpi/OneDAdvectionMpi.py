@@ -173,8 +173,12 @@ class OneDAdvectionMpi(System):
         self.log.info("Initial value routine = central bump")
         r = grid.axes[0]
         length = grid.bounds[0][1] - grid.bounds[0][0]
-        rv = np.maximum(0.0, (-r + length/3) * (r - 2*length/3))**8
-        rv = 0.5*rv/np.amax(rv)
+        rv = np.maximum(0.0, 
+            (36) * (1/length)**2 * (-r + length/3) * (r - 2*length/3)
+            )**8
+        print rv
+        #if np.amax(rv is not 0:
+            #rv = 0.5*rv/np.amax(rv)
         rtslice = tslices.TimeSlice(np.array([rv]),grid,t0)
         return rtslice
         
