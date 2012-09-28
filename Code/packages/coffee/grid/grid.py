@@ -14,7 +14,6 @@ from coffee.mpi import mpiinterfaces
 ################################################################################
 # Base Grid class
 ################################################################################
-
 class ABCGrid(object):
     """The abstract base class for Grid objects."""
     
@@ -70,22 +69,6 @@ class ABCGrid(object):
             return r_slices
         return self.mpi.boundary_slices(shape)
 
-    #def sendrecv(self, data):
-        #if self.mpi is None:
-            #return
-        #self.mpi.sendrecv(data)
-
-    #def send(self, data):
-        #if self.mpi is None:
-            #return 
-        #self.mpi.send(data)
-        
-    #def recv(self,data):
-        #if self.mpi is None:
-            #return 
-        #self.mpi.recv(data)
-        #return data
-
     def collect_data(self, data):
         if self.mpi is None:
             return 
@@ -116,7 +99,6 @@ class ABCGrid(object):
 # Constructors for specific cases
 ################################################################################
 class UniformCart(ABCGrid):
-    """A Grid object to represent an ND interval of coordinates"""
     
     def __init__(self, 
             shape, bounds, 
@@ -160,57 +142,3 @@ class UniformCart(ABCGrid):
     @property
     def step_sizes(self):
         return self._step_sizes
-
-    #@property
-    #def axes(self):
-        #axes = [
-            #np.linspace(
-                #self.bounds[i][0], self.bounds[i][1], self.shape[i]+1
-            #)[self.mpi.subdomian]
-            #for i in range(len(self.bounds))
-            #]
-        #return axes
-        
-    #@property
-    #def step_sizes(self):
-        #axes = [
-            #np.linspace(
-                #self.bounds[i][0], self.bounds[i][1], self.shape[i]+1
-            #)
-            #for i in range(len(self.bounds))
-            #]
-        #step_sizes = [axis[1]-axis[0] for axis in axes]
-        #return step_sizes
-
-#ABCGrid.register(UniformCart)
-
-#class S2(Grid):
-    #"""A Grid object representing the sphere. Note that
-    #theta is in [0, pi) and phi is in [0, 2*pi)."""
-    
-    #def __init__(self, shape, *args, **kwds):
-        #if len(shape) != 2:
-            #return Exception("Shape length is not 2")
-        #name = "S2%s%s"%(shape, comparison)
-        #super(S2, self).__init__(shape, 
-            #[[0, math.pi], [0, 2*math.pi]],
-            #*args,
-            #name=name, 
-            #**kwds
-            #)
-            
-    #@property
-    #def axes(self):
-        #axes = [
-            #np.linspace(
-                #self.bounds[i][0], self.bounds[i][1], self.shape[i],
-                #endpoint=False
-            #)
-            #for i in range(len(self.bounds))
-            #]
-        #return axes
-        
-    #@property
-    #def step_sizes(self):
-        #step_sizes = [axis[1]-axis[0] for axis in self.axes]
-        #return step_sizes   
