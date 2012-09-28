@@ -31,10 +31,6 @@ class ABCTimeSlice(object):
         self.log = logging.getLogger(self.name)
         super(ABCTimeSlice, self).__init__(*args, **kwds)
 
-    #@property
-    #def numFields(self):
-        #return len(self.data)
-    
     def __repr__(self):
         s = "%s(data = %s, domain = %s, time = %s)"%(
             self.name, 
@@ -43,22 +39,6 @@ class ABCTimeSlice(object):
             repr(self.time)
             )
         return s
-
-    #@property
-    #def dx(self):
-        #return self.step_sizes
-      
-    #@property
-    #def step_sizes(self):
-        #return self.domain.step_sizes
-        
-    #@property
-    #def fields(self):
-        #return self.data
-
-    #@property        
-    #def x(self):
-        #return self.domain
 
     def boundary_slices(self):
         return self.domain.boundary_slices(self.data.shape)
