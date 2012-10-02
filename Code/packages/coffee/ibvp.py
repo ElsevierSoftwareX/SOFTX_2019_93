@@ -70,56 +70,48 @@ class IBVP:
             
             if __debug__: 
                 self.log.debug("Using timestep dt = %f"%dt)
-            
-            #Ideally u.collect_data() should only be executed if there
-            #actions that will run. because of single process access to
-            #actions this causes an issue.
-            #Some thought is required to fix this problem.
-            tslice = u.collect_data()
-            if tslice is not None:
-                if __debug__:
-                    self.log.debug(
-                        "tslice is not None. Computing if actions will run"
-                        )
-                actions_do_actions = [
-                    action.will_run(self.iteration, tslice) 
-                    for action in self.theActions
-                    ]
-                if any(actions_do_actions):
-                    if __debug__:
-                        self.log.debug("Some actions will run")
-                    for i, action in enumerate(self.theActions):
-                        if actions_do_actions[i]:
-                            if __debug__:
-                                self.log.debug(
-                                    "Running action %s at iteration %i"%\
-                                     (str(action), self.iteration)
-                                     )
-                            action(self.iteration, tslice)
+           
+            self._run_actions(t, u)
 
             if __debug__:
                 self.log.debug("About to advance for iteration = %i"%
                     self.iteration)
             t, u = advance(t, u, dt)
+            u.domain.mpi.comm.barrier()
             self.iteration+=1
             if __debug__:
                 self.log.debug("time slice after advance = %s"%repr(u))
         # end (while)
-        
-        # do the last round of actions
-        actions_do_actions = [action.will_run(self.iteration,u) 
-            for action in self.theActions]
-        if any(actions_do_actions):
-            tslice = u.collect_data()
-            for i, action in enumerate(self.theActions):
-                if actions_do_actions[i]:
-                    if __debug__:
-                        self.log.debug(
-                            "Running action %s at iteration %i"%\
-                             (str(action), self.iteration)
-                             )
-                    action(self.iteration, tslice)
-
-            
+        self._run_actions(t, u)
+        u.domain.mpi.comm.barrier()
         self.log.info("Finished computation at time %f for iteration %i"%(t,self.iteration))
         return u
+
+    def _run_actions(self, t, u):
+        #Ideally u.collect_data() should only be executed if there
+        #actions that will run. because of single process access to
+        #actions this causes an issue.
+        #Some thought is required to fix this problem.
+        tslice = u.collect_data()
+        if tslice is not None:
+            if __debug__:
+                self.log.debug(
+                    "tslice is not None. Computing if actions will run"
+                    )
+            actions_do_actions = [
+                action.will_run(self.iteration, tslice) 
+                for action in self.theActions
+                ]
+            if any(actions_do_actions):
+                if __debug__:
+                    self.log.debug("Some actions will run")
+                for i, action in enumerate(self.theActions):
+                    if actions_do_actions[i]:
+                        if __debug__:
+                            self.log.debug(
+                                "Running action %s at iteration %i"%\
+                                 (str(action), self.iteration)
+                                 )
+                        action(self.iteration, tslice)
+                if __debug__:
+                    self.log.debug("All actions done")
