@@ -44,8 +44,8 @@ class SimOutput(Prototype):
 #            stop = float('infinity'),
             **kwds):
         self.log = logging.getLogger("SimOutput")
-#        if __debug__:
-#            self.log.debug("Setting up HDF output...")
+        if __debug__:
+            self.log.debug("Setting up HDF output...")
         super(SimOutput,self).__init__(**kwds)
         if name == None:
             hour = str(time.localtime()[3])
@@ -62,14 +62,16 @@ class SimOutput(Prototype):
         self.cmp_ = cmp_
         for action in actionTypes:
             action.setup(self)
-#        if __debug__:
-#            self.log.debug("HDF output setup completed.")
+        if __debug__:
+            self.log.debug("HDF output setup completed.")
         
     def _doit(self,it,u):
         for action in self.actions:
-#            if __debug__:
-#                self.log.debug("Outputting %s"%action.groupname)
+            if __debug__:
+                self.log.debug("Outputting %s"%action.groupname)
             action(it,u)
+            if __debug__:
+                self.log.debug("Output done")
 
     class SimOutputType(object):
 
@@ -95,8 +97,8 @@ class SimOutput(Prototype):
         def __call__(self,it,u):
             for key,value in self.derivedAttrs.items():
                 v = value(it,u,self.parent.system)
-#                if __debug__:
-#                    self.log.debug("Derived Attrs = %s"%str(v))
+                if __debug__:
+                    self.log.debug("Derived Attrs = %s"%str(v))
                 self.data_group[it].attrs[key] = v
          
     class Data(SimOutputType):
