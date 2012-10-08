@@ -284,29 +284,29 @@ class SimulationHDF(object):
         if indices[1] - indices[0] == 1:
             dt = times_dg[indices[1]].value-time_dg.value
             if t<=time_dg.value<t+dt/2:
-                return 0
+                return indices[0]
         else:
             if t == time_dg.value[0]:
-                return 0
+                return indices[0]
         #Check all other steps except final
         for i in range(1, len(indices)-1):
             time_dg = times_dg[indices[i]]
             if indices[i+1] - indices[i] == 1:
                 dt = times_dg[indices[i+1]].value-time_dg.value
                 if t-dt/2<=time_dg.value<t+dt/2:
-                    return i
+                    return indices[i]
             else:
                 if t == time_dg.value[0]:
-                    return i
+                    return indices[i]
         i = len(indices)-1
         time_dg = times_dg[indices[i]]
         if indices[i] - indices[i-1] == 1:
             dt = time_dg.value - times_dg[indices[i-1]]
             if t-dt/2<=time_dg.value<=t:
-                return i
+                return indices[i]
         else:
             if t == time_dg.value[0]:
-                return i
+                return indices[i]
         return -1
         
 #    def indexOfDomain(self,d,time_index,sim):
