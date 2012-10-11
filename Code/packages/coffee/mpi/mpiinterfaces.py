@@ -48,8 +48,8 @@ class EvenCart(MPIInterface):
         self.domain_mapping = self._make_domain_mappings(domain)
 
     def boundary_slices(self, shape):
-        if __debug__:
-            self.log.debug("Calculating boundary slices in mpi")
+        #if __debug__:
+            #self.log.debug("Calculating boundary slices in mpi")
         extra_dims = len(shape) - len(self.domain)
         edims_shape = shape[:extra_dims]
         edims_slice = tuple([
@@ -57,8 +57,8 @@ class EvenCart(MPIInterface):
             for i in range(extra_dims)
             ])
         coords = self.comm.Get_coords(self.comm.rank)
-        if __debug__:
-            self.log.debug("coords is %s"%coords)
+        #if __debug__:
+            #self.log.debug("coords is %s"%coords)
         dims = self.comm.dims
         r_slices = []
         periods = self.comm.periods
@@ -93,8 +93,8 @@ class EvenCart(MPIInterface):
                 for i, coord in enumerate(coords)
                 ])
                 ]
-        if __debug__:
-            self.log.debug("domain_mapping is %s"%r_map)
+        #if __debug__:
+            #self.log.debug("domain_mapping is %s"%r_map)
         return r_map                
     
     def _neighbour_slices(self, shape):
@@ -104,8 +104,8 @@ class EvenCart(MPIInterface):
         neighbours = []
         for d in range(dims):
             source, dest = self.comm.Shift(d, 1)
-            if __debug__:
-                self.log.debug("source=%d, dest=%d"%(source, dest))
+            #if __debug__:
+                #self.log.debug("source=%d, dest=%d"%(source, dest))
             send_slice, recv_slice = self._get_dataslice(
                 source, dest,
                 shape, d, 1
@@ -117,8 +117,8 @@ class EvenCart(MPIInterface):
                 shape, d, -1
                 )
             neighbours += [(source, dest, send_slice, recv_slice)]
-        if __debug__:
-            self.log.debug("neighbour_slices is %s"%neighbours)
+        #if __debug__:
+            #self.log.debug("neighbour_slices is %s"%neighbours)
         return neighbours
 
     def _get_dataslice(self, source, dest, shape, dim, direction):
@@ -162,7 +162,7 @@ class EvenCart(MPIInterface):
         #over the appropriate number of processes
         if rank < r:
             if __debug__:
-                self.log.debug("rank > r so we add one to end point")
+                self.log.debug("rank < r so we add one to end point")
             e = e + 1
         #add in ghost_points if we can
         if s - self.gp > -1:
@@ -183,17 +183,17 @@ class EvenCart(MPIInterface):
         nslices = self._neighbour_slices(data.shape)
         from mpi4py import MPI
         rank = MPI.COMM_WORLD.rank
-        if __debug__:
-            self.log.debug("about to perform communication")
-            self.log.debug("rank=%d, nslices = %s"%(rank, repr(nslices)))
-            self.log.debug("data is %s"%repr(data))
+        #if __debug__:
+            #self.log.debug("about to perform communication")
+            #self.log.debug("rank=%d, nslices = %s"%(rank, repr(nslices)))
+            #self.log.debug("data is %s"%repr(data))
         r_data = []
         for source, dest, send_slice, recv_slice in nslices:
-            if __debug__:
-                self.log.debug(
-                    "source=%d, dest=%d, send_slice=%s, recv_slice=%s"%
-                    (source, dest, repr(send_slice), repr(recv_slice))
-                    )
+            #if __debug__:
+                #self.log.debug(
+                    #"source=%d, dest=%d, send_slice=%s, recv_slice=%s"%
+                    #(source, dest, repr(send_slice), repr(recv_slice))
+                    #)
             if dest is -1:
                 send_data = None
             else:
@@ -211,23 +211,23 @@ class EvenCart(MPIInterface):
                 #when testing the above assertion I suggest changing this
                 #line to np.ones_like, rather than np.empty_like
                 recv_data = np.empty_like(data[recv_slice])
-            if __debug__:
-                self.log.debug("About to sendrecv")
-                self.log.debug("data to be sent is %s"%send_data)
+            #if __debug__:
+                #self.log.debug("About to sendrecv")
+                #self.log.debug("data to be sent is %s"%send_data)
             self.comm.Sendrecv(
                 send_data,
                 dest=dest,
                 recvbuf=recv_data,
                 source=source
                 )
-            if __debug__:
-                self.log.debug("Received data = %s"%recv_data)
-                self.log.debug("Sendrecv completed")
+            #if __debug__:
+                #self.log.debug("Received data = %s"%recv_data)
+                #self.log.debug("Sendrecv completed")
             if source is not -1:
                 r_data += [(recv_slice, recv_data)]
-        if __debug__:
-            self.log.debug("r_data = %s"%repr(r_data))
-            self.log.debug("communication complete")
+        #if __debug__:
+            #self.log.debug("r_data = %s"%repr(r_data))
+            #self.log.debug("communication complete")
         return r_data
 
     def collect_data(self, data):
@@ -239,46 +239,46 @@ class EvenCart(MPIInterface):
         if self.comm is None:
             return data
         #Gather the data
-        if __debug__:
-            self.log.debug("Data is %s"%repr(data))
+        #if __debug__:
+            #self.log.debug("Data is %s"%repr(data))
         fields = self.comm.gather(data, root = 0)
-        if __debug__:
-            self.log.debug("Data has been gathered.")
+        #if __debug__:
+            #self.log.debug("Data has been gathered.")
         #If this process is root then collate the data and return
         if self.comm.rank == 0:
-            if __debug__:
-                self.log.debug("The collected fields have shapes %s"%\
-                    repr([f.shape for f in fields]))
+            #if __debug__:
+                #self.log.debug("The collected fields have shapes %s"%\
+                    #repr([f.shape for f in fields]))
             extra_dims = len(data.shape) - len(self.domain)
             rdata_edims_shape = data.shape[:extra_dims]
             rdata_edims_slice = tuple([
                 slice(None,None,None)
                 for i in range(extra_dims)
                 ])
-            if __debug__:
-                self.log.debug("data.shape is %s"%str(data.shape))
-                self.log.debug(
-                    "rdata_shape_edims is %s"%str(rdata_edims_slice)
-                    )
-                self.log.debug("self.domain is %s"%str(self.domain))
+            #if __debug__:
+                #self.log.debug("data.shape is %s"%str(data.shape))
+                #self.log.debug(
+                    #"rdata_shape_edims is %s"%str(rdata_edims_slice)
+                    #)
+                #self.log.debug("self.domain is %s"%str(self.domain))
             rdata = np.zeros(
                 rdata_edims_shape + self.domain
                 )
-            if __debug__:
-                self.log.debug("rdata.shape = %s"%(repr(rdata.shape)))
+            #if __debug__:
+                #self.log.debug("rdata.shape = %s"%(repr(rdata.shape)))
             for rank, field in enumerate(fields):
                 dslice = self.domain_mapping[rank]
-                if __debug__:
-                    self.log.debug("dslice is %s"%repr(dslice))
-                    self.log.debug(
-                        "rdata_edims_slice is %s"%repr(rdata_edims_slice)
-                        )
-                    self.log.debug("rdata.shape is %s"%repr(rdata.shape))
-                    self.log.debug("field.shape is %s"%repr(field.shape))
-                    self.log.debug(
-                        "rdata[rdata_edims_slice + dslice].shape is %s"
-                        %(repr(rdata[rdata_edims_slice + dslice].shape))
-                        )
+                #if __debug__:
+                    #self.log.debug("dslice is %s"%repr(dslice))
+                    #self.log.debug(
+                        #"rdata_edims_slice is %s"%repr(rdata_edims_slice)
+                        #)
+                    #self.log.debug("rdata.shape is %s"%repr(rdata.shape))
+                    #self.log.debug("field.shape is %s"%repr(field.shape))
+                    #self.log.debug(
+                        #"rdata[rdata_edims_slice + dslice].shape is %s"
+                        #%(repr(rdata[rdata_edims_slice + dslice].shape))
+                        #)
                 rdata[rdata_edims_slice + dslice] = field
             return rdata
         else: 
