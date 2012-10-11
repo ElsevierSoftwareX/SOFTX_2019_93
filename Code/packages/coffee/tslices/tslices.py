@@ -52,10 +52,10 @@ class ABCTimeSlice(object):
         r_tslice = self.__class__(
             data_all, domain_all, self.time
             )
-        if __debug__:
-            self.log.debug(
-                "r_tslice is %s"%(repr(r_tslice))
-                )
+        #if __debug__:
+            #self.log.debug(
+                #"r_tslice is %s"%(repr(r_tslice))
+                #)
         return r_tslice
 
 ###############################################################################
