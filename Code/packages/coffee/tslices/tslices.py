@@ -11,6 +11,7 @@ Copyright (c) 2010 University of Otago. All rights reserved.
 
 import abc
 import logging
+import numpy as np
 import functools
 
 ###############################################################################
@@ -21,7 +22,7 @@ class ABCTimeSlice(object):
     __metaclass__ = abc.ABCMeta
  
     def __init__(self, data, domain, time, name=None, *args, **kwds):
-        self.data = data
+        self.data = np.array(data)
         self.domain = domain
         self.time = time
         if name is None:
