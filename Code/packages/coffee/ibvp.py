@@ -51,9 +51,17 @@ class IBVP:
             if self.iteration > self.maxIteration:
                 self.log.warning("Maximum number of iterations exceeded")
                 break
-            
+           
             dt = self.theSystem.timestep(u)
-            
+            #import warnings
+
+            #with warnings.catch_warnings(record=True) as w:
+                #dt = self.theSystem.timestep(u)
+                #if len(w)==1 and issubclass(w[-1].category, RuntimeWarning):
+                    #print t
+                    #print u.time
+                    #print w
+
             if dt < self.minTimestep:
                 self.log.error(
                     'Exiting computation: timestep too small dt = %.15f'%dt
@@ -84,7 +92,10 @@ class IBVP:
         # end (while)
         self._run_actions(t, u)
         u.domain.mpi.comm.barrier()
-        self.log.info("Finished computation at time %f for iteration %i"%(t,self.iteration))
+        self.log.info(
+            "Finished computation at time %f for iteration %i"%
+            (t,self.iteration)
+            )
         return u
 
     def _run_actions(self, t, u):
