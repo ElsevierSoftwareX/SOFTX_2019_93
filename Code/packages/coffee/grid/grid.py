@@ -41,7 +41,7 @@ class ABCGrid(object):
 
     def communicate(self, data):
         if self.mpi is None:
-            return
+            return []
         return self.mpi.communicate(data)
 
     def boundary_slices(self, shape):
