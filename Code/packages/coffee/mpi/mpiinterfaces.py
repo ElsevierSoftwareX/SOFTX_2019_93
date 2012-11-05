@@ -65,7 +65,20 @@ class EvenCart(MPIInterface):
         for i, dim in enumerate(dims):
             if periods[i]:
                 continue
-            if coords[i] == 0:
+            if coords[i] == 0 and coords[i] == dim - 1:
+                r_slice = [
+                    slice(None, None, None)
+                    for d in self.domain
+                    ]
+                r_slice[i] = slice(None, 1, None)
+                r_slices += [(i, -1, edims_slice + tuple(r_slice))]
+                r_slice = [
+                    slice(None, None, None)
+                    for d in self.domain
+                    ]
+                r_slice[i] = slice(-1, None, None)
+                r_slices += [(i, 1, edims_slice + tuple(r_slice))]
+            elif coords[i] == 0:
                 r_slice = [
                     slice(None, None, None)
                     for d in self.domain
@@ -182,12 +195,12 @@ class EvenCart(MPIInterface):
         return tuple(self.domain_mapping[self.comm.rank])
             
     def communicate(self, data):
+        #if self.comm.size == 1:
+            #return []
         nslices = self._neighbour_slices(data.shape)
-        from mpi4py import MPI
-        rank = MPI.COMM_WORLD.rank
         #if __debug__:
             #self.log.debug("about to perform communication")
-            #self.log.debug("rank=%d, nslices = %s"%(rank, repr(nslices)))
+            #self.log.debug("nslices = %s"%(repr(nslices)))
             #self.log.debug("data is %s"%repr(data))
         r_data = []
         for source, dest, send_slice, recv_slice in nslices:
@@ -196,7 +209,7 @@ class EvenCart(MPIInterface):
                     #"source=%d, dest=%d, send_slice=%s, recv_slice=%s"%
                     #(source, dest, repr(send_slice), repr(recv_slice))
                     #)
-            if dest is -1:
+            if dest < 0:
                 send_data = None
             else:
                 #I really did not want to copy this view. For large data
@@ -207,7 +220,7 @@ class EvenCart(MPIInterface):
                 #so only in rare cases is it possible to send.
                 #Hence the np.copy statement is required.
                 send_data = np.array(data[send_slice], copy=True, order='C')
-            if source is -1:
+            if source < 0:
                 recv_data = None
             else:
                 #when testing the above assertion I suggest changing this
@@ -225,7 +238,7 @@ class EvenCart(MPIInterface):
             #if __debug__:
                 #self.log.debug("Received data = %s"%recv_data)
                 #self.log.debug("Sendrecv completed")
-            if source is not -1:
+            if source >= 0:
                 r_data += [(recv_slice, recv_data)]
         #if __debug__:
             #self.log.debug("r_data = %s"%repr(r_data))
