@@ -20,7 +20,8 @@ class IBVP:
     
     
     def __init__(self, sol, eqn, grid, action = [], 
-        maxIteration = 10000, minTimestep = 1e-8): #, CFL = 1.0):
+        maxIteration = 10000, minTimestep = 1e-8
+        ): #, CFL = 1.0):
         sol.use_system(eqn)
         self.theSolver = sol
         self.theSystem = eqn
@@ -31,8 +32,15 @@ class IBVP:
         self.log = logging.getLogger("IBVP")
         self.minTimestep = minTimestep
              
-    def run(self, tstart, tstop = float('inf')):
+    def run(self, tstart, tstop = float('inf'), thits = None):
         """Go for it"""
+        if thits is None:
+            thits = []
+        if tstop not in thits:
+            thits += [tstop]
+        thits = sorted(thits)
+        thits.reverse()
+        tstop = thits.pop()
         t = tstart
         #Get initial data and configure timeslices for multiple processors
         u = self.theSystem.initial_data(t, self.theGrid)
@@ -71,10 +79,16 @@ class IBVP:
             timeleft = tstop - t
             if timeleft < dt:
                 dt = timeleft
-                self.log.warning(
-                        "Final time step: adjusting to dt = %.15f" % dt
+                if not thits:
+                    self.log.warning(
+                            "Final time step: adjusting to dt = %.15f" % dt
+                        )
+                    computation_valid = False
+                else:
+                    self.log.warning(
+                        "Forcing evaluation at time %f"%tstop
                     )
-                computation_valid = False
+                    tstop = thits.pop()
             
             if __debug__: 
                 self.log.debug("Using timestep dt = %f"%dt)
