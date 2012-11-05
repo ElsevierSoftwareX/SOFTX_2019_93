@@ -16,7 +16,11 @@ def exact(args):
     with sd.SimulationHDF(args.file) as file:
         print "Initialising data."
         sims = file.getSims()
-        smallest_domain = sims[0].domain
+
+        #needed for fixing domain size to smallest domain. This will cause
+        #problems when plotting.
+        #smallest_domain = sims[0].domain
+
         tSimNames = [sim.name for sim in sims]
         stepsizes = []
         # We make the assumption that the number of components for each run
@@ -35,32 +39,50 @@ def exact(args):
                 #print "Doing calculation for simulation %s"%sim.name
                 it = sim.indexOfTime(time)
                 domain = sim.domain[it]
-                if i == 0:
-                    smallest_it = it
-                    smallest_domain = domain 
-                print "Index for simulation %s is %i at time %f"%(sim.name,it,time)
-                if __debug__:
-                    print "Index for smallest_domain is %i at time %f"%(
-                        smallest_it, time)
-                    print "smallest domain is: %s"%repr(smallest_domain)
-                axes_mappings = [
-                    sd.array_value_index_mapping(
-                        smallaxis,
-                        axis,
-                        compare_on_axes = 0
-                        )
-                    for smallaxis, axis in
-                    zip(smallest_domain, domain)
-                    ]
-                if __debug__: print "Mapping = "+str(axes_mappings)
+
+                #needed for fixing domain size to smallest domain. 
+                #This will cause
+                #problems when plotting.
+                #if i == 0:
+                    #smallest_it = it
+                    #smallest_domain = domain 
+                
+                print "Index for simulation %s is %i at time %f"%\
+                    (sim.name,it,time)
+
+                #needed for fixing domain size to smallest domain. 
+                #This will cause
+                #problems when plotting.
+                #if __debug__:
+                    #print "Index for smallest_domain is %i at time %f"%(
+                        #smallest_it, time)
+                    #print "smallest domain is: %s"%repr(smallest_domain)
+                #axes_mappings = [
+                    #sd.array_value_index_mapping(
+                        #smallaxis,
+                        #axis,
+                        #compare_on_axes = 0
+                        #)
+                    #for smallaxis, axis in
+                    #zip(smallest_domain, domain)
+                    #]
+                #if __debug__: print "Mapping = "+str(axes_mappings)
                 
                 #Calculating difference in values of common domains
-                error = np.ones_like(sims[0].raw[smallest_it])
-                for from_tup, to_tup in map_generator(axes_mappings):
-                    error[(slice(None),)+from_tup] = np.absolute(
-                        sim.raw[it][(slice(None), ) + to_tup] - 
-                        sim.exact[it][(slice(None), ) + to_tup]
-                        )
+                
+                #needed for fixing domain size to smallest domain. 
+                #This will cause
+                #problems when plotting.
+                #error = np.ones_like(sims[0].raw[smallest_it])
+                #for from_tup, to_tup in map_generator(axes_mappings):
+                    #error[(slice(None),)+from_tup] = np.absolute(
+                        #sim.raw[it][(slice(None), ) + to_tup] - 
+                        #sim.exact[it][(slice(None), ) + to_tup]
+                        #)
+                
+                error = np.absolute(
+                    sim.raw[it] - sim.exact[it]
+                    )
                 if __debug__:
                     print "Errors are: %s"%repr(error)
                 sim.write(sd.dgTypes["errorExa"], it, error)
