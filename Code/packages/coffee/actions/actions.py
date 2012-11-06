@@ -5,6 +5,9 @@ import os
 import numpy as np
 import logging
 
+import os.path
+
+
 class Prototype(object):
     """The prototype of all actions. 
     
@@ -51,7 +54,6 @@ class BlowupCutoff(Prototype):
             raise Exception("Function values are above the cutoff")
 
 class Info(Prototype):
-    """docstring for info"""
     def __init__(self, *args, **kwds):
         self.log = logging.getLogger("Info")
         super(Info, self).__init__(*args, **kwds)

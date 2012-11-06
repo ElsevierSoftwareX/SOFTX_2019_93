@@ -11,6 +11,10 @@ Edited by Ben Whale and George Doulis.
 import math
 import logging
 
+import warnings
+
+warnings.simplefilter('error', RuntimeWarning)
+
 class IBVP:
     theActions  = None
     theGrid = None
@@ -21,14 +25,13 @@ class IBVP:
     
     def __init__(self, sol, eqn, grid, action = [], 
         maxIteration = 10000, minTimestep = 1e-8
-        ): #, CFL = 1.0):
+        ): 
         sol.use_system(eqn)
         self.theSolver = sol
         self.theSystem = eqn
         self.maxIteration = maxIteration
         self.theGrid = grid
         self.theActions = action
-#        self.cfl = CFL
         self.log = logging.getLogger("IBVP")
         self.minTimestep = minTimestep
              
@@ -98,7 +101,11 @@ class IBVP:
             if __debug__:
                 self.log.debug("About to advance for iteration = %i"%
                     self.iteration)
-            t, u = advance(t, u, dt)
+            try:
+                t, u = advance(t, u, dt)
+            except OverflowError as e:
+                print "Overflow error({0}): {1}".format(e.errno, e.strerror)
+                computation_valid = False
             u.domain.mpi.comm.barrier()
             self.iteration+=1
             if __debug__:

@@ -49,5 +49,10 @@ mathplot lib and pylab break on vulcan.
 
 --) Remove system dependent data types from simulation HDF
 
+--) Documents interdependencies on hdf files between simulate.py and the system file being run. Included documentation in scripts that require hdf files. Mention that the hdf file must have been constructed using
+the actions.hdf_output module.
+
+--) Move cfl condition from ibvp to system files
+
 SHORT TERM
 1) update advect and wave for free_data
