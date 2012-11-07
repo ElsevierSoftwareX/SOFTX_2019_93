@@ -28,19 +28,19 @@ sys.path.append("../../EvolutionSBP/")
 # the item, not the key.
 #
 # These represent the types of data that a simulation knows about.
-dgTypes = {\
-    "raw":"Raw_Data",\
-    "exact":"Exact_Data",\
-    "errorNum":"Error_Numeric",\
-    "errorExa":"Error_Exact",\
-    "IJ":"Weyl_Constants_IJ",\
-    "domain":"Domain",\
-    "time":"Time",\
-    "dt": "Time_Step",\
-    "scrif":"Scri+",\
-    "constraint": "Constraint",\
-    "mu":"mu",\
-    "mup":"mup"\
+dgTypes = {
+    "raw":"Raw_Data",
+    "exact":"Exact_Data",
+    "errorNum":"Error_Numeric",
+    "errorExa":"Error_Exact",
+    "IJ":"Weyl_Constants_IJ",
+    "domain":"Domain",
+    "time":"Time",
+    "dt": "Time_Step",
+    "scrif":"Scri+",
+    "constraint": "Constraint",
+    "mu":"mu",
+    "mup":"mup"
     }
 
 dgTypesInv = dict(zip(dgTypes.values(),dgTypes.keys()))
@@ -50,10 +50,11 @@ dgTypesInv = dict(zip(dgTypes.values(),dgTypes.keys()))
 systemD = "System"
 
 sysDTypes = {\
-    "system":systemD,\
-    "solver": "Solver",\
-    "grid": "Grid",\
-    "cmp": "cmp"\
+    "system":systemD,
+    "solver": "Solver",
+    "grid": "Grid",
+    "cmp": "cmp",
+    "numvar": "NumVariables"
     }
 
 
@@ -74,16 +75,32 @@ class Sim(object):
                     self.simHDF[systemD+"/"+self.name][item].value\
                     )
         self.cmp = float(self.cmp)
+        self.numvar = int(self.numvar)
         existing_items = self.simHDF.file.keys()
         for key, item in dgTypes.items():
             if item in existing_items:
                 if self.name in self.simHDF[item].keys():
-                    setattr(self,key,\
-                      DataGroup(self.simHDF[item+"/"+self.name],\
-                        returnValue=True\
-                        )\
-                      )
-
+                    if key == "domain":
+                        setattr(self,key,
+                          DomainDataGroup(self.simHDF[item+"/"+self.name],
+                            returnValue=True
+                            )
+                          )
+                    else:      
+                        setattr(self,key,
+                          DataGroup(self.simHDF[item+"/"+self.name],
+                            returnValue=True
+                            )
+                          )
+        setattr(
+            self,
+            "indices", 
+            sorted([
+                int(key) 
+                for key in 
+                self.simHDF[self.simHDF.file.keys()[0]+"/"+self.name].keys()
+                ])
+            )
     
     def tslice(self,i):
         return self.simHDF.tslice(i,self.name,dgType = dgType["raw"])
@@ -253,24 +270,44 @@ class SimulationHDF(object):
         
     def indexOfTime(self,t,sim):
         times_dg = DataGroup(self.file[dgTypes["time"]+"/"+sim])
-        min_time = times_dg[0][0]
-        max_time = times_dg[len(times_dg)-1][0]
-        if t <= min_time:
-            return 0
-        elif t>= max_time:
-            return len(times_dg)-1
+        indices = sorted([
+            int(index) for index in times_dg.group.keys()
+            ])
+        #If only one index
+        if len(indices) == 1:
+            if t==times_dg[indices[0]].value[0]:
+                return indices[0]
+            else:
+                return -1
+        #Check initial step
+        time_dg = times_dg[indices[0]]
+        if indices[1] - indices[0] == 1:
+            dt = times_dg[indices[1]].value-time_dg.value
+            if t<=time_dg.value<t+dt/2:
+                return indices[0]
         else:
-            for i in range(len(times_dg)-1):
-                 time_dg = times_dg[i]
-                 dt = times_dg[i+1].value-time_dg.value
-                 if t-dt/2<time_dg.value<t+dt/2:
-                     return i
-            i = len(times_dg)-1
-            time_dg = times_dg[i-1]
-            dt = times_dg[i].value-time_dg.value
-            if t-dt/2<time_dg.value<=t:
-                return i
-            return -1
+            if t == time_dg.value[0]:
+                return indices[0]
+        #Check all other steps except final
+        for i in range(1, len(indices)-1):
+            time_dg = times_dg[indices[i]]
+            if indices[i+1] - indices[i] == 1:
+                dt = times_dg[indices[i+1]].value-time_dg.value
+                if t-dt/2<=time_dg.value<t+dt/2:
+                    return indices[i]
+            else:
+                if t == time_dg.value[0]:
+                    return indices[i]
+        i = len(indices)-1
+        time_dg = times_dg[indices[i]]
+        if indices[i] - indices[i-1] == 1:
+            dt = time_dg.value - times_dg[indices[i-1]]
+            if t-dt/2<=time_dg.value<=t:
+                return indices[i]
+        else:
+            if t == time_dg.value[0]:
+                return indices[i]
+        return -1
         
 #    def indexOfDomain(self,d,time_index,sim):
 #        domain_dg = DataGroup(self.file[dgTypes["domain"]+"/"+sim])[time_index]
@@ -375,7 +412,7 @@ class DataGroup():
 #                    return i
 #            return None
     
-    def __init__(self, grp,returnValue=False):
+    def __init__(self, grp, returnValue=False):
         """The group to behave like an array. It is assumed that
         the group has/will have a number of datasets with the labels
         '0','1', etc... 
@@ -412,6 +449,27 @@ class DataGroup():
         
     def __repr__(self):
         return r"<H5pyArray datagroup %s (%d)>"% (self.name, len(self))       
+        
+class DomainDataGroup(DataGroup):
+
+    def __setitem__(self, i, value):
+        value = np.array(value)
+        dataset = self.group.require_dataset(str(i), value.shape,  value.dtype)
+        dataset[:] = value
+        dataset.attrs['index'] = i
+    
+    def __getitem__(self, i):
+        dataset = self.group[str(i)]
+        axes_shape = dataset.attrs['axes_shape']
+        axes = []
+        start = 0
+        for i in range(len(axes_shape)):
+            axes += [dataset.value[start:start + axes_shape[i]]]
+            start = start + axes_shape[i]
+        return axes
+        
+    def __repr__(self):
+        return r"<H5pyArray domaindatagroup %s (%d)>"% (self.name, len(self)) 
         
 def binarysearch(a,low,high,value):
     if high<low:

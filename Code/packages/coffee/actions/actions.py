@@ -1,6 +1,7 @@
 import Gnuplot
 import time
-from pylab import *
+import os
+#from pylab import *
 import numpy as np
 import logging
 
@@ -35,10 +36,9 @@ class Prototype(object):
     def _doit(self, it, u):
         pass
 
-
 class BlowupCutoff(Prototype):
 
-    def __init__(self,cutoff = 10,frequency =1, start = -float('infinity'),\
+    def __init__(self, cutoff = 10, frequency = 1, start = -float('infinity'),\
         stop = float('infinity') ):
         super(BlowupCutoff,self).__init__(frequency,start,stop)
         self.cutoff = cutoff
@@ -53,221 +53,10 @@ class BlowupCutoff(Prototype):
         if self.above_cutoff(u):
             raise Exception("Function values are above the cutoff")
 
-class GNUPlotter1D(Prototype):
-    
-    DEFAULT_SETTINGS = ['set yrange [-2:2]', 'set style data linespoints']
-    
-    def __init__(self, *args, **kwds):
-        if 'start' in kwds:
-            start = kwds.pop('start')
-        else:
-            start = -float('Infinity')
-        if 'frequency' in kwds:
-            frequency = kwds.pop('frequency')
-        else:
-            frequency = 1
-        super(GNUPlotter1D,self).__init__(frequency = frequency, start = start)
-        if 'delay' in kwds:
-            self.delay = kwds.pop('delay')
-        else:
-            self.delay = 0.0
-        self.system = kwds.pop('system')
-        try:
-            debug_parent = kwds.pop("debug_parent")
-        except:
-            debug_parent = "main"
-        self.log = logging.getLogger("GNUplotter")
-        try:
-            if kwds['data_function'] is not None:
-                self.datafunc = kwds.pop('data_function') 
-            else:
-                self.datafunc = lambda y,x,z:x.fields
-        except:
-            self.datafunc = lambda y,x,z:x.fields
-#        if __debug__:
-#            self.log.debug("Initialising plotter...")
-        self.Device = Gnuplot.Gnuplot()
-        g = self.Device
-        for arg in args:
-            g(arg)
-#        if __debug__:
-#            self.log.debug("Done.-")
-
-    def _doit(self, it, u):
-        g = self.Device
-        x = u.x
-#        if __debug__:
-#            self.log.debug("Plotting iteration %i with data %s"%(it,str(u)))
-        f = np.atleast_2d(self.datafunc(it,u,self.system))
-#        if __debug__:
-#            self.log.debug("Data after processing by self.datafunc is %s"%f)
-        graphs = []
-        g('set title "Advection equation time = %f" enhanced'%u.time)
-        for i,val in enumerate(f):
-            graphs += [Gnuplot.Data(x, val,\
-                title = "Component %i"%i)]
-        g.plot(*graphs)
-        time.sleep(self.delay)
-    
-    def __del__(self):
-        del self.Device
-
-class GNUPlotter2D(Prototype):
-    
-    def __init__(self, *args, **kwds):
-        if 'start' in kwds:
-            start = kwds.pop('start')
-        else:
-            start = -float('Infinity')
-        if 'frequency' in kwds:
-            frequency = kwds.pop('frequency')
-        else:
-            frequency = 1
-        super(GNUPlotter2D,self).__init__(frequency = frequency, start = start)
-        if 'delay' in kwds:
-            self.delay = kwds.pop('delay')
-        else:
-            self.delay = 0.0
-        self.system = kwds.pop('system')
-        try:
-            debug_parent = kwds.pop("debug_parent")
-        except:
-            debug_parent = "main"
-        self.log = logging.getLogger("GNUPlotter2D")
-        try:
-            if kwds['data_function'] is not None:
-                self.datafunc = kwds.pop('data_function') 
-            else:
-                self.datafunc = lambda y,x,z:x.fields
-        except:
-            self.datafunc = lambda y,x,z:x.fields
-#        if __debug__:
-#            self.log.debug("Initialising plotter...")
-        self.Device = Gnuplot.Gnuplot()
-        g = self.Device
-        for arg in args:
-            g(arg)
-#        if __debug__:
-#            self.log.debug("Done.-")
-
-    def _doit(self, it, u):
-        g = self.Device
-        x = u.x
-#        if __debug__:
-#            self.log.debug("Plotting iteration %i with data %s"%(it,str(u)))
-        f = np.atleast_2d(self.datafunc(it,u,self.system))
-#        if __debug__:
-#            self.log.debug("Data after processing by self.datafunc is %s"%f)
-        graphs = []
-        g('set title "Advection equation time = %f" enhanced'%u.time)
-        for i in range(1):
-            graphs += [Gnuplot.GridData(f[i,:,:],xvals = x.axes[0],yvals = x.axes[1],\
-                filename="deleteme.gp",title = "Component %i"%i,binary = 0)]
-        g.splot(*graphs)
-        time.sleep(self.delay)
-    
-    def __del__(self):
-        del self.Device
-
-class Plotter(Prototype):
-    """docstring for Plotter"""
-    def __init__(self, frequency = 1, xlim = (-1,1), ylim = (-1,1), \
-        findex = None, delay = 0.0, dir = None):
-        super(Plotter, self).__init__(frequency)
-        if dir is not None:
-            self.picnum = 0
-            self.path = os.path.expanduser(dir)
-        if findex is not None:
-            self.index = findex
-            self.delay = delay
-            self.colors = ('b','g','r','c','m','y','k','coral') 
-#            from numpy import asarray
-            ion()
-            fig = figure(1)
-            ax = fig.add_subplot(111)
-            self.lines = [ ax.add_line(Line2D(xlim,ylim)) for k in findex ] 
-            ax.set_xlim(xlim)
-            ax.set_ylim(ylim)       
-            ax.grid(True)
-            self.axes = ax
-            fig.show()
-    
-    def _doit(self, it, u):
-        x = u.x
-        index = np.asarray(self.index)
-        f = u.fields[index]
-        mx = np.max(f.flat)
-        mn = np.min(f.flat)
-        self.axes.set_title("Iteration: %d, Time: %f" % (it,u.time))
-        #self.axes.set_xlim(x[0],x[-1])
-        #self.axes.set_ylim(mn,mx,auto=True)
-
-        l = len(self.index)
-        ioff()
-        for k in range(l):
-            line = self.lines[k]
-            line.set_xdata(x)
-            line.set_ydata(f[k])
-            line.set_color(self.colors[k])
-        ion()
-
-        draw()
-
-        if dir is not None:
-            filename = self.path + ('/pic%06d.png'% self.picnum)
-            self.picnum = self.picnum + 1
-            savefig(filename, format = 'png')
-        time.sleep(self.delay)
-
-class C_Plotter(Prototype):
-    """docstring for C_Plotter"""
-    def __init__(self, frequency = 1, xlim = (-1,1), ylim = (-1,1), \
-        findex = None, delay = 0.0):
-        super(C_Plotter, self).__init__(frequency)
-        if findex is not None:
-            self.index = findex
-            self.delay = delay
-            self.colors = ('b','g','r','c','m','y','k','coral', 'orange') 
-            from numpy import asarray
-            ion()
-            fig = figure(1)
-            ax = fig.add_subplot(111)
-            self.lines = [ ax.add_line(Line2D(xlim,ylim)) for k in findex ] 
-            self.lines.append(ax.add_line(Line2D(xlim,ylim)))
-            ax.set_xlim(xlim)
-            ax.set_ylim(ylim)       
-            ax.grid(True)
-            self.axes = ax
-            fig.show()
-    
-    def _doit(self, it, u):
-        x = u.x
-        index = np.asarray(self.index)
-        f = u.fields[index]
-        mx = np.max(f.flat)
-        mn = np.min(f.flat)
-        self.axes.set_title("Iteration: %d, Time: %f" % (it,u.time))
-
-        l = len(self.index)
-        ioff()
-        C = f[0]*f[1] + 3.*(((f[4]*f[5]) - (f[2]*f[3]))**2)
-        for k in range(0,8):
-            line = self.lines[k]
-            line.set_xdata(x)
-            line.set_ydata(f[k])
-            line.set_color(self.colors[k])
-        line = self.lines[8]
-        line.set_xdata(x)
-        line.set_ydata(C)
-        line.set_color(self.colors[8])
-        
-        ion()
-        draw()
-        time.sleep(self.delay)
-
 class Info(Prototype):
-    """docstring for info"""
-    
-    def _doit(self, it, u):
-        print("Iteration: %d, Time: %f" % (it, u.time))
+    def __init__(self, *args, **kwds):
+        self.log = logging.getLogger("Info")
+        super(Info, self).__init__(*args, **kwds)
 
+    def _doit(self, it, u):
+        self.log.info("Iteration: %d, Time: %f" % (it, u.time))
