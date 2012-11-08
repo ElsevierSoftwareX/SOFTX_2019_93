@@ -1,0 +1,284 @@
+#!/usr/bin/env python
+# encoding: utf-8 
+"""
+Created by Ben Whale, 2012-10-08. 
+"""
+from __future__ import division
+#import sys
+#import os
+#import unittest
+#import math
+import numpy as np
+import abc
+#import logging
+
+################################################################################
+# Base classes for SBP artificial dissipation operators
+################################################################################
+class Diss(object):
+    name = "Dissipation"
+
+    def __init__(self, *args, **kwds):
+        pass
+
+    @abc.abstractmethod
+    def __call__(self, u, dx, boundary_ID=None):
+        r,c = self.bdyRegion
+        if u.shape[0] + 1 <= 2 * c:
+            self.log.error("Domain too small for application of operator")
+            raise ValueError("Domain too small for application of operator")
+#        if __debug__:
+#            self.log.debug("Boundary region r = %s, c = %s"%(r,c))
+#            self.log.debug("Array to operate on is = %s"%repr(u))
+
+    def __str__(self):
+        return "SBP Dissipation operator"%self.name
+        
+class DissDiag(Diss):
+    name = "Dissipation Diagonal Norm"
+
+    def __init__(self):
+        self.bdyRegion = self.Ql.shape
+        self.w = self.A.shape[0]//2
+        self.log = logging.getLogger('DissDiag')
+
+    def __call__(self, u, dx, boundary_ID=None):
+        super(DissDiag, self)(u, dx, boundary_ID)
+        diss_u = np.zeros_like(u)
+        diss_u = np.convolve(u, self.A, mode='same')
+#        if __debug__:
+#            self.log.debug("After convolve: diss_u = %s"%repr(diss_u))
+        if boundary_ID is None:
+            diss_u[0:r] = np.dot(self.Ql, u[0:c])
+            diss_u[-r:] = np.dot(self.Qr, u[-c:])
+#            if __debug__:
+#                self.log.debug("Applying both boundary region computation")
+        elif boundary_ID == grid.LEFT:
+            diss_u[0:r] = np.dot(self.Ql, u[0:c])
+#            if __debug__:
+#                self.log.debug("Applying left boundary region computation")
+        elif boundary_ID == grid.RIGHT:
+            diss_u[-r:] = np.dot(self.Qr, u[-c:])
+#            if __debug__:
+#                self.log.debug("Applying right boundary region computation")    
+#        if __debug__:
+#            self.log.debug("After boundary conditions: diss_u = %s"%repr(diss_u))
+        return diss_u/(dx**self.order)
+
+class DissRestFull(Diss):
+    name = "Dissipation Restricted Full Norm"
+
+    def __init__(self, p):
+        self.bdyRegion = self.Ql.shape
+        self.w = self.A.shape[0]//2
+        self.p = p
+        self.log = logging.getLogger('DissRestFull')
+
+    def __call__(self, u, dx, boundary_ID=None):
+        """We follow the notation of Diener Dorband Schnetter and Tiglio. We
+        make the assumption that the differencing operator D_p is always of the
+        form of some central finite difference stencil in the interior and some
+        boundary matrix on the boundary.
+        
+        An important assumption is that D decomposes into the sum of two
+        matrices A, Q. Where A represents the application of a centred
+        finite difference operator on the interior and B the application of the
+        centred difference on the boundary. 
+
+        If the stencil for A is [-1,3, -3, 1] then it is assumed that
+        D has the form
+        [[-1, 3, -3, 1, 0,...], [-1, 3, -3, 1, 0,...], [-1, 3, -3, 1, 0,...],
+         [0, -1, 3, -3, 1, 0,...], [0, 0, -1, 3, -3, 1, 0, ...], ... ]
+        and that the number of times the stencil is repeated on the boundary
+        is the stencil length (4 in this case) minus 1 (to give 3 repeats).
+        Hence Q is assumed to have the form
+        [[-1, 3, -3, 1, 0,...], [-1, 3, -3, 1, 0,...], [0,0,0,0,0,...],
+         [0,0,0,0,0,0,...], ... ]
+        and A is assumed to be D-B. This ensures that if
+        r,c = self.bdyRegion then r = self.A.shape[0]//2. This is an important
+        assumption that is applied in the formula below to calculate 
+        Transpose[A].B.A.u where B is the non-constant diagonal matrix required 
+        to ensure numerical stability (see the paper).
+
+        The explicit form of A and Q here ensures that Transpose[A].Q = 0
+        and Transpose[Q].A = 0. This implies that
+        Transpose[D].B.D.u = Transpose[Q].B.Q.u + Transpose[A].B.A.u
+        This equation reduces the need for futher calculations involving
+        Transpose[A].Q and Transpose[Q].A
+
+        In principle it is possible to remove these restrictions, i.e. allow
+        r \neq self.A.shape[0]//2 and to allow Transpose[A].Q \neq 0
+        and Transpose[Q].A \neq 0, but the code below WILL need to be 
+        rewritten.
+        """
+        #This performs a consistance check
+        super(DissDiag, self)(u, dx, boundary_ID)
+
+        #First do the internal convolution.
+        #The array A is the central difference stencil that makes up the
+        #"interior" portion of D_p. By assumption A is a matrix with the first
+        #r rows full of zeros and the first non-zero row starting with the
+        #stencil. That is if the stencil is [1, -2, 1] then the top left corner
+        #of A is [[0,0,0,...], [0,0,0,...], [1, -2, 1, 0,...], ...
+        #This implies that the convolvution operator used to implement matrix
+        #multiplication must take account of the zero rows. 
+        #It turns out that this can be done by using the 'valid' mode in 
+        #the np.convolve method. This will reduce the size of the output by r
+        #elements on the end and beginning of the output array. The values that
+        #should be in these positions are all zero due to the r zero'd rows in
+        #the matrix A.
+        diss_u_int = np.zeros_like(u)
+        diss_u_int[r:-r] = np.convolve(u, self.A, mode='valid')
+        diss_u_int = self.B * diss_u_int
+
+        #To multiply my Transpose[A], requires some care. The zero'd rows now
+        #become columns and the stencil is reversed. I make here the assumption
+        #that the stencil is always symmetric, up to sign! For stencils with
+        #odd length (p is even) the sign does not change, but for stencils with
+        #even length (p is odd) the sign does change. For the stencil 
+        #[-1,3,-3,1] the matrix A is
+        #[[0,0,0,0,0,...], [0,0,0,0,0,...], [-1, 3, -3, 1, 0,...], 
+        # [0, -1, 3, -3, 1, 0,...], ...]
+        #Hence Transpose[A] is
+        #[[0, 0, -1, 0,...], [0, 0, 3, -1, 0,...], [0, 0, -3, 3, -1, 0,...],
+        # [0, 0, 1, -3, 3, -1, 0,...],... ]
+        #This is incontrast to the A matrix generated by the stencil [1,-2,1]
+        #where Transpose[A] is
+        #[[0, 1, 0,...], [0, -2, 1, 0,...], [0, 1, -2, 1, 0,...], ...]
+        #This is why the term math.pow(-1, p) is incorporated.
+        #
+        #On top of this np.convolve performs the convolution iterating from the
+        #end of the stencil. This makes a difference when boundary affects of
+        #convolution are desirable (as in this case). This is why there is
+        #a ::-1 in the iteration for u in convolve. This did not need to be
+        #accounted for in the calculation above because of the use of the
+        #'valid' mode.
+        #
+        #Lastly the differences in vector length diss_u[r:-r] and diss_u is
+        #inculded to account for the vector lengthening of the 'full' mode
+        #of the convolve method which adds r number of terms to the vector
+        #at both ends.
+        diss_u_int = np.convolve(
+            diss_u_int[r:-r], 
+            math.pow(-1,p) * self.A[::-1], 
+            mode='full'
+            )
+
+        #Second do the boundary convolution
+        #The check at the beginning of the method ensures that the
+        #two array's diss_u_b[0:r] and diss_u_b[-r:] do not share any points
+        #of diss_u_b
+        diss_u_b = np.zeros_like(u)
+#        if __debug__:
+#            self.log.debug("After convolve: diss_u = %s"%repr(diss_u))
+        if boundary_ID is None:
+            diss_u_b[0:r] = np.dot(self.Ql, u[0:c])
+            diss_u_b[-r:] = np.dot(self.Qr, u[-c:])
+#            if __debug__:
+#                self.log.debug("Applying both boundary region computation")
+        elif boundary_ID == grid.LEFT:
+            diss_u[0:r] = np.dot(self.Ql, u[0:c])
+#            if __debug__:
+#                self.log.debug("Applying left boundary region computation")
+        elif boundary_ID == grid.RIGHT:
+            diss_u[-r:] = np.dot(self.Qr, u[-c:])
+#            if __debug__:
+#                self.log.debug("Applying right boundary region computation")    
+#        if __debug__:
+#            self.log.debug("After boundary conditions: diss_u = %s"%repr(diss_u))
+
+        #Add the two parts together and return the result with the appropriate
+        #numerical factor.
+        diss_u = diss_u_int + diss_u_b
+        factor = math.pow(0.5, 2 * self.p) * math.pow(dx, 2 * (p - 2))
+        return -factor * diss_u
+
+
+################################################################################
+# Dissipation for diagonal norm SBP operators.
+################################################################################
+class Diss21_DDST(DissDiag):
+    """
+    Taken from Diener, Dorband, Schnetter and Tiglio. Due to consistance
+    conditions on SBP dissipertion operators and the derivative operators this
+    disspertion operator can only be used with the D21 operator from the same
+    paper. Note that D21 is unique so the operator sbp.D21_CNG is the 
+    correct operator. 
+    """
+    def __init__(self, *args, **kwds):
+        A = np.array([1.0,2.0,1.0])
+        name = "Diss21_DDST"
+        p = 2
+        
+        Q = np.zeros((2,3))
+        
+        Q[0,0] = -2
+        Q[0,1] = 2.0
+        Q[0,2] = 0.0
+        Q[1,0] = 1.0
+        Q[1,1] = -2.0
+        Q[1,2] = 1.0
+        
+        self.Ql = Q
+        self.Qr = -self.Ql[::-1,::-1]
+        
+        super(D21_CNG, self).__init__(*args, **kwds)
+
+class Diss42_DDST(DissDiag):
+    """
+    Taken from Diener, Dorband, Schnetter and Tiglio. Due to consistance
+    conditions on SBP dissipertion operators and the derivative operators this
+    disspertion operator can only be used with the sbp.D42 operator which
+    is from the same
+    paper. 
+    """
+    def __init__(self, *args, **kwds):
+        A = np.array([-1.0, 4.0, -6.0, 4.0, -1.0])
+        name = "Diss42_DDST"
+        p = 4
+        
+        Q = np.zeros((4,6))
+        
+        Q[0,0] = -2.8235294117647058823529411764705882352941176470588
+        Q[0,1] = 5.6470588235294117647058823529411764705882352941176
+        Q[0,2] = -2.8235294117647058823529411764705882352941176470588
+        Q[0,3] = 0.0 
+        Q[0,4] = 0.0 
+        Q[0,5] = 0.0 
+
+        Q[1,0] = 1.6271186440677966101694915254237288135593220338983
+        Q[1,1] = -4.0677966101694915254237288135593220338983050847458
+        Q[1,2] = 3.2542372881355932203389830508474576271186440677966
+        Q[1,3] = -0.81355932203389830508474576271186440677966101694915
+        Q[1,4] = 0.0
+        Q[1,5] = 0.0
+        
+        Q[2,0] = -1.1162790697674418604651162790697674418604651162791
+        Q[2,1] = 4.4651162790697674418604651162790697674418604651163
+        Q[2,2] = -6.6976744186046511627906976744186046511627906976744
+        Q[2,3] = 4.4651162790697674418604651162790697674418604651163
+        Q[2,4] = -1.1162790697674418604651162790697674418604651162791
+        Q[2,5] = 0.0
+
+        Q[3,0] = 0.0
+        Q[3,1] = -0.97959183673469387755102040816326530612244897959184
+        Q[3,2] = 3.9183673469387755102040816326530612244897959183673
+        Q[3,3] = -5.8775510204081632653061224489795918367346938775510
+        Q[3,4] = 3.9183673469387755102040816326530612244897959183673
+        Q[3,5] = -0.97959183673469387755102040816326530612244897959184
+
+        self.Ql = Q
+        self.Qr = -self.Ql[::-1,::-1]
+        
+        super(D21_CNG, self).__init__(*args, **kwds)
+
+################################################################################
+# Dissipation for restricted full norm SBP operators.
+################################################################################
+class Diss43_DDSt(DissRestFull):
+    """Compatibility considerations require that this disspertion operator only 
+    used with sbp.D43_Tiglioetal.
+    """
+
+    def __init__(self):
+        
