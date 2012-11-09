@@ -7,8 +7,7 @@ import argparse
 import numpy as np
 import math
 
-sys.path.append("../../EvolutionSBP/")
-from skyline.io import simulation_data as sd
+from coffee.io import simulation_data as sd
 
 # load default file
 from hdfvis_gnuplot_defaults import *
@@ -38,7 +37,7 @@ def error(args):
         
         # Setting argument defaults
         if args.c is None:
-            args.c = range(sims[0].raw[0].shape[0])
+            args.c = range(sims[0].numvar)
         
         # Initialise array to calculate abs errors and convergence rates
         tSimNames = [sim.name for sim in sims[:-1]]
@@ -63,10 +62,12 @@ def error(args):
             additional_data +=[(data, index, data_dg, domain)]
         
         # Producing plots
-        for j,phi_index in enumerate(args.c):
+        for j, phi_index in enumerate(args.c):
             print "Doing component %i"%phi_index
             plot_data = []
-            for i,sim in enumerate(sims[:-1]):
+            for i, sim in enumerate(sims):
+                if i == len(sims)-1 and not args.e:
+                    break
                 # Get data for plot
                 index = sim.indexOfTime(args.t)
                 if args.e:
@@ -77,15 +78,15 @@ def error(args):
                 name = sim.name
                 if args.o:
                     if args.e:
-                        plot_data += [Gnuplot.Data(domain,np.log2(error), \
+                        plot_data += [Gnuplot.Data(domain[0],np.log2(error), \
                             title = name, filename = "%s-e-exa_%i_%f.gnup"%\
                                 (args.ofile_base, phi_index, args.t))]
                     else:
-                        plot_data += [Gnuplot.Data(domain,np.log2(error), \
+                        plot_data += [Gnuplot.Data(domain[0],np.log2(error), \
                           title = name, filename = "%s-e-num_%i_%f.gnup"%\
                               (args.ofile_base, phi_index, args.t))]
                 else:
-                    plot_data += [Gnuplot.Data(domain,np.log2(error), \
+                    plot_data += [Gnuplot.Data(domain[0],np.log2(error), \
                         title = name)]
             for add_name, add_index, add_data, add_domain in additional_data:
                 plot_data += [Gnuplot.Data(baDomain,baRaw[phi_index,:],\
@@ -141,7 +142,7 @@ def anima(args):
 ################################################################################
 def _plot(args):
     
-    animationLength = 2
+    animationLength = 10
     framesPerSec = 60
         
     #Initialize gnuplot
@@ -180,19 +181,20 @@ def _plot(args):
                 g.reset()
                 for com in args.g:
                     g(com)
+                g('set yrange [-5:5]')
                 if not args.d:
                     g('set output "%s_%s_%s.%s"'%\
                         (args.ofile_base, sim.name, args.t, args.ofile_ext))
                 
                 group = sim.getDgType(dg)
                 # While there is a next frame...
-                while nextFrame_index<numOfFrames:
+                while nextFrame_index<stop_index+1:
                     # plot data
                     i = nextFrame_index
                     y = group[i]
                     g.title('Simulation %s at time %f'%(sim.name,times[i])) 
                     plotItems = []
-                    for j,row in enumerate(np.atleast_2d(y.value)):
+                    for j, row in enumerate(np.atleast_2d(y.value)):
                         if args.o and args.frame is None:
                             plotItems +=[Gnuplot.Data(domains[i],\
                                row, \

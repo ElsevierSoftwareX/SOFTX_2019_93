@@ -1,5 +1,19 @@
 # File types to be ignored by git
 
+# Ignore directories
+Code/AdvectionS2/_compiledLinux/
+Code/packages/coffee/swsh/c_code/rrf-3.2/bin/
+Code/packages/coffee/swsh/c_code/rrf-3.2/doc/
+Code/packages/coffee/swsh/c_code/rrf-3.2/tests/
+Code/packages/coffee/swsh/spinsfastpy/examples/
+
+# Ignore original spinsfast code
+#Code/packages/coffee/swsh/spinsfastpy/spinsfast_rev90/
+
+# Ignore any folder that matches /output
+output/
+Output/
+
 # binary python files and objects
 *.pyc
 *.pyo
@@ -27,5 +41,11 @@
 .DS_Store
 *.backup
 
-# dynamic library
+# dynamic librarys
 libspinsfast.so
+
+# c object code
+*.o
+
+#tilde backup files
+*~

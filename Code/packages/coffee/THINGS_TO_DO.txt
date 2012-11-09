@@ -36,10 +36,23 @@ a tslice.
 11) grid objects changed to no longer subclass nd.array and use mesh type arrays for
 multi dimensional processing.
 
-12) Documents interdependencies on hdf files between simulate.py and the system file being run. Included documentation in scripts that require hdf files. Mention that the hdf file must have been constructed using
+12) Move cfl from ibvp to systems.
+
+13) remove extronious references to time in ibvp, system classes and solvers.
+Similary, come up with some way to address the issue of multiple, conflicting, times
+parameters being passed to system evolute routines.
+
+14) separate the matplotlib dependent modules from other code. Imports of
+mathplot lib and pylab break on vulcan.
+
+--) Remove linking of system and solver done in ibvp.py. This can be done at construction time.
+
+--) Remove system dependent data types from simulation HDF
+
+--) Documents interdependencies on hdf files between simulate.py and the system file being run. Included documentation in scripts that require hdf files. Mention that the hdf file must have been constructed using
 the actions.hdf_output module.
 
-13) Move cfl condition from ibvp to system files
+--) Move cfl condition from ibvp to system files
 
 SHORT TERM
 1) update advect and wave for free_data

@@ -24,8 +24,9 @@ class IBVP:
     
     
     def __init__(self, sol, eqn, grid, action = [], 
-        maxIteration = 10000, minTimestep = 1e-8):
-        sol.useSystem(eqn)
+        maxIteration = 10000, minTimestep = 1e-8
+        ): 
+        sol.use_system(eqn)
         self.theSolver = sol
         self.theSystem = eqn
         self.maxIteration = maxIteration
@@ -34,60 +35,68 @@ class IBVP:
         self.log = logging.getLogger("IBVP")
         self.minTimestep = minTimestep
              
-    def run(self, tstart, tstop = float('inf')):
+    def run(self, tstart, tstop = float('inf'), thits = None):
         """Go for it"""
+        if thits is None:
+            thits = []
+        if tstop not in thits:
+            thits += [tstop]
+        thits = sorted(thits)
+        thits.reverse()
+        tstop = thits.pop()
         t = tstart
         #Get initial data and configure timeslices for multiple processors
         u = self.theSystem.initial_data(t, self.theGrid)
         self.log.info("Running system %s"%str(self.theSystem))
-        
-        if __debug__:
-            self.log.info("Grid = %s"%str(self.theGrid))
-            self.log.info("Using spacestep dx=%s"%repr(u.dx))
+        self.log.info("Grid = %s"%str(self.theGrid))
+        self.log.info("Stepsizes = %s"%repr(u.domain.step_sizes))
+        if __debug__:    
+            self.log.debug("self.actions is %s"%repr(self.theActions))
             self.log.debug("Initial data is = %s"%repr(u))
-        
         advance = self.theSolver.advance
-        validate = self.theGrid.validate
         computation_valid = True
-        
-        while(computation_valid):
-            dt = self.theSystem.timestep(u)
-            if __debug__: self.log.debug("Using timestep dt=%f"%(dt,))
-     
-            if dt < self.minTimestep:
-                self.log.warning('Timestep too small: dt = %f\nFinishing ...'%
-                    dt)
-                break
-                
-            if (self.iteration > self.maxIteration):
+        while(computation_valid and t < tstop):
+            if __debug__:
+                self.log.debug("Beginning new iteration")
+
+            if self.iteration > self.maxIteration:
                 self.log.warning("Maximum number of iterations exceeded")
                 break
-            
-            # if (math.fabs(t-tstop) < dt/2):
-            #     self.log.warning("Maximum time reached at %f for iterations: %d"
-            #         %(t, self.iteration))
-            #     break
-            
+           
+            dt = self.theSystem.timestep(u)
+            #import warnings
+
+            #with warnings.catch_warnings(record=True) as w:
+                #dt = self.theSystem.timestep(u)
+                #if len(w)==1 and issubclass(w[-1].category, RuntimeWarning):
+                    #print t
+                    #print u.time
+                    #print w
+
+            if dt < self.minTimestep:
+                self.log.error(
+                    'Exiting computation: timestep too small dt = %.15f'%dt
+                )
+                break
             
             timeleft = tstop - t
-            
-            if (timeleft < dt):
+            if timeleft < dt:
                 dt = timeleft
-                self.log.warning("Final time step: adjusting to dt = %f" % dt)
-                computation_valid = False
-             
-            actions_do_actions = [action.will_run(self.iteration,u) 
-                for action in self.theActions]
-            if any(actions_do_actions):
-                tslice = u.collect_data()
-                for i, action in enumerate(self.theActions):
-                    if actions_do_actions[i]:
-                        if __debug__:
-                            self.log.debug(
-                                "Running action %s at iteration %i"%\
-                                 (str(action), self.iteration)
-                                 )
-                        action(self.iteration, tslice)
+                if not thits:
+                    self.log.warning(
+                            "Final time step: adjusting to dt = %.15f" % dt
+                        )
+                    computation_valid = False
+                else:
+                    self.log.warning(
+                        "Forcing evaluation at time %f"%tstop
+                    )
+                    tstop = thits.pop()
+            
+            if __debug__: 
+                self.log.debug("Using timestep dt = %f"%dt)
+           
+            self._run_actions(t, u)
 
             if __debug__:
                 self.log.debug("About to advance for iteration = %i"%
@@ -97,26 +106,44 @@ class IBVP:
             except OverflowError as e:
                 print "Overflow error({0}): {1}".format(e.errno, e.strerror)
                 computation_valid = False
-
+            u.barrier()
             self.iteration+=1
             if __debug__:
                 self.log.debug("time slice after advance = %s"%repr(u))
         # end (while)
-        
-        # do the last round of actions
-        actions_do_actions = [action.will_run(self.iteration,u) 
-            for action in self.theActions]
-        if any(actions_do_actions):
-            tslice = u.collect_data()
-            for i, action in enumerate(self.theActions):
-                if actions_do_actions[i]:
-                    if __debug__:
-                        self.log.debug(
-                            "Running action %s at iteration %i"%\
-                             (str(action), self.iteration)
-                             )
-                    action(self.iteration, tslice)
-
-            
-        self.log.info("Finished computation at time %f for iteration %i"%(t,self.iteration))
+        self._run_actions(t, u)
+        u.barrier()
+        self.log.info(
+            "Finished computation at time %f for iteration %i"%
+            (t,self.iteration)
+            )
         return u
+
+    def _run_actions(self, t, u):
+        #Ideally u.collect_data() should only be executed if there
+        #actions that will run. because of single process access to
+        #actions this causes an issue.
+        #Some thought is required to fix this problem.
+        tslice = u.collect_data()
+        if tslice is not None:
+            if __debug__:
+                self.log.debug(
+                    "tslice is not None. Computing if actions will run"
+                    )
+            actions_do_actions = [
+                action.will_run(self.iteration, tslice) 
+                for action in self.theActions
+                ]
+            if any(actions_do_actions):
+                if __debug__:
+                    self.log.debug("Some actions will run")
+                for i, action in enumerate(self.theActions):
+                    if actions_do_actions[i]:
+                        if __debug__:
+                            self.log.debug(
+                                "Running action %s at iteration %i"%\
+                                 (str(action), self.iteration)
+                                 )
+                        action(self.iteration, tslice)
+                if __debug__:
+                    self.log.debug("All actions done")

@@ -31,7 +31,7 @@ the EvolutionSBP code.""")
 parser.add_argument('-f','-file', help=\
 """The name of the hdf file to be produced. Defaults to test.""")
 args = parser.parse_args()
-################################################################################  
+################################################################################
 # These are the commonly altered settings
 ################################################################################
 

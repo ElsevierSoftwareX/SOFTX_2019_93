@@ -16,9 +16,9 @@ class SimOutput(Prototype):
     as an attribute of SimOutput.
     
     The existing subclasses of SimOutputType are:
-    Data -- write tslice.fields to a datagroup
+    Data -- write tslice.data to a datagroup
     Exact -- calls system.exactValue(tslice.time,tslice.domain) and outputs the 
-             fields of the resulting tslice to a datagroup
+            .data of the resulting tslice to a datagroup
     Times -- writes tslice.time to a datagroup
     TimeStep -- writes the time step associated to tslice to a datagroup. This 
                 is currently implemented by calling system.timestep(u)
@@ -36,16 +36,17 @@ class SimOutput(Prototype):
 
     def __init__(self, hdf_file, solver, theSystem, theInterval, 
             actionTypes, 
-            frequency = 1, 
+#            frequency = 1, 
             cmp_ = None, 
             overwrite = True, 
             name = None, 
-            start = -float('infinity'), 
-            stop = float('infinity')):
+#            start = -float('infinity'), 
+#            stop = float('infinity'),
+            **kwds):
         self.log = logging.getLogger("SimOutput")
-#        if __debug__:
-#            self.log.debug("Setting up HDF output...")
-        super(SimOutput,self).__init__(frequency)
+        if __debug__:
+            self.log.debug("Setting up HDF output...")
+        super(SimOutput,self).__init__(**kwds)
         if name == None:
             hour = str(time.localtime()[3])
             minute = str(time.localtime()[4])
@@ -55,20 +56,22 @@ class SimOutput(Prototype):
         self.hdf = hdf_file
         self.solver = solver
         self.system = theSystem
-        self.grid = theInterval
+        self.domain = theInterval
         self.actions = actionTypes
         self.overwrite = overwrite
         self.cmp_ = cmp_
         for action in actionTypes:
             action.setup(self)
-#        if __debug__:
-#            self.log.debug("HDF output setup completed.")
+        if __debug__:
+            self.log.debug("HDF output setup completed.")
         
     def _doit(self,it,u):
         for action in self.actions:
-#            if __debug__:
-#                self.log.debug("Outputting %s"%action.groupname)
+            if __debug__:
+                self.log.debug("Outputting %s"%action.groupname)
             action(it,u)
+            if __debug__:
+                self.log.debug("Output done")
 
     class SimOutputType(object):
 
@@ -94,8 +97,8 @@ class SimOutput(Prototype):
         def __call__(self,it,u):
             for key,value in self.derivedAttrs.items():
                 v = value(it,u,self.parent.system)
-#                if __debug__:
-#                    self.log.debug("Derived Attrs = %s"%str(v))
+                if __debug__:
+                    self.log.debug("Derived Attrs = %s"%str(v))
                 self.data_group[it].attrs[key] = v
          
     class Data(SimOutputType):
@@ -104,7 +107,7 @@ class SimOutput(Prototype):
 
         def __call__(self,it,u):
             dg = self.data_group
-            dg[it] = u.fields
+            dg[it] = u.data
             super(SimOutput.Data,self).__call__(it,u)
 
     class Exact(SimOutputType):
@@ -114,7 +117,7 @@ class SimOutput(Prototype):
         def __call__(self,it,u):
             dg = self.data_group
             parent = self.parent
-            dg[it] = parent.system.exactValue(u.time,u.x).fields
+            dg[it] = parent.system.exact_value(u.time, u.domain).data
             super(SimOutput.Exact, self).__call__(it, u)
 
     class Times(SimOutputType):
@@ -141,7 +144,21 @@ class SimOutput(Prototype):
         
         def __call__(self,it,u):
             dg = self.data_group
-            dg[it] = u.x
+            axes = u.domain.axes
+            axes_shape = tuple([axis.size for axis in axes])
+            axes_flat = np.empty(
+                (reduce(lambda x,y: x+y, axes_shape),),
+                dtype=u.domain.axes[0].dtype
+                )
+            start = 0
+            for i, axis in enumerate(axes):
+                axes_flat[start: start + axes_shape[i]] = axis
+                start = start + axes_shape[i]
+            dg[it] = axes_flat
+            dg[it].attrs["axes_shape"] = axes_shape
+            dg[it].attrs["shape"] = u.domain.shape
+            dg[it].attrs["bounds"] = u.domain.bounds
+            dg[it].attrs["comparison"] = u.domain.comparison
             super(SimOutput.Domains,self).__call__(it,u)
 
     class Constraints(SimOutputType):
@@ -170,23 +187,33 @@ class SimOutput(Prototype):
         
         groupname = systemD
         
-        def setup(self,parent):
+        def setup(self, parent):
             super(SimOutput.System,self).setup(parent)
             g = self.data_group.group
             psystem = np.asarray(repr(parent.system))
-            pgrid = np.asarray(repr(parent.grid))
+            pgrid = np.asarray(repr(parent.domain))
             psolver = np.asarray(repr(parent.solver))
             pcmp = np.asarray(repr(parent.cmp_))
+            pnumvar = np.asarray(repr(parent.system.numvar))
             g.require_dataset(sysDTypes['system'],\
                 psystem.shape, psystem.dtype, \
-                data=psystem)
+                data = psystem)
             g.require_dataset(sysDTypes['grid'], \
                 pgrid.shape, pgrid.dtype, data=pgrid)
             g.require_dataset(sysDTypes['solver'], \
                 psolver.shape, psolver.dtype, \
                 data = psolver)
-            g.require_dataset(sysDTypes['cmp'], \
-                pcmp.shape, pcmp.dtype, data=pcmp)
-        
+            g.require_dataset(
+                sysDTypes['cmp'], 
+                pcmp.shape, 
+                pcmp.dtype, 
+                data=pcmp
+                )
+            g.require_dataset(
+                sysDTypes['numvar'], 
+                pnumvar.shape, 
+                pnumvar.dtype, 
+                data=pnumvar
+                )
         def __call__(self,it,u):
             pass

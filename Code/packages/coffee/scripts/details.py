@@ -4,8 +4,6 @@ import sys
 import h5py
 import argparse
 
-sys.path.append("../../EvolutionSBP/")
-print(sys.path)
 from coffee.io import simulation_data as sd
 
 def printTimes(simulationHDF):
@@ -49,6 +47,13 @@ group = hdf group to be printed"""
             elif key1 == sd.systemD:
                 print "==========================="
                 exploreKeys(group[key1][key2])
+                for key3 in group[key1][key2]:
+                    print "%s: %s"%(\
+                        group[key1][key2][key3],\
+                        group[key1][key2][key3].value\
+                        )
+            elif key1 == sd.dgTypes["time"]:
+                print group[key1][key2]
                 for key3 in group[key1][key2]:
                     print "%s: %s"%(\
                         group[key1][key2][key3],\
