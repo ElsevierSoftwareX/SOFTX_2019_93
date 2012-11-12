@@ -136,14 +136,16 @@ class DissRestFull(Diss):
         #the matrix A.
         diss_u_int = np.zeros_like(u)
         diss_u_int[r:-r] = np.convolve(u, self.A, mode='valid')
-        print "A.u = %s"%repr(diss_u_int)
+        if __debug__:
+            self.log.debug("A.u = %s"%repr(diss_u_int))
         for i in range(size):
             diss_u_int[i] = self.B(i, dx, size) * diss_u_int[i]
         B_string = "[ "
         for i in range(size-1):
             B_string += "%f, "%diss_u_int[i]
         B_string += "%f ]"%diss_u_int[size-1]
-        print "B.A.u = " + B_string
+        if __debug__:
+            self.log.debug("B.A.u = " + B_string)
 
         #To multiply my Transpose[A], requires some care. The zero'd rows now
         #become columns and the stencil is reversed. I make here the assumption
@@ -177,7 +179,8 @@ class DissRestFull(Diss):
             math.pow(-1, self.p) * self.A[::-1], 
             mode='full'
             )
-        print "Transpose[A].B.A.u = %s"%repr(diss_u_int)
+        if __debug__:
+            self.log.debug("Transpose[A].B.A.u = %s"%repr(diss_u_int))
 
         #Second do the boundary convolution
         #The check at the beginning of the method ensures that the
@@ -189,17 +192,20 @@ class DissRestFull(Diss):
         if boundary_ID is None:
             diss_u_b[0:r] = np.dot(self.Ql, u[0:c])
             diss_u_b[-r:] = np.dot(self.Qr, u[-c:])
-            print "Q.u = %s"%repr(diss_u_b)
+            if __debug__:
+                self.log.debug("Q.u = %s"%repr(diss_u_b))
             for i in range(size):
                 diss_u_b[i] = self.B(i, dx, size) * diss_u_b[i]
             B_string = "[ "
             for i in range(size-1):
                 B_string += "%f, "%diss_u_b[i]
             B_string += "%f ]"%diss_u_b[size-1]
-            print "B.Q.u = " + B_string
+            if __debug__:
+                self.log.debug("B.Q.u = " + B_string)
             diss_u_b[0:c] = np.dot(diss_u_b[0:r], self.Ql)
             diss_u_b[-c:] = np.dot(diss_u_b[-r:], self.Qr)
-            print "Transpose[Q].B.Q.u = %s"%repr(diss_u_b)
+            if __debug__:
+                self.log.debug("Transpose[Q].B.Q.u = %s"%repr(diss_u_b))
 #            if __debug__:
 #                self.log.debug("Applying both boundary region computation")
         elif boundary_ID == grid.LEFT:
@@ -222,13 +228,12 @@ class DissRestFull(Diss):
         #Add the two parts together and multiply by the appropriate
         #numerical factor.
         diss_u = diss_u_int + diss_u_b
-        print "Transpose[M].B.M.u = %s"%repr(diss_u)
+        if __debug__:
+            self.log.debug("Transpose[M].B.M.u = %s"%repr(diss_u))
         factor = math.pow(0.5, 2 * self.p) * math.pow(dx, 2 * self.p - 2)
-        print "dx = %.10f"%dx
-        print "p = %d"%self.p
-        print "factor = %.10f"%factor
         diss_u = -factor * diss_u
-        print "D(u,dx) = %s"%repr(diss_u)
+        if __debug__:
+            self.log.debug("D(u,dx) = %s"%repr(diss_u))
 
         #Multiply by the inverse of the norm
         super(DissRestFull, self)._consistancy_check(u, self.norm_inv.shape)
