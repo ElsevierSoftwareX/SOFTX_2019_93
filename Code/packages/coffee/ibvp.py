@@ -11,9 +11,9 @@ Edited by Ben Whale and George Doulis.
 import math
 import logging
 
-import warnings
+#import warnings
 
-warnings.simplefilter('error', RuntimeWarning)
+#warnings.simplefilter('error', RuntimeWarning)
 
 class IBVP:
     theActions  = None
