@@ -135,11 +135,12 @@ class D21_CNG(SBP):
     
     The inner product is the identity.
     """
-    A = np.array([-1.0/2,0.0,1.0/2])
-    name = "D21_CNG"
-    order = 1
 
     def __init__(self):
+
+        self.A = -np.array([-1.0/2, 0.0, 1.0/2])
+        self.name = "D21_CNG"
+        self.order = 1
         
         Q = np.zeros((2,3))
         
@@ -147,8 +148,8 @@ class D21_CNG(SBP):
         Q[0,1] = 1.0
         Q[0,2] = 0.0
         
-        self.g00 = -1
-        self.gnn = 1
+        #self.g00 = -1
+        #self.gnn = 1
         
         Q[1,0] = -1.0
         Q[1,1] = 0.0
@@ -201,6 +202,7 @@ class D42(SBP):
         self.Qr = -self.Ql[::-1,::-1]
         #P is the identity, H is as given above
         self.pbound = np.array([48./17])
+        self.bdyRegion = self.Ql.shape
         super(D42, self).__init__()
 
 
