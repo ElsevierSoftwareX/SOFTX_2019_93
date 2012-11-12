@@ -7,7 +7,7 @@ from __future__ import division
 #import sys
 #import os
 #import unittest
-#import math
+import math
 import numpy as np
 import abc
 #import logging
@@ -23,7 +23,10 @@ class Diss(object):
 
     @abc.abstractmethod
     def __call__(self, u, dx, boundary_ID=None):
-        r,c = self.bdyRegion
+        pass
+
+    def _consistancy_check(self, u, shape):
+        r,c = shape
         if u.shape[0] + 1 <= 2 * c:
             self.log.error("Domain too small for application of operator")
             raise ValueError("Domain too small for application of operator")
@@ -39,7 +42,7 @@ class DissDiag(Diss):
 
     def __init__(self):
         self.bdyRegion = self.Ql.shape
-        self.w = self.A.shape[0]//2
+        #self.w = self.A.shape[0]//2
         self.log = logging.getLogger('DissDiag')
 
     def __call__(self, u, dx, boundary_ID=None):
@@ -70,7 +73,7 @@ class DissRestFull(Diss):
 
     def __init__(self, p):
         self.bdyRegion = self.Ql.shape
-        self.w = self.A.shape[0]//2
+        #self.w = self.A.shape[0]//2
         self.p = p
         self.log = logging.getLogger('DissRestFull')
 
@@ -112,7 +115,11 @@ class DissRestFull(Diss):
         rewritten.
         """
         #This performs a consistance check
-        super(DissDiag, self)(u, dx, boundary_ID)
+        super(DissRestFull, self)._consistancy_check(u, self.Ql.shape)
+
+        #Get useful variables
+        size = u.shape[0]
+        r,c = self.Ql.shape
 
         #First do the internal convolution.
         #The array A is the central difference stencil that makes up the
@@ -129,7 +136,14 @@ class DissRestFull(Diss):
         #the matrix A.
         diss_u_int = np.zeros_like(u)
         diss_u_int[r:-r] = np.convolve(u, self.A, mode='valid')
-        diss_u_int = self.B * diss_u_int
+        print "A.u = %s"%repr(diss_u_int)
+        for i in range(size):
+            diss_u_int[i] = self.B(i, dx, size) * diss_u_int[i]
+        B_string = "[ "
+        for i in range(size-1):
+            B_string += "%f, "%diss_u_int[i]
+        B_string += "%f ]"%diss_u_int[size-1]
+        print "B.A.u = " + B_string
 
         #To multiply my Transpose[A], requires some care. The zero'd rows now
         #become columns and the stencil is reversed. I make here the assumption
@@ -160,9 +174,10 @@ class DissRestFull(Diss):
         #at both ends.
         diss_u_int = np.convolve(
             diss_u_int[r:-r], 
-            math.pow(-1,p) * self.A[::-1], 
+            math.pow(-1, self.p) * self.A[::-1], 
             mode='full'
             )
+        print "Transpose[A].B.A.u = %s"%repr(diss_u_int)
 
         #Second do the boundary convolution
         #The check at the beginning of the method ensures that the
@@ -174,24 +189,55 @@ class DissRestFull(Diss):
         if boundary_ID is None:
             diss_u_b[0:r] = np.dot(self.Ql, u[0:c])
             diss_u_b[-r:] = np.dot(self.Qr, u[-c:])
+            print "Q.u = %s"%repr(diss_u_b)
+            for i in range(size):
+                diss_u_b[i] = self.B(i, dx, size) * diss_u_b[i]
+            B_string = "[ "
+            for i in range(size-1):
+                B_string += "%f, "%diss_u_b[i]
+            B_string += "%f ]"%diss_u_b[size-1]
+            print "B.Q.u = " + B_string
+            diss_u_b[0:c] = np.dot(diss_u_b[0:r], self.Ql)
+            diss_u_b[-c:] = np.dot(diss_u_b[-r:], self.Qr)
+            print "Transpose[Q].B.Q.u = %s"%repr(diss_u_b)
 #            if __debug__:
 #                self.log.debug("Applying both boundary region computation")
         elif boundary_ID == grid.LEFT:
             diss_u[0:r] = np.dot(self.Ql, u[0:c])
+            for i in range(size):
+                diss_u_b[i] = self.B(i, dx, size) * diss_u_b[i]
+            diss_u_b[0:c] = np.dot(diss_u_b[0:r], self.Ql)
 #            if __debug__:
 #                self.log.debug("Applying left boundary region computation")
         elif boundary_ID == grid.RIGHT:
             diss_u[-r:] = np.dot(self.Qr, u[-c:])
+            for i in range(size):
+                diss_u_b[i] = self.B(i, dx, size) * diss_u_b[i]
+            diss_u_b[-c:] = np.dot(diss_u_b[-r:], self.Qr)
 #            if __debug__:
 #                self.log.debug("Applying right boundary region computation")    
 #        if __debug__:
 #            self.log.debug("After boundary conditions: diss_u = %s"%repr(diss_u))
 
-        #Add the two parts together and return the result with the appropriate
+        #Add the two parts together and multiply by the appropriate
         #numerical factor.
         diss_u = diss_u_int + diss_u_b
-        factor = math.pow(0.5, 2 * self.p) * math.pow(dx, 2 * (p - 2))
-        return -factor * diss_u
+        print "Transpose[M].B.M.u = %s"%repr(diss_u)
+        factor = math.pow(0.5, 2 * self.p) * math.pow(dx, 2 * self.p - 2)
+        print "dx = %.10f"%dx
+        print "p = %d"%self.p
+        print "factor = %.10f"%factor
+        diss_u = -factor * diss_u
+        print "D(u,dx) = %s"%repr(diss_u)
+
+        #Multiply by the inverse of the norm
+        super(DissRestFull, self)._consistancy_check(u, self.norm_inv.shape)
+        r,c = self.norm_inv.shape
+        diss_u[0:r] = np.dot(self.norm_inv, diss_u[0:c])
+        diss_u[-r:] = np.dot(self.norm_inv[::-1,::-1], diss_u[-c:])
+
+        #return the result
+        return diss_u
 
 
 ################################################################################
@@ -235,7 +281,7 @@ class Diss42_DDST(DissDiag):
     def __init__(self, *args, **kwds):
         A = np.array([-1.0, 4.0, -6.0, 4.0, -1.0])
         name = "Diss42_DDST"
-        p = 4
+        self.p = 4
         
         Q = np.zeros((4,6))
         
@@ -275,10 +321,62 @@ class Diss42_DDST(DissDiag):
 ################################################################################
 # Dissipation for restricted full norm SBP operators.
 ################################################################################
-class Diss43_DDSt(DissRestFull):
+class Diss43_DDST(DissRestFull):
     """Compatibility considerations require that this disspertion operator only 
     used with sbp.D43_Tiglioetal.
     """
 
-    def __init__(self):
+    def __init__(self, bdy_percent):
+
+        self.bdy_percent = bdy_percent
+        self.p = 2
         
+        self.A = np.array([1,-2,1])
+        self.Ql = np.array([[1,-2,1]])
+        self.Qr = self.Ql
+
+        self.norm_inv = np.zeros((5,5))
+        self.norm_inv[0,0] = 4.186595370392226897362216859769846226369
+        self.norm_inv[0,1] = 0
+        self.norm_inv[0,2] = 0
+        self.norm_inv[0,3] = 0
+        self.norm_inv[0,4] = 0
+        self.norm_inv[1,0] = 0
+        self.norm_inv[1,1] = 0.6725191921225620731888714836983116420871
+        self.norm_inv[1,2] = 0.3613418181134949259370502966736306984367
+        self.norm_inv[1,3] = -0.2021316117293899791481674539631879662707
+        self.norm_inv[1,4] = 0.03455320708729270824077678274955265350304
+        self.norm_inv[2,0] = 0
+        self.norm_inv[2,1] = 0.3613418181134949259370502966736306984367
+        self.norm_inv[2,2] = 0.7206133711630147057720442098623847362950
+        self.norm_inv[2,3] = 0.1376472340546569368321616389764958792591
+        self.norm_inv[2,4] = -0.04136405531324488624637892257286207044784
+        self.norm_inv[3,0] = 0
+        self.norm_inv[3,1] = -0.2021316117293899791481674539631879662707
+        self.norm_inv[3,2] = 0.1376472340546569368321616389764958792591
+        self.norm_inv[3,3] = 0.9578653607931026822074133441449909689509
+        self.norm_inv[3,4] = 0.02069353627247161734563597102894256809696
+        self.norm_inv[4,0] = 0
+        self.norm_inv[4,1] = 0.03455320708729270824077678274955265350304
+        self.norm_inv[4,2] = -0.04136405531324488624637892257286207044784
+        self.norm_inv[4,3] = 0.02069353627247161734563597102894256809696
+        self.norm_inv[4,4] = 0.9908272703370861473007798925906968380654
+
+    def B(self, i, dx, size):
+        cut_off = math.floor(size * self.bdy_percent)
+        if i < cut_off:
+            return dx + (i / cut_off) * (1 - dx)    
+        elif i > size - 1 - cut_off:
+            return  1 + (cut_off + 1 - size + i) * (dx - 1) / cut_off
+        else:
+            return 1
+
+################################################################################
+# Testing
+################################################################################
+
+if __name__ == "__main__":
+    D = Diss43_DDST(0.2)
+    u = np.arange(20, dtype=float)
+    u = 10 - (u - 5)**2
+    D(u, 0.1)
