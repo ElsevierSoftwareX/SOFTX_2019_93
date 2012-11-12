@@ -46,7 +46,8 @@ class DissDiag(Diss):
         self.log = logging.getLogger('DissDiag')
 
     def __call__(self, u, dx, boundary_ID=None):
-        super(DissDiag, self)(u, dx, boundary_ID)
+        super(DissDiag, self)._consistancy_check(u, self.bdyRegion)
+        r, c = self.bdyRegion
         diss_u = np.zeros_like(u)
         diss_u = np.convolve(u, self.A, mode='same')
 #        if __debug__:
@@ -66,7 +67,8 @@ class DissDiag(Diss):
 #                self.log.debug("Applying right boundary region computation")    
 #        if __debug__:
 #            self.log.debug("After boundary conditions: diss_u = %s"%repr(diss_u))
-        return diss_u/(dx**self.order)
+        factor = math.pow(0.5, 2 * self.p)
+        return factor * diss_u
 
 class DissRestFull(Diss):
     name = "Dissipation Restricted Full Norm"
@@ -257,23 +259,21 @@ class Diss21_DDST(DissDiag):
     correct operator. 
     """
     def __init__(self, *args, **kwds):
-        A = np.array([1.0,2.0,1.0])
-        name = "Diss21_DDST"
-        p = 2
+        self.A = np.array([1.0, -2.0, 1.0])
+        self.name = "Diss21_DDST"
+        self.p = 2
         
-        Q = np.zeros((2,3))
+        self.Ql = np.zeros((2,3))
         
-        Q[0,0] = -2
-        Q[0,1] = 2.0
-        Q[0,2] = 0.0
-        Q[1,0] = 1.0
-        Q[1,1] = -2.0
-        Q[1,2] = 1.0
+        self.Ql[0,0] = -2
+        self.Ql[0,1] = 2.0
+        self.Ql[0,2] = 0.0
+        self.Ql[1,0] = 1.0
+        self.Ql[1,1] = -2.0
+        self.Ql[1,2] = 1.0
         
-        self.Ql = Q
         self.Qr = -self.Ql[::-1,::-1]
-        
-        super(D21_CNG, self).__init__(*args, **kwds)
+        self.bdyRegion = (2,3)
 
 class Diss42_DDST(DissDiag):
     """
@@ -284,8 +284,8 @@ class Diss42_DDST(DissDiag):
     paper. 
     """
     def __init__(self, *args, **kwds):
-        A = np.array([-1.0, 4.0, -6.0, 4.0, -1.0])
-        name = "Diss42_DDST"
+        self.A = np.array([-1.0, 4.0, -6.0, 4.0, -1.0])
+        self.name = "Diss42_DDST"
         self.p = 4
         
         Q = np.zeros((4,6))
@@ -320,8 +320,8 @@ class Diss42_DDST(DissDiag):
 
         self.Ql = Q
         self.Qr = -self.Ql[::-1,::-1]
+        self.bdyRegion = (4,6)
         
-        super(D21_CNG, self).__init__(*args, **kwds)
 
 ################################################################################
 # Dissipation for restricted full norm SBP operators.
