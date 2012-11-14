@@ -85,28 +85,50 @@ class TimeSlice(ABCTimeSlice):
             #def wrapper(*args, **kwds):
 
     def __add__(self, other):
+        # It is very important that the rv is other + self.data not
+        # self.data + other.
+        # The reason (seems) is because as self.data can be an 
+        # nd.array the sum self.data + other
+        # ends up being computed as the elements of self.other
+        # plus other, itself an nd.array.
+        # This screws up the array of elements.
+        # Putting other first ensures that if other is a timeslice
+        # then the sum isn't distributed over the elements of self.data.
         try:
-            rv = self.data + other
+            rv =  other + self.data
         except:
             return NotImplementedError(
                 "Addition of %s and %s is not implemented"
                 %(self, other)
                 )
-        return TimeSlice(rv, self.domain, self.time, name=self.name)
+        if isinstance(rv, TimeSlice):
+            return rv
+        else:
+            return TimeSlice(rv, self.domain, self.time, name=self.name)
 
     def __iadd__(self, other):
-        self.data += other
+        if isinstance(other, TimeSlice):
+            self.data += other.data
+        else:
+            try:
+                self.data += other
+            except:
+                return NotImplementedError(
+                    "Addition of %s and %s is not implemented"
+                    %(self, other)
+                    )
         return self
 
     def __radd__(self, other):
-        try:
-            r_time_slice = other + self.data
-        except:
-            return NotImplementedError(
-                "Reflected addition of %s and %s is not implemented"
-                %(other, self)
-                )
-        return r_time_slice
+        return self + other
+        #try:
+            #r_time_slice = other + self.data
+        #except:
+            #return NotImplementedError(
+                #"Reflected addition of %s and %s is not implemented"
+                #%(other, self)
+                #)
+        #return r_time_slice
 
     def __sub__(self, other):
         try:
@@ -159,14 +181,15 @@ class TimeSlice(ABCTimeSlice):
         return self
 
     def __rmul__(self, other):
-        try:
-            r_time_slice = other * self.data
-        except:
-            return NotImplementedError(
-                "Reflected multiplicatio of %s and %s is not implemented"
-                %(other, self)
-                )
-        return r_time_slice
+        return self * other
+        #try:
+            #r_time_slice = other * self.data
+        #except:
+            #return NotImplementedError(
+                #"Reflected multiplicatio of %s and %s is not implemented"
+                #%(other, self)
+                #)
+        #return r_time_slice
     
     def __div__(self, other):
         try:
