@@ -49,3 +49,6 @@ libspinsfast.so
 
 #tilde backup files
 *~
+
+*.so.1
+*.so.*
