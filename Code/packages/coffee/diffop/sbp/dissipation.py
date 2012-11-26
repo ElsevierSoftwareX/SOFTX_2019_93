@@ -10,7 +10,7 @@ from __future__ import division
 import math
 import numpy as np
 import abc
-#import logging
+import logging
 
 ################################################################################
 # Base classes for SBP artificial dissipation operators
@@ -366,6 +366,8 @@ class Diss43_DDST(DissRestFull):
         self.norm_inv[4,2] = -0.04136405531324488624637892257286207044784
         self.norm_inv[4,3] = 0.02069353627247161734563597102894256809696
         self.norm_inv[4,4] = 0.9908272703370861473007798925906968380654
+
+        super(Diss43_DDST, self).__init__(self.p)
 
     def B(self, i, dx, size):
         cut_off = math.floor(size * self.bdy_percent)
