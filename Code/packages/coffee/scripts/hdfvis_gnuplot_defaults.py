@@ -8,7 +8,7 @@ hdfvis_gnuplot_anima=[\
 hdfvis_gnuplot_plot = hdfvis_gnuplot_anima
 hdfvis_gnuplot_error = [\
     'set xlabel "r"',\
-    'set ylabel "Log base 2 of absolute value of difference"',\
+    'set ylabel "Log_2(|difference|)"',\
     'set y2tics nomirror',\
     'set y2tics',\
     'set style data lines',\
@@ -18,7 +18,7 @@ hdfvis_gnuplot_error = [\
     ]
 hdfvis_gnuplot_error2D = [\
     'set xlabel "r"',\
-    'set ylabel "Log base 2 of absolute value of difference"',\
+    'set ylabel "Log_2(|difference|)"',\
     'set y2tics nomirror',\
     'set y2tics',\
     'set style data lines',\

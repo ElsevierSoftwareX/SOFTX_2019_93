@@ -88,14 +88,23 @@ def error(args):
                 else:
                     plot_data += [Gnuplot.Data(domain[0],np.log2(error), \
                         title = name)]
+            if "scri" in sim.raw.group[str(index)].attrs.keys():
+                scri = sim.raw.group[str(index)].attrs["scri"]
+                g(r'set arrow from %f,graph(0,0) to %f,graph(1,1) nohead'
+                    %(scri,scri)
+                )
             for add_name, add_index, add_data, add_domain in additional_data:
                 plot_data += [Gnuplot.Data(baDomain,baRaw[phi_index,:],\
                     axes = "x1y2",\
                     title = "Phi %i"%phi_index)]
                 plot_data += [Gnuplot.Data(scrifDomain,scrifRange,\
                     title = "Scri+")]
-            g(r'set title "Errors in phi %i at time %s\nfrom %s" enhanced' %\
-                (phi_index,args.t,args.file))
+            g("set terminal postscript enhanced color solid")
+            g(r'set title "Errors in {/Symbol \152}_{%i} at time %s" enhanced' %\
+                (phi_index,args.t)
+                )
+            #g(r'set title "Errors in phi %i at time %s\nfrom %s" enhanced' %\
+                #(phi_index,args.t,args.file))
             if not args.d:
                 if args.e:
                     g('set output "%s-e-exa_%i_%f.%s"'%\
