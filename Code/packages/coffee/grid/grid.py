@@ -101,8 +101,12 @@ class ABCGrid(object):
 class UniformCart(ABCGrid):
     
     def __init__(self, 
-            shape, bounds, 
-            mpi_comm=None, comparison=None, name=None, ghost_points=1,
+            shape, 
+            bounds, 
+            mpi_comm=None, 
+            comparison=None, 
+            name=None, 
+            ghost_points=1,
             *args, **kwds):
         _shape = tuple([s+1 for s in shape])
         mpi = mpiinterfaces.EvenCart(
