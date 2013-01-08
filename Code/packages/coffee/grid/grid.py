@@ -142,3 +142,67 @@ class UniformCart(ABCGrid):
     @property
     def step_sizes(self):
         return self._step_sizes
+
+class GeneralGrid(ABCGrid):
+
+    def __init__(self, 
+            shape, 
+            bounds, 
+            periods,
+            #mpi_comm=None, 
+            comparison=None, 
+            name=None, 
+            #ghost_points=1,
+            *args, **kwds):
+        _shape = []
+        for i,p in enumerate(periods):
+            if p:
+                _shape.append(shape[i])
+            else:
+                shape.append(shape[i]+1)
+        _shape = tuple(_shape)
+        mpi=None
+        #mpi = mpiinterfaces.EvenCart(
+            #_shape, 
+            #mpi_comm=mpi_comm, 
+            #ghost_points=ghost_points
+            #)
+        if name is None:
+            name = "<GeneralGrid shape=%s, bounds=%s,periods=%s, comparison=%s>"%(
+                shape, 
+                bounds, 
+                periods,
+                comparison)
+        super(UniformCart, self).__init__(
+            shape, bounds, 
+            name=name, 
+            comparison=comparison,
+            mpi=mpi, 
+            *args, 
+            **kwds
+            ) 
+        _axes = [
+            np.linspace(
+                self.bounds[i][0], self.bounds[i][1], self.shape[i]+1
+            )
+            for i in range(len(self.bounds))
+            ]
+        self._step_sizes = [axis[1]-axis[0] for axis in _axes]
+        #self._axes = [axis[self.mpi.subdomain] for axis in _axes]
+
+    @property
+    def axes(self):
+        return self._axes
+
+    @property
+    def full_grid(self):
+        if self.mpi is None:
+            return self
+        return UniformCart(
+            self.shape, self.bounds, 
+            comparison=self.comparison, name=self.name
+            )
+        
+    @property
+    def step_sizes(self):
+        return self._step_sizes
