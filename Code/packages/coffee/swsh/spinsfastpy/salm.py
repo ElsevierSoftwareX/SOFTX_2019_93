@@ -90,7 +90,7 @@ class sfpy_salm(np.ndarray):
         self.cg = getattr(obj, "cg", None)
        
     def __str__(self):
-        s = "spins = %s,\n"
+        s = "spins = %s,\n"%repr(self.spins)
         for spin in self.spins:
             for l in range(self.lmax + 1):
                 s +="(%f, %f): %s\n"%(spin, l, repr(self[spin,l].view(np.ndarray)))
