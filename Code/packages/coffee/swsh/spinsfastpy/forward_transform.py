@@ -67,16 +67,26 @@ sf.spinsfast_forward_multi_Jmm.argtypes = [ \
         flags='contiguous, writeable, aligned') ]
 
 sf.spinsfast_forward_transform.restype = ctypes.c_void_p
-sf.spinsfast_forward_transform.argtypes = [ \
-    ctypeslib.ndpointer(dtype=typeDict['complex'], ndim=1, \
-        flags='contiguous, writeable, aligned'), \
-    ctypes.c_int, \
-    ctypeslib.ndpointer(dtype=typeDict['int'], ndim=1, \
-        flags='contiguous, writeable, aligned'), \
-    ctypes.c_int, \
-    ctypeslib.ndpointer(dtype=typeDict['complex'], ndim=1, \
-        flags='contiguous, writeable, aligned'), \
-    ctypes.c_int, ctypes.c_void_p ]
+sf.spinsfast_forward_transform.argtypes = [
+    ctypeslib.ndpointer(
+        dtype=typeDict['complex'], 
+        ndim=1,
+        flags='contiguous, writeable, aligned'
+        ),
+    ctypes.c_int,
+    ctypeslib.ndpointer(
+        dtype=typeDict['int'], 
+        ndim=1,
+        flags='contiguous, writeable, aligned'
+        ),
+    ctypes.c_int,
+    ctypeslib.ndpointer(
+        dtype=typeDict['complex'], 
+        ndim=1,
+        flags='contiguous, writeable, aligned'
+        ),
+    ctypes.c_int, 
+    ctypes.c_void_p ]
 
 sf.spinsfast_forward_transform_eo.restype = ctypes.c_void_p
 sf.spinsfast_forward_transform_eo.argtypes = [ \
@@ -153,9 +163,9 @@ def _Jmm(f, spins, lmax):
     spins = np.atleast_1d(spins)
     if len(spins.shape)!=1:
         raise ValueError('spins must be an int or a one dimensional array of ints')
-    Nm = 2*lmax+1
-    NJmm = Nm*(lmax+1)
-    Jmm = np.empty(NJmm, dtype = typeDict['complex'])
+    Nm = 2 * lmax + 1
+    NJmm = Nm * (lmax + 1)
+    Jmm = np.empty(Nmaps*NJmm, dtype = typeDict['complex'])
     sf.spinsfast_forward_multi_Jmm(f_flat, spins, Nmaps, Ntheta, Nphi, lmax, Jmm)
     return Jmm
 
@@ -189,20 +199,22 @@ def _forward_Jmm(spins, lmax, Jmm, delta_method="TN_PLANE", real=False):
     if len(spins.shape)!=1:
         raise ValueError('spins must be an int or a one dimensional array of ints')
     Ntransform = spins.shape[0]
-    a = np.empty(sf.N_lm(lmax)*Ntransform, dtype = typeDict['complex'])
+    a = np.empty(sf.N_lm(lmax) * Ntransform, dtype = typeDict['complex'])
     DeltaMethod, Deltawork = dm.methods[delta_method](lmax)
     if real:
-      sf.spinsfast_forward_transform_eo(a, Ntransform, spins, lmax, Jmm, \
-          DeltaMethod, Deltawork)
+        sf.spinsfast_forward_transform_eo(a, Ntransform, spins, lmax, Jmm, \
+            DeltaMethod, Deltawork)
     else:    
-      sf.spinsfast_forward_transform(a, Ntransform, spins, lmax, Jmm, \
-          DeltaMethod, Deltawork)
+        sf.spinsfast_forward_transform(
+            a, 
+            Ntransform, 
+            spins, 
+            lmax, 
+            Jmm,
+            DeltaMethod, 
+            Deltawork
+            )
     return salm.sfpy_salm(a.reshape(Ntransform,sf.N_lm(lmax)),spins,lmax)
 
-#a = np.arange(400).reshape(20,20)
-#Jmm = Jmm(a,0,8)
-#print forward(0, 8, Jmm, "TN")
-
-
-
-
+#a = np.zeros((2,8,8), dtype="complex")
+#print forward(a, [1,3], 3)
