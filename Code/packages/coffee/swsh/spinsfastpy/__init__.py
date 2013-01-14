@@ -25,12 +25,12 @@ __all__ = ['forward','backward','salm']
 from forward_transform import forward
 from backward_transform import backward
 from delta_matrix import methods
-from salm import sfpy_salm
+#from salm import sfpy_salm
 
 del forward_transform
 del backward_transform
 del delta_matrix
-del salm
+#del salm
 
 def set_clebsch_gordan_default(cg):
     sfpy_salm.cg_default = cg
