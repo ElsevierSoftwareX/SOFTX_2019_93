@@ -117,9 +117,8 @@ class sfpy_salm(np.ndarray):
         self.bl_mult = bool
         
     def __getitem__(self, key):
-        key = np.index_exp[key]
         alt_key = self.convert_key(key)
-        if len(key) == 1:
+        if len(alt_key) == 1:
             return sfpy_salm(
                 np.atleast_2d(self.view(np.ndarray)[alt_key]),
                 self.spins[alt_key[0]],
@@ -131,11 +130,11 @@ class sfpy_salm(np.ndarray):
             return self.view(np.ndarray)[alt_key]
         
     def __setitem__(self, key, value):
-        key = np.index_exp[key]
         alt_key = self.convert_key(key)
         self.view(np.ndarray)[alt_key] = value
         
     def convert_key(self, key):
+        key = np.index_exp[key]
         spin_key = self._convert_spin_key(key[0])
         if len(key) == 1:
             r_key = spin_key,
@@ -156,7 +155,10 @@ class sfpy_salm(np.ndarray):
         
     def _convert_spin_key(self, key):
         if isinstance(key, int):
-            spin_key = np.where(self.spins == key)[0][0]
+            try:
+                spin_key = np.where(self.spins == key)[0][0]
+            except IndexError:
+                raise IndexError("Spins %d not found in self.spins"%key)
         elif isinstance(key, slice):
             if key.start is None:
                 start = 0
@@ -327,6 +329,100 @@ salm.Salm.register(sfpy_salm)
 #    if stride is None:
 #        stride = 1
 #    return start, stop, stride
+
+class sfpy_rsalm(np.ndarray):
+
+    """
+    Represents the spin spherical harmonic coefficients of a function defined on
+    [a,b] x S^2. It is assume that this array will be stored in an array
+    corresponding to spins. Thus, while this object knows it's own spin
+    it is not possible for this object to store multiple spins.
+    
+    The coefficient of sYlm is accessed as sfpy_salm[:,l,m]. Basic slicing 
+    is implemented.
+    """
+    
+    cg_default = None
+    
+    def __new__(cls, array, spin, lmax, cg=None, bandlimit_multiplication=False):
+        """
+        Returns an instance of alm.salm.
+
+        The array must have the following structure: len(array.shape)=2,
+        array.shape[0] = number of grid points in the interval
+        array.shape[1] = salm.__lmax_Nlm(lmax)
+        
+        Arguments:
+        array -- the alm array with the structure described in the doc string
+                 for the class.
+        spin -- the spin value. 
+                 
+        Returns:
+        sfpy_rsalm -- an instance of class alm.salm
+        """
+        obj = np.asarray(array).view(cls)
+        obj.spin = spin
+        obj.lmax = lmax
+        obj.bl_mult = bandlimit_multiplication
+        if cg is None:
+            obj.cg = sfpy_salm.cg_default
+        return obj
+            
+    def __array_finalize__(self, obj):
+        if obj is None: return
+        self.spin = getattr(obj, 'spin', None)
+        self.lmax = getattr(obj, 'lmax', None)
+        self.bl_mult = getattr(obj, 'bl_mult', None)
+        self.cg = getattr(obj, "cg", None)
+       
+    def __str__(self):
+        s = "spin = %s,\n"%repr(self.spin)
+        s += "lmax = %d,\n"%self.lmax
+        for i in range(self.shape[0]):
+            for l in range(self.lmax + 1):
+                s +="(%f, %f): %s\n"%(i, l, repr(self[i,l].view(np.ndarray)))
+        return s 
+       
+    def __repr__(self):
+        s = "<sfpy_rsalm lmax = %d, spin = %s, bandlimit_multiplication = %s, cg = %s, coefficients = %s"%(
+            self.lmax,
+            repr(self.spin),
+            repr(self.bl_mult),
+            repr(self.cg),
+            repr(self.view(np.ndarray))
+            )
+        return s
+
+    def __getitem__(self, key):
+        key = self.convert_key(key)
+        if len(key) == 1:
+            return sfpy_salm(
+                np.atleast_2d(self.view(np.ndarray)[key]),
+                self.spin,
+                self.lmax,
+                self.cg,
+                self.bl_mult
+                )
+        else:
+            return self.view(np.ndarray)[key]
+
+    def convert_key(self, key):
+        key = np.index_exp[key]
+        r_key = key[0]
+        if len(key) == 1:
+            return r_key,
+        elif len(key) == 2:
+            if key[1] <= self.lmax or key[1] >= 0:
+                l_ind = _lm_ind(key[1],-key[1])
+                order_key = slice(l_ind, l_ind + 2*key[1] +1)
+            else:
+                raise IndexError("Order index not within bounds")
+        else:
+            return IndexError("too many indices")
+        return r_key, order_key
+
+salm.Salm.register(sfpy_rsalm)
+
 
 def _Nlm_lmax(Nlm):
     """
