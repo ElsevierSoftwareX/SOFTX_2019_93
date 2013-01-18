@@ -45,6 +45,10 @@ class ABCGrid(object):
         return self.mpi.communicate(data)
 
     def boundary_slices(self, shape):
+        #Note that essentailly the same code is used in mpiinterfaces.py
+        #At some point this reuse of code will need to be resolved.
+        #The problem boils down to which object should handle boundary
+        #slices when no mpi is used.
         if self.mpi is None:
             if __debug__:
                 self.log.debug(
@@ -63,9 +67,9 @@ class ABCGrid(object):
                     for d in shape
                     ]
                 r_slice[i] = slice(None, 1, None)
-                r_slices += [tuple(r_slice)]
+                r_slices += [(i, -1, edims_slice + tuple(r_slice))]
                 r_slice[i] = slice(-1, None, None)
-                r_slices += [tuple(r_slice)]
+                r_slices += [(i, 1, edims_slice + tuple(r_slice))]
             return r_slices
         return self.mpi.boundary_slices(shape)
 
@@ -109,11 +113,14 @@ class UniformCart(ABCGrid):
             ghost_points=1,
             *args, **kwds):
         _shape = tuple([s+1 for s in shape])
-        mpi = mpiinterfaces.EvenCart(
-            _shape, 
-            mpi_comm=mpi_comm, 
-            ghost_points=ghost_points
-            )
+        if mpi_comm is None:
+            mpi = None
+        else:
+            mpi = mpiinterfaces.EvenCart(
+                _shape, 
+                mpi_comm=mpi_comm, 
+                ghost_points=ghost_points
+                )
         if name is None:
             name = "UniformCart%s%s%s"%(shape, bounds, comparison)
         super(UniformCart, self).__init__(
@@ -128,7 +135,10 @@ class UniformCart(ABCGrid):
             for i in range(len(self.bounds))
             ]
         self._step_sizes = [axis[1]-axis[0] for axis in _axes]
-        self._axes = [axis[self.mpi.subdomain] for axis in _axes]
+        if self.mpi is None:
+            self._axes = _axes
+        else:
+            self._axes = [axis[self.mpi.subdomain] for axis in _axes]
 
     @property
     def axes(self):
