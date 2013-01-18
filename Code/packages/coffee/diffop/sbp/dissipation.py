@@ -321,6 +321,7 @@ class Diss42_DDST(DissDiag):
         self.Ql = Q
         self.Qr = -self.Ql[::-1,::-1]
         self.bdyRegion = (4,6)
+        super(Diss42_DDST, self).__init__()
         
 
 ################################################################################
