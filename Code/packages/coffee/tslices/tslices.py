@@ -95,9 +95,10 @@ class TimeSlice(ABCTimeSlice):
         # Putting other first ensures that if other is a timeslice
         # then the sum isn't distributed over the elements of self.data.
         try:
+            import pdb; pdb.set_trace()
             rv =  other + self.data
         except:
-            return NotImplementedError(
+            raise NotImplementedError(
                 "Addition of %s and %s is not implemented"
                 %(self, other)
                 )
@@ -113,7 +114,7 @@ class TimeSlice(ABCTimeSlice):
             try:
                 self.data += other
             except:
-                return NotImplementedError(
+                raise NotImplementedError(
                     "Addition of %s and %s is not implemented"
                     %(self, other)
                     )
@@ -134,7 +135,7 @@ class TimeSlice(ABCTimeSlice):
         try:
             rv = self.data - other
         except:
-            return NotImplementedError(
+            raise NotImplementedError(
                 "Subtraction of %s and %s is not implemented"
                 %(self, other)
                 )
@@ -144,7 +145,7 @@ class TimeSlice(ABCTimeSlice):
         try:
             self.data -= other
         except:
-            return NotImplementedError(
+            raise NotImplementedError(
                 "In place subraction of %s and %s is not implemented"
                 %(self, other)
                 )
@@ -154,7 +155,7 @@ class TimeSlice(ABCTimeSlice):
         try:
             r_time_slice = other - self.data
         except:
-            return NotImplementedError(
+            raise NotImplementedError(
                 "Reflected subtraction of %s and %s is not implemented"
                 %(other, self)
                 )
@@ -164,7 +165,7 @@ class TimeSlice(ABCTimeSlice):
         try:
             rv = self.data * other
         except:
-            return NotImplementedError(
+            raise NotImplementedError(
                 "Multiplicatio of %s and %s is not implemented"
                 %(self, other)
                 )
@@ -174,7 +175,7 @@ class TimeSlice(ABCTimeSlice):
         try:
             self.data *= other
         except:
-            return NotImplementedError(
+            raise NotImplementedError(
                 "In place multiplicatio of %s and %s is not implemented"
                 %(self, other)
                 )
@@ -195,7 +196,7 @@ class TimeSlice(ABCTimeSlice):
         try:
             rv = self.data / other
         except:
-            return NotImplementedError(
+            raise NotImplementedError(
                 "Division of %s and %s is not implemented"
                 %(self, other)
                 )
@@ -205,7 +206,7 @@ class TimeSlice(ABCTimeSlice):
         try:
             self.data /= other
         except:
-            return NotImplementedError(
+            raise NotImplementedError(
                 "In place division of %s and %s is not implemented"
                 %(self, other)
                 )
@@ -234,7 +235,7 @@ class TimeSlice(ABCTimeSlice):
         try:
             rv = self.data ** other
         except:
-            return NotImplementedError(
+            raise NotImplementedError(
                 "Exponentiation of %s by %s is not implemented"
                 %(self, other)
                 )
@@ -244,7 +245,7 @@ class TimeSlice(ABCTimeSlice):
         try:
             self.data **= other
         except:
-            return NotImplementedError(
+            raise NotImplementedError(
                 "In place exponentiation of %s by %s is not implemented"
                 %(self, other)
                 )
