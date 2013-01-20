@@ -72,10 +72,10 @@ class EvenCart(MPIInterface):
                     ]
                 r_slice[i] = slice(None, 1, None)
                 r_slices += [(i, -1, edims_slice + tuple(r_slice))]
-                r_slice = [
-                    slice(None, None, None)
-                    for d in self.domain
-                    ]
+                #r_slice = [
+                    #slice(None, None, None)
+                    #for d in self.domain
+                    #]
                 r_slice[i] = slice(-1, None, None)
                 r_slices += [(i, 1, edims_slice + tuple(r_slice))]
             elif coords[i] == 0:
