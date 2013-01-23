@@ -74,14 +74,20 @@ class sfpy_salm(np.ndarray):
         Returns:
         salm -- an instance of class alm.salm
         """
-        spins = np.atleast_1d(spins)
-        if len(array.shape) == 2:
-            obj = np.asarray(array).view(cls)
-        elif len(array.shape) == 1 and array.shape[0] == _lmax_Nlm(lmax) \
-            and len(spins.shape) == 1:
-            obj = np.asarray([array]).view(cls)
+        spins = np.asarray(spins)
+        if len(array.shape) == 1:
+            if spins.shape is () and array.shape[0] == _lmax_Nlm(lmax):
+                obj = np.asarray(array).view(cls)
+            else:
+                raise ValueError("Mal-formed array and shape for lmax")
+        elif len(array.shape) == 2:
+            if spins.shape[0] == array.shape[0] \
+                and array.shape[1] == _lmax_Nlm(lmax):
+                obj = np.asarray(array).view(cls)
+            else:
+                raise ValueError("Mal-formed array and shape for lmax")
         else:
-            raise ValueError("Array shape does not match lmax and spin shape")
+            raise ValueError("Array shape has too many dimensions")
         obj.spins = spins
         obj.lmax = lmax
         obj.bl_mult = bandlimit_multiplication
@@ -98,9 +104,21 @@ class sfpy_salm(np.ndarray):
        
     def __str__(self):
         s = "spins = %s,\n"%repr(self.spins)
-        for spin in self.spins:
+        if self.spins.shape is ():
             for l in range(self.lmax + 1):
-                s +="(%f, %f): %s\n"%(spin, l, repr(self[spin,l].view(np.ndarray)))
+                s +="(%f, %f): %s\n"%(
+                    self.spins, 
+                    l, 
+                    repr(self[l].view(np.ndarray))
+                    )
+        else:
+            for spin in self.spins:
+                for l in range(self.lmax + 1):
+                    s +="(%f, %f): %s\n"%(
+                        spin, 
+                        l, 
+                        repr(self[spin,l].view(np.ndarray))
+                        )
         return s 
        
     def __repr__(self):
@@ -115,10 +133,7 @@ class sfpy_salm(np.ndarray):
 
     @property
     def coefs(self):
-        if self.shape[0] == 1:
-            return self.view(np.ndarray)[0]
-        else:
-            return self.view(np.ndarray)[0]
+        return self.view(np.ndarray)[0]
 
     def multiplication_bandlimit(self, bool):
         self.bl_mult = bool
@@ -126,13 +141,16 @@ class sfpy_salm(np.ndarray):
     def __getitem__(self, key):
         alt_key = self.convert_key(key)
         if len(alt_key) == 1:
-            return sfpy_salm(
-                np.atleast_2d(self.view(np.ndarray)[alt_key]),
-                self.spins[alt_key[0]],
-                self.lmax,
-                self.cg,
-                self.bl_mult
-                )
+            if self.spins.shape is ():
+                return self.view(np.ndarray)[alt_key]
+            else:
+                return sfpy_salm(
+                    self.view(np.ndarray)[alt_key],
+                    self.spins[alt_key],
+                    self.lmax,
+                    self.cg,
+                    self.bl_mult
+                    )
         else:
             return self.view(np.ndarray)[alt_key]
         
@@ -141,33 +159,32 @@ class sfpy_salm(np.ndarray):
         self.view(np.ndarray)[alt_key] = value
         
     def convert_key(self, key):
+        # convert ket into a tuple of ints and slices
         key = np.index_exp[key]
-        spin_key = _convert_spin_key(key[0], self.spins)
+
+        # perform the transformation from salm to indices
         if len(key) == 1:
-            r_key = spin_key,
+            if self.spins.shape is ():
+                return _convert_lm_key(key, self.lmax),
+            else:
+                return _convert_spin_key(key[0], self.spins),
         elif len(key) == 2:
-            if key[1] > self.lmax or key[1] < 0:
-                raise IndexError("order out of bounds")
-            l_ind = _lm_ind(key[1],-key[1])
-            order_key = slice(l_ind, l_ind + 2*key[1] +1)
-            r_key = spin_key, order_key
+            if self.spins.shape is ():
+                return _convert_lm_key(key, self.lmax),
+
+            else:
+                spin_key = _convert_spin_key(key[0], self.spins)
+                order_key = _convert_lm_key(key[1:], self.lmax)
+                return spin_key, order_key
         elif len(key) == 3:
-            if abs(key[2]) > self.lmax:
-                raise IndexError("degree out of bounds")
-            order_key = _lm_ind(key[1],key[2])
-            r_key = spin_key, order_key
+            spin_key = _convert_spin_key(key[0], self.spins)
+            order_key = _convert_lm_key(key[1:], self.lmax)
+            return spin_key, order_key
         else:
-            return IndexError("too many indices")
-        return r_key
-        
-        
-#    def check_lm(l,m):
-#        if l > self.lmax:
-#            raise ValueError('l must be less than or equal to lmax')
-#        if math.abs(m)> l:
-#            raise ValueError('|m| must be less than or equal to l')
+            raise IndexError("Too many indices")
 
     def _addsub(self, other, add):
+        #check object types and delegate addition if not sfpy_salm
         if not isinstance(other, sfpy_salm):
             if add:
                 return sfpy_salm(
@@ -185,38 +202,74 @@ class sfpy_salm(np.ndarray):
                     self.cg, 
                     self.bl_mult
                     )
+
+        #Perform set up
+        #Remember that we have three cases to deal with: 
+        # 1) other.spins == () and self.spins == () 
+        # 2) other.spins == () and self.spins is not ()
+        # 3) other.spins is not () and self.spins is not ()
+        # I deal with these cases by converting everything to
+        # arrays and then formatting the output appropriately.
         lmax = max(self.lmax, other.lmax)
         bl_mult = self.bl_mult or other.bl_mult
         cg = self.cg
         if self.cg is None and other.cg is not None:
             cg = other.cg
-        spins = np.union1d(self.spins, other.spins)
-        array = np.zeros((spins.shape[0], _lmax_Nlm(lmax)), dtype=np.typeDict["complex"])
-        s_len = self.shape[1]
-        o_len = other.shape[1]
+        s_spins = self.spins
+        s_array = np.asarray(self)
+        if self.spins.shape == ():
+            s_spins = np.atleast_1d(s_spins)
+            s_array = np.atleast_2d(s_array)
+        o_spins = other.spins
+        o_array = np.asarray(other)
+        if other.spins.shape is ():
+            o_spins = np.atleast_1d(o_spins)
+            o_array = np.atleast_2d(o_array)
+        spins = np.union1d(s_spins, o_spins)
+        if self.dtype <= other.dtype:
+            dtype = other.dtype
+        elif self.dtype > other.dtype:
+            dtype = self.dtype
+        else:
+            raise ValueError("Unable to infer the dtype of the result of\
+            addition")
+        array = np.zeros(
+            (spins.shape[0], _lmax_Nlm(lmax)), 
+            dtype=dtype
+            )
+        s_len = _lmax_Nlm(self.lmax)
+        o_len = _lmax_Nlm(other.lmax)
+
+        #Do computation
         for i, spin in enumerate(spins):
-            self_spins = self.spins==spin
-            self_has_spin = any(self_spins)
-            other_spins = other.spins==spin
-            other_has_spin = any(other_spins)
+            s_spins_select = s_spins==spin
+            self_has_spin = any(s_spins_select)
+            o_spins_select = o_spins==spin
+            other_has_spin = any(o_spins_select)
             if self_has_spin:
-                self_index = np.where(self_spins)[0][0]
-                array[i][:s_len] = self.view(np.ndarray)[self_index]
+                self_index = np.where(s_spins_select)[0][0]
+                array[i][:s_len] = s_array[self_index]
                 if other_has_spin:
-                    other_index = np.where(other_spins)[0][0]
+                    other_index = np.where(o_spins_select)[0][0]
                     if add:
-                        array[i][:o_len] += other.view(np.ndarray)[other_index]
+                        array[i][:o_len] += o_array[other_index]
                     else:
-                        array[i][:o_len] -= other.view(np.ndarray)[other_index]
+                        array[i][:o_len] -= o_array[other_index]
             elif other_has_spin:
-                other_index = np.where(other_spins)[0][0]
+                other_index = np.where(o_spins_select)[0][0]
                 if add:
-                    array[i][:o_len] += other.view(np.ndarray)[other_index]
+                    array[i][:o_len] += o_array[other_index]
                 else:
-                    array[i][:o_len] -= other.view(np.ndarray)[other_index]
+                    array[i][:o_len] -= o_array[other_index]
             else:
                 raise Exception("A spin has been encountered that is not in \
                 either summand.")
+
+        # Now we need to appropriately format the output
+        if self.spins.shape is () and other.spins.shape is () \
+            and self.spins == other.spins:
+            spins = spins[0]
+            array = array[0]    
         return sfpy_salm(array, spins, lmax, cg, bl_mult)
 
 
@@ -298,6 +351,29 @@ class sfpy_salm(np.ndarray):
         return sfpy_salm(array, spins, lmax)
 
 salm.Salm.register(sfpy_salm)
+
+def _convert_lm_key(key, lmax):
+    if isinstance(key, int):
+        l_ind = _lm_ind(key[0],-key[0])
+        return slice(l_ind, l_ind + 2*key[0] +1)
+    elif isinstance(key, slice):
+        raise IndexError("The order index cannot be a slice")
+    else:
+        if isinstance(key[0], slice):
+            raise IndexError("The order index cannot be a slice")
+        elif key[0] <= lmax and key[0] >= 0:
+            if len(key) == 1:
+                l_ind = _lm_ind(key[0],-key[0])
+                return slice(l_ind, l_ind + 2*key[0] +1)
+            elif len(key) == 2:
+                if isinstance(key[1], slice):
+                    raise IndexError("The degree index cannot be a slice")
+                elif abs(key[1]) <= key[0]:
+                    return _lm_ind(key[0],key[1])
+                else:
+                    raise IndexError("degree out of bounds")
+        else:
+            raise IndexError("order out of bounds")
 
 def _convert_spin_key(key, spins):
     if isinstance(key, int):
@@ -610,12 +686,32 @@ def _lmax_Nlm(lmax):
     
 if __name__ == "__main__":
     lmax = 3
-    spins = np.array([-1,0,1])
+    spins = [-1]
     Nlmax = _lmax_Nlm(lmax)
     a = np.arange(Nlmax)
-    a = np.array([a-15, a, a+15])
-    salm = sfpy_salm(a, spins, lmax)
-    salm[:, 1] = 2
-    print salm
+    a = np.array([a-Nlmax])
+    a_salm = sfpy_salm(a, spins, lmax)
+    print "a info"
+    print a_salm
+    print a_salm.spins
+    print a_salm.shape
 
+    lmax = 5
+    spins = -1
+    Nlmax = _lmax_Nlm(lmax)
+    b = np.arange(Nlmax)
+    b = np.array(16 - b)
+    b_salm = sfpy_salm(b, spins, lmax)
+    print "\n\nb info"
+    print b_salm
+    print b_salm.spins
+    print b_salm.shape
+ 
+    c_salm = a_salm + b_salm
+    print "\n\nc info"
+    print c_salm
+    print c_salm.spins
+    print c_salm.shape
 
+    print "\n\n"
+    print c_salm[-1][5,-2]
