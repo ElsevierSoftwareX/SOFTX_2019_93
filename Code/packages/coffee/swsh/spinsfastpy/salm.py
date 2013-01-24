@@ -74,6 +74,7 @@ class sfpy_salm(np.ndarray):
         Returns:
         salm -- an instance of class alm.salm
         """
+        # no error checking is currently done to test if s>=l. Be warned.
         spins = np.asarray(spins)
         if len(array.shape) == 1:
             if spins.shape is () and array.shape[0] == _lmax_Nlm(lmax):
@@ -93,6 +94,8 @@ class sfpy_salm(np.ndarray):
         obj.bl_mult = bandlimit_multiplication
         if cg is None:
             obj.cg = sfpy_salm.cg_default
+        else:
+            obj.cg = cg
         return obj
             
     def __array_finalize__(self, obj):
@@ -289,6 +292,7 @@ class sfpy_salm(np.ndarray):
             )
 
     def __mul__(self, other):
+        # Do we need to treat this multiplication as between salm objects?
         if not isinstance(other, sfpy_salm):
             a = sfpy_salm(
                 self.view(np.ndarray) * other, 
@@ -298,26 +302,58 @@ class sfpy_salm(np.ndarray):
                 self.bl_mult
                 )
             return a
+        # Set up work
+        # Transform everything to arrays
+        # Then format back when returning the result
+        bl_mult = self.bl_mult or other.bl_mult
+        cg = self.cg
+        if self.cg is None and other.cg is not None:
+            cg = other.cg
         if self.cg is None:
             raise Exception("alm.cg must be set to a valid clebschgordan object before multiplication can be done.")
-        if self.bandlimit_mult or other.bandlimit_mult:
+        if bl_mult:
             lmax = min(self.lmax, other.lmax)
         else:
             lmax = self.lmax + other.lmax
-        self_sorted_spins = sorted(self.spins)
-        other_sorted_spins = sorted(other.spins)
+        s_spins = self.spins
+        s_array = np.asarray(self)
+        if self.spins.shape == ():
+            s_spins = np.atleast_1d(s_spins)
+            s_array = np.atleast_2d(s_array)
+        self_sorted_spins = sorted(s_spins)
+        o_spins = other.spins
+        o_array = np.asarray(other)
+        if other.spins.shape is ():
+            o_spins = np.atleast_1d(o_spins)
+            o_array = np.atleast_2d(o_array)
+        other_sorted_spins = sorted(o_spins)
         min_spin = self_sorted_spins[0] + other_sorted_spins[0]
         max_spin = self_sorted_spins[-1] + other_sorted_spins[-1]
         spins = np.arange(min_spin, max_spin+1, 1)
-        array = np.zeros( (spins.shape[0], _lmax_Nlm(lmax)), dtype=np.typeDict['complex'] )
-        for self_s_index, self_s in enumerate(self.spins): 
-            for other_s_index, other_s in enumerate(other.spins):
+        if self.dtype <= other.dtype:
+            dtype = other.dtype
+        elif self.dtype > other.dtype:
+            dtype = self.dtype
+        else:
+            raise ValueError("Unable to infer the dtype of the result of\
+            multiplication")
+        array = np.zeros( 
+            (spins.shape[0], _lmax_Nlm(lmax)), 
+            dtype=dtype 
+            )
+        # Do the calculation already!
+        for self_s_index, self_s in enumerate(s_spins): 
+            for other_s_index, other_s in enumerate(o_spins):
                 s = self_s + other_s
                 s_index = np.where(spins==s)[0][0]
-                for k, self_salm in enumerate(self[self_s_index]):
-                    for l, other_salm in enumerate(other[other_s_index]):
-                        self_j, self_m = _ind_lm(k)
+                for k, self_salm in enumerate(s_array[self_s_index]):
+                    self_j, self_m = _ind_lm(k)
+                    if self_j < abs(self_s):
+                        continue
+                    for l, other_salm in enumerate(o_array[other_s_index]):
                         other_j, other_m = _ind_lm(l)
+                        if other_j < abs(other_s):
+                            continue
                         m = self_m + other_m
                         jmin = max(
                             abs(self_j - other_j), 
@@ -336,7 +372,7 @@ class sfpy_salm(np.ndarray):
                                 ) \
                                 * \
                                 self.cg(
-                                self_j, -self_s, other_j, -other_s, j, -s
+                                    self_j, -self_s, other_j, -other_s, j, -s
                                 )
                             jm_index = _lm_ind(j, m)
 #                            print "(j,m) = (%d, %d)"%(j,m)
@@ -348,7 +384,16 @@ class sfpy_salm(np.ndarray):
                                 first_f * second_f \
                                 * cg_fact * self_salm * other_salm
 #                            print "array is now %s"%repr(array)
-        return sfpy_salm(array, spins, lmax)
+        if self.spins.shape is () and other.spins.shape is ():
+            array = array[0]
+            spins = spins[0]
+        return sfpy_salm(
+            array, 
+            spins, 
+            lmax, 
+            cg=self.cg, 
+            bandlimit_multiplication=bl_mult
+            )
 
 salm.Salm.register(sfpy_salm)
 
@@ -685,33 +730,37 @@ def _lmax_Nlm(lmax):
     return sf.N_lm(lmax)
     
 if __name__ == "__main__":
+    from coffee.swsh import clebschgordan as cg
+    cg_object = cg.CGStone()
+
     lmax = 3
-    spins = [-1]
+    spins = -1
     Nlmax = _lmax_Nlm(lmax)
     a = np.arange(Nlmax)
-    a = np.array([a-Nlmax])
-    a_salm = sfpy_salm(a, spins, lmax)
+    a[:] =1 
+    #a = np.array([a])
+    a_salm = sfpy_salm(a, spins, lmax, cg=cg_object)
     print "a info"
     print a_salm
     print a_salm.spins
     print a_salm.shape
 
-    lmax = 5
+    lmax = 3
     spins = -1
     Nlmax = _lmax_Nlm(lmax)
     b = np.arange(Nlmax)
-    b = np.array(16 - b)
-    b_salm = sfpy_salm(b, spins, lmax)
+    b = np.array(b)
+    b_salm = sfpy_salm(b, spins, lmax, cg=cg_object)
     print "\n\nb info"
     print b_salm
     print b_salm.spins
     print b_salm.shape
  
-    c_salm = a_salm + b_salm
+    c_salm = a_salm * b_salm
     print "\n\nc info"
     print c_salm
     print c_salm.spins
     print c_salm.shape
 
     print "\n\n"
-    print c_salm[-1][5,-2]
+    print c_salm[5,-2]

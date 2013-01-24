@@ -12,6 +12,9 @@ from coffee.swsh import w3j
 
 NUMERICAL_ERROR_TOLERANCE = 1e-15
 
+def valid(j1, j2, j3, m1, m2, m3):
+    return w3j.valid(j1, j2, j3, m1, m2, m3)
+
 class CGW3j(object):
     """A class that produces Clebsch Gordan coefficients.
     
@@ -59,8 +62,6 @@ class CGStone(object):
     program rrfcalc. For some reason wrapping his fortran code directly with
     f2py ends with errors that are difficult to diagnose.
     """
-
-
     
     def __call__(self, j1, m1, j2, m2, j3, m3):
         """Returns the double precision value of the exact calculation of the
