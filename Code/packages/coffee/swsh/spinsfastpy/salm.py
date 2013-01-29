@@ -99,6 +99,7 @@ class sfpy_salm(np.ndarray):
         return obj
             
     def __array_finalize__(self, obj):
+        print "salm.__array_finalise"
         if obj is None: return
         self.spins = getattr(obj, 'spins', None)
         self.lmax = getattr(obj, 'lmax', None)
@@ -140,6 +141,17 @@ class sfpy_salm(np.ndarray):
 
     def multiplication_bandlimit(self, bool):
         self.bl_mult = bool
+
+    def __getslice__(self, start, stop):
+          """Thiss solves a subtle bug, where __getitem__ is not called, and all
+          the dimensional checking not done, when a slice of only the first
+          dimension is taken, e.g. a[1:3]. From the Python docs:
+          Deprecated since version 2.0: Support slice objects as parameters
+          to the __getitem__() method. (However, built-in types in CPython
+          currently still implement __getslice__(). Therefore, you have to
+          override it in derived classes when implementing slicing.)
+          """  
+        return self.__getitem__(slice(start, stop))
         
     def __getitem__(self, key):
         alt_key = self.convert_key(key)
@@ -171,7 +183,7 @@ class sfpy_salm(np.ndarray):
                 return _convert_lm_key(key, self.lmax),
             else:
                 return _convert_spin_key(key[0], self.spins),
-        elif len(key) == 2:
+        elif len(key) >= 2:
             if self.spins.shape is ():
                 return _convert_lm_key(key, self.lmax),
 
@@ -179,10 +191,6 @@ class sfpy_salm(np.ndarray):
                 spin_key = _convert_spin_key(key[0], self.spins)
                 order_key = _convert_lm_key(key[1:], self.lmax)
                 return spin_key, order_key
-        elif len(key) == 3:
-            spin_key = _convert_spin_key(key[0], self.spins)
-            order_key = _convert_lm_key(key[1:], self.lmax)
-            return spin_key, order_key
         else:
             raise IndexError("Too many indices")
 
@@ -456,9 +464,10 @@ class sfpy_sralm(np.ndarray):
     
     def __new__(cls, array, spins, lmax, cg=None, bandlimit_multiplication=False):
         """
-        Returns an instance of alm.salm.
+        Returns an instance of alm.sralm.
 
-        The array must have the following structure: len(array.shape)=3,
+        The array must have the following structure: len(array.shape)=2 or 3,
+        If .... balch
         array.shape[0] = number of spins
         array.shape[1] = number of grid points in the interval
         array.shape[2] = salm.__lmax_Nlm(lmax)
@@ -471,19 +480,20 @@ class sfpy_sralm(np.ndarray):
         Returns:
         sfpy_sralm -- an instance of class sfpy_sralm
         """
-        spins = np.atleast_1d(spins)
-        if len(array.shape) == 3:
-            obj = np.asarray(array).view(cls)
-        elif len(array.shape) == 2:
-            if array.shape[0] is not spins.shape[0]:
-                if len(spins.shape) == 1:
-                    obj = np.asarray(array)[np.newaxis,:,:].view(cls)
-                else:
-                    raise ValueError("The first dimension of array is not the same length as spins.")
+        spins = np.asarray(spins)
+        if len(array.shape) == 2:
+            if spins.shape is () and array.shape[1] == _lmax_Nlm(lmax):
+                obj = np.asarray(array).view(cls)
             else:
-                raise ValueError("array is 2-dimensional, it should be 3-dimensional.")
+                raise ValueError("Mal-formed array and shape for lmax")
+        elif len(array.shape) == 3:
+            if spins.shape[0] == array.shape[0] and \
+                array.shape[2] == _lmax_Nlm(lmax):
+                obj = np.asarray(array).view(cls)
+            else:
+                raise ValueError("Mal-formed array and shape for lmax")
         else:
-            raise ValueError("Array must be 3 dimensional")
+            raise ValueError("Array shape has too many or too few dimensions")
         obj.spins = spins
         obj.lmax = lmax
         obj.bl_mult = bandlimit_multiplication
@@ -492,6 +502,7 @@ class sfpy_sralm(np.ndarray):
         return obj
             
     def __array_finalize__(self, obj):
+        print "sralm.__array_finalize"
         if obj is None: return
         self.spins = getattr(obj, 'spins', None)
         self.lmax = getattr(obj, 'lmax', None)
@@ -501,15 +512,25 @@ class sfpy_sralm(np.ndarray):
     def __str__(self):
         s = "spins = %s,\n"%repr(self.spins)
         s += "lmax = %d,\n"%self.lmax
-        for j in self.spins:
+        if self.spins.shape is ():
             for i in range(self.shape[0]):
                 for l in range(self.lmax + 1):
-                    s +="(%f, %f) at %f r value: %s\n"%(
-                        j, 
+                    s +="(%.1f, %.1f) at %d r value: %s\n"%(
+                        int(self.spins), 
                         l, 
                         i,
-                        repr(self[j,i,l].view(np.ndarray))
+                        repr(self[i,l])
                         )
+        else:
+            for j in self.spins:
+                for i in range(self.shape[1]):
+                    for l in range(self.lmax + 1):
+                        s +="(%.1f, %.1f) at %d r value: %s\n"%(
+                            j, 
+                            l, 
+                            i,
+                            repr(self[j,i,l])
+                            )
         return s 
        
     def __repr__(self):
@@ -523,70 +544,206 @@ class sfpy_sralm(np.ndarray):
             )
         return s
 
+    def __getslice__(self, start, stop):
+          """Thiss solves a subtle bug, where __getitem__ is not called, and all
+          the dimensional checking not done, when a slice of only the first
+          dimension is taken, e.g. a[1:3]. From the Python docs:
+          Deprecated since version 2.0: Support slice objects as parameters
+          to the __getitem__() method. (However, built-in types in CPython
+          currently still implement __getslice__(). Therefore, you have to
+          override it in derived classes when implementing slicing.)
+          """  
+        return self.__getitem__(slice(start, stop))
+
     def __getitem__(self, key):
+        #import pdb; pdb.set_trace()
         key = self.convert_key(key)
+        if self.spins.shape is ():
+            return self._getitem_no_spin(key)
+        else:
+            return self._getitem_spin(key)
+
+    def _getitem_no_spin(self, key):
+        rv = np.asarray(self)[key]
         if len(key) == 1:
+            if len(rv.shape) == 2:
+                if rv.shape[0] == 1:
+                    return sfpy_salm(
+                        rv[0],
+                        self.spins,
+                        self.lmax,
+                        self.cg,
+                        self.bl_mult
+                        )
+                else:
+                    return sfpy_sralm(
+                        rv,
+                        self.spins,
+                        self.lmax,
+                        self.cg,
+                        self.bl_mult
+                        )
+            else:
+                return sfpy_salm(
+                    rv,
+                    self.spins,
+                    self.lmax,
+                    self.cg,
+                    self.bl_mult
+                    )
+        elif len(key) == 2:
+            if not isinstance(rv, np.ndarray) or len(rv.shape) < 2:
+                return rv
+            else:
+                if rv.shape[0] == 1:
+                    return sfpy_salm(
+                        rv[0],
+                        self.spins,
+                        self.lmax,
+                        self.cg,
+                        self.bl_mult
+                        )
+                else:
+                    return sfpy_sralm(
+                        rv,
+                        self.spins,
+                        self.lmax,
+                        self.cg,
+                        self.bl_mult
+                        )
+        raise IndexError("Unable to process selection")
+
+    def _getitem_spin(self, key):
+        rv = np.asarray(self)[key]
+        rs = self.spins[key[0]]
+        if len(key) < 2:
             return sfpy_sralm(
-                self.view(np.ndarray)[key],
-                self.spins[key],
+                rv,
+                rs,
                 self.lmax,
                 self.cg,
                 self.bl_mult
                 )
+        elif len(key) == 3:
+            return rv  
         elif len(key) == 2:
-            rv = self.view(np.ndarray)[key]
-            if len(rv.shape) < 3:
-                return sfpy_salm(
-                    rv,
-                    self.spins[key[0]],
-                    self.lmax,
-                    self.cg,
-                    self.bl_mult
-                    )
+            # This is the awkward case. Did we get rid of s or r dependence?
+            # note that r dependence can be removed in two ways, either the
+            # rv array has reduced shape length or length of the dimension
+            # representing r is 1.
+            if rs.shape is ():
+                #spins has disapeared we know that len(rv.shape) <=2
+                if len(rv.shape) < 2:
+                    #since the key is selecting for only s and r we know that
+                    # rv must contain all l values for the selected s and r
+                    # this is an salm object
+                    return sfpy_salm(
+                        rv,
+                        self.spins,
+                        self.lmax,
+                        self.cg,
+                        self.bl_mult
+                        )
+                else:
+                    #we need to test to see if r dependence has been removed
+                    if rv.shape[0] == 1:
+                        return sfpy_salm(
+                            rv[0],
+                            self.spins,
+                            self.lmax,
+                            self.cg,
+                            self.bl_mult
+                            )
+                    else:
+                        return sfpy_sralm(
+                            rv,
+                            rs,
+                            self.lmax,
+                            self.cg,
+                            self.bl_mult
+                            )
             else:
-                return sfpy_sralm(
-                    rv,
-                    self.spins[key],
-                    self.lmax,
-                    self.cg,
-                    self.bl_mult
-                    )
-        else:
-            return self.view(np.ndarray)[key]
+                #spin dependence still exists
+                if len(rv.shape) < 2:
+                    #the r dependence has been removed
+                    return sfpy_salm(
+                        rv,
+                        self.spins,
+                        self.lmax,
+                        self.cg,
+                        self.bl_mult
+                        )
+                elif rv.shape[1] == 1:
+                    return sfpy_salm(
+                        rv[:,0,:],
+                        self.spins,
+                        self.lmax,
+                        self.cg,
+                        self.bl_mult
+                        )
+                else:
+                    return sfpy_sralm(
+                        rv,
+                        rs,
+                        self.lmax,
+                        self.cg,
+                        self.bl_mult
+                        )
+        # if nothing was selected return an error
+        raise IndexError("Unable to process selection")
 
     def convert_key(self, key):
         key = np.index_exp[key]
         if len(key) == 1:
+            if self.spins.shape is ():
+                return key
             return _convert_spin_key(key[0], self.spins),
         elif len(key) == 2:
+            if self.spins.shape is ():
+                return key[0], _convert_lm_key(key[1:], self.lmax)
             return _convert_spin_key(key[0], self.spins), key[1] 
-        elif len(key) == 3:
-            if isinstance(key[2], slice):
-                if key[2].start is None and key[2].stop is None and \
-                    key[2].step is None:
-                    return _convert_spin_key(key[0], self.spins), key[1]
-                else:
-                    raise NotImplementedError("Slicing across degrees is not implemented.")
-            if key[2] <= self.lmax or key[2] >= 0:
-                l_ind = _lm_ind(key[2],-key[2])
-                order_key = slice(l_ind, l_ind + 2 * key[2] + 1)
+        elif len(key) >= 3:
+            if self.spins.shape is ():
+                return key[0], _convert_lm_key(key[1:], self.lmax)
             else:
-                raise IndexError("Order index not within bounds")
-            return _convert_spin_key(key[0], self.spins), key[1], order_key
-        elif len(key) == 4:
-            if key[2] <= self.lmax or key[2] >= 0:
-                if abs(key[3]) <= self.lmax:
-                    order_key = _lm_ind(key[2],key[3])
-            else:
-                raise IndexError("Order or degree out of bounds")
-            return _convert_spin_key(key[0], self.spins), key[1], order_key
+                return (
+                    _convert_spin_key(key[0], self.spins), 
+                    key[1],
+                    _convert_lm_key(key[2:], self.lmax)
+                    )
         else:
             return IndexError("too many indices")
 
     def __add__(self, other):
-        """Note that no checking for the correct spin is performed."""
-        return sfpy_sralm(
-                np.asarray(self) + other, 
+        if isinstance(other, sfpy_sralm):
+            if self.spins.shape == ():
+                rv_temp = self[0] + other[0]
+                rv = np.empty(
+                    (self.shape[0],) + (rv_temp.shape[0],),
+                    dtype = self.dtype
+                    )
+                rv[0] = rv_temp
+                for i in range(1, rv.shape[0]):
+                    rv[i] = self[i] + other[i]
+            else:
+                rv_temp = self[:,0] + other[:, 0]
+                rv = np.empty(
+                    (rv_temp.shape[0],) + (self.shape[1],) + (rv_temp.shape[1],),
+                    dtype = self.dtype
+                    )
+                rv[:, 0] = rv_temp
+                for i in range(1, rv.shape[0]):
+                    rv[:, i] = self[:, i] + other[:, i]
+            return sfpy_sralm(
+                rv,
+                rv_temp.spins,
+                rv_temp.lmax,
+                cg=rv_temp.cg,
+                bandlimit_multiplication=rv_temp.bl_mult
+                )
+        else:
+            return sfpy_sralm(
+                self.view(np.ndarray) + other,
                 self.spins,
                 self.lmax,
                 cg=self.cg,
@@ -604,9 +761,35 @@ class sfpy_sralm(np.ndarray):
                 )
 
     def __sub__(self, other):
-        """Note that no checking for the correct spin is performed."""
-        return sfpy_sralm(
-                np.asarray(self) - other, 
+        if isinstance(other, sfpy_sralm):
+            if self.spins.shape == ():
+                rv_temp = self[0] - other[0]
+                rv = np.empty(
+                    (self.shape[0],) + (rv_temp.shape[0],),
+                    dtype = self.dtype
+                    )
+                rv[0] = rv_temp
+                for i in range(1, rv.shape[0]):
+                    rv[i] = self[i] - other[i]
+            else:
+                rv_temp = self[:,0] - other[:, 0]
+                rv = np.empty(
+                    (rv_temp.shape[0],) + (self.shape[1],) + (rv_temp.shape[1],),
+                    dtype = self.dtype
+                    )
+                rv[:, 0] = rv_temp
+                for i in range(1, rv.shape[0]):
+                    rv[:, i] = self[:, i] - other[:, i]
+            return sfpy_sralm(
+                rv,
+                rv_temp.spins,
+                rv_temp.lmax,
+                cg=rv_temp.cg,
+                bandlimit_multiplication=rv_temp.bl_mult
+                )
+        else:
+            return sfpy_sralm(
+                self.view(np.ndarray) - other,
                 self.spins,
                 self.lmax,
                 cg=self.cg,
@@ -624,16 +807,15 @@ class sfpy_sralm(np.ndarray):
                 )
 
     def __mul__(self, other):
-        import pdb; pdb.set_trace()
         if isinstance(other, sfpy_sralm):
-            rv_temp = self[:,0,:] * other[:, 0, :]
+            rv_temp = self[:,0] * other[:, 0]
             rv = np.empty(
                 (rv_temp.shape[0],) + (self.shape[1],) + (rv_temp.shape[1],),
                 dtype = self.dtype
                 )
-            rv[:, 0, :] = rv_temp
+            rv[:, 0] = rv_temp
             for i in range(1, rv.shape[0]):
-                rv[:, i, :] = self[:, i, :] * other[:, i, :]
+                rv[:, i] = self[:, i] * other[:, i]
             return sfpy_sralm(
                 np.ndarray(rv),
                 rv_temp.spins,
@@ -730,37 +912,46 @@ def _lmax_Nlm(lmax):
     return sf.N_lm(lmax)
     
 if __name__ == "__main__":
-    from coffee.swsh import clebschgordan as cg
-    cg_object = cg.CGStone()
-
-    lmax = 3
-    spins = -1
-    Nlmax = _lmax_Nlm(lmax)
-    a = np.arange(Nlmax)
-    a[:] =1 
-    #a = np.array([a])
-    a_salm = sfpy_salm(a, spins, lmax, cg=cg_object)
-    print "a info"
-    print a_salm
-    print a_salm.spins
-    print a_salm.shape
-
-    lmax = 3
-    spins = -1
-    Nlmax = _lmax_Nlm(lmax)
-    b = np.arange(Nlmax)
-    b = np.array(b)
-    b_salm = sfpy_salm(b, spins, lmax, cg=cg_object)
-    print "\n\nb info"
-    print b_salm
-    print b_salm.spins
-    print b_salm.shape
- 
-    c_salm = a_salm * b_salm
-    print "\n\nc info"
-    print c_salm
-    print c_salm.spins
-    print c_salm.shape
-
+    lmax = 2
+    a = np.ones((2,_lmax_Nlm(lmax)))
+    spins = 2
+    p = sfpy_sralm(a, spins, lmax)
+    p[-1]
     print "\n\n"
-    print c_salm[5,-2]
+    p[-1:]
+    print "\n\n"
+    p[slice(-1,None,None)]
+    #from coffee.swsh import clebschgordan as cg
+    #cg_object = cg.CGStone()
+
+    #lmax = 3
+    #spins = -1
+    #Nlmax = _lmax_Nlm(lmax)
+    #a = np.arange(Nlmax)
+    #a[:] =1 
+    ##a = np.array([a])
+    #a_salm = sfpy_salm(a, spins, lmax, cg=cg_object)
+    #print "a info"
+    #print a_salm
+    #print a_salm.spins
+    #print a_salm.shape
+
+    #lmax = 3
+    #spins = -1
+    #Nlmax = _lmax_Nlm(lmax)
+    #b = np.arange(Nlmax)
+    #b = np.array(b)
+    #b_salm = sfpy_salm(b, spins, lmax, cg=cg_object)
+    #print "\n\nb info"
+    #print b_salm
+    #print b_salm.spins
+    #print b_salm.shape
+ 
+    #c_salm = a_salm * b_salm
+    #print "\n\nc info"
+    #print c_salm
+    #print c_salm.spins
+    #print c_salm.shape
+
+    #print "\n\n"
+    #print c_salm[5,-2]
