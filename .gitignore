@@ -23,7 +23,6 @@ Output/
 *.hdf
 *.ps
 *.gp
-*.eps
 
 # tex auxiliary files
 *.aux
