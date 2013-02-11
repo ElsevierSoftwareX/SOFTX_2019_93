@@ -23,7 +23,6 @@ Output/
 *.hdf
 *.ps
 *.gp
-*.eps
 
 # tex auxiliary files
 *.aux
@@ -49,3 +48,8 @@ libspinsfast.so
 
 #tilde backup files
 *~
+
+*.so.1
+*.so.*
+/icon.png
+/Docs/Papers/EREProc/ereproc.pdf

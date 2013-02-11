@@ -47,6 +47,9 @@ class ABCTimeSlice(object):
     def communicate(self):
         return self.domain.communicate(self.data)
 
+    def barrier(self):
+        return self.domain.barrier()
+
     def collect_data(self):
         data_all = self.domain.collect_data(self.data)
         domain_all = self.domain.full_grid
