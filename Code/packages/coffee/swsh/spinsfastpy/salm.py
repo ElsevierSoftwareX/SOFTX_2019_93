@@ -99,7 +99,6 @@ class sfpy_salm(np.ndarray):
         return obj
             
     def __array_finalize__(self, obj):
-        print "salm.__array_finalise"
         if obj is None: return
         self.spins = getattr(obj, 'spins', None)
         self.lmax = getattr(obj, 'lmax', None)
@@ -143,16 +142,16 @@ class sfpy_salm(np.ndarray):
         self.bl_mult = bool
 
     def __getslice__(self, start, stop):
-          """Thiss solves a subtle bug, where __getitem__ is not called, and all
-          the dimensional checking not done, when a slice of only the first
-          dimension is taken, e.g. a[1:3]. From the Python docs:
-          Deprecated since version 2.0: Support slice objects as parameters
-          to the __getitem__() method. (However, built-in types in CPython
-          currently still implement __getslice__(). Therefore, you have to
-          override it in derived classes when implementing slicing.)
-          """  
+        """Thiss solves a subtle bug, where __getitem__ is not called, and all
+        the dimensional checking not done, when a slice of only the first
+        dimension is taken, e.g. a[1:3]. From the Python docs:
+        Deprecated since version 2.0: Support slice objects as parameters
+        to the __getitem__() method. (However, built-in types in CPython
+        currently still implement __getslice__(). Therefore, you have to
+        override it in derived classes when implementing slicing.)
+        """  
         return self.__getitem__(slice(start, stop))
-        
+
     def __getitem__(self, key):
         alt_key = self.convert_key(key)
         if len(alt_key) == 1:
@@ -502,7 +501,6 @@ class sfpy_sralm(np.ndarray):
         return obj
             
     def __array_finalize__(self, obj):
-        print "sralm.__array_finalize"
         if obj is None: return
         self.spins = getattr(obj, 'spins', None)
         self.lmax = getattr(obj, 'lmax', None)
@@ -513,7 +511,8 @@ class sfpy_sralm(np.ndarray):
         s = "spins = %s,\n"%repr(self.spins)
         s += "lmax = %d,\n"%self.lmax
         if self.spins.shape is ():
-            for i in range(self.shape[0]):
+            #for i in range(self.shape[0]):
+            for i in [0,1,2,self.shape[0]-3, self.shape[0]-2, self.shape[0]-1]:
                 for l in range(self.lmax + 1):
                     s +="(%.1f, %.1f) at %d r value: %s\n"%(
                         int(self.spins), 
@@ -545,14 +544,14 @@ class sfpy_sralm(np.ndarray):
         return s
 
     def __getslice__(self, start, stop):
-          """Thiss solves a subtle bug, where __getitem__ is not called, and all
-          the dimensional checking not done, when a slice of only the first
-          dimension is taken, e.g. a[1:3]. From the Python docs:
-          Deprecated since version 2.0: Support slice objects as parameters
-          to the __getitem__() method. (However, built-in types in CPython
-          currently still implement __getslice__(). Therefore, you have to
-          override it in derived classes when implementing slicing.)
-          """  
+        """Thiss solves a subtle bug, where __getitem__ is not called, and all
+        the dimensional checking not done, when a slice of only the first
+        dimension is taken, e.g. a[1:3]. From the Python docs:
+        Deprecated since version 2.0: Support slice objects as parameters
+        to the __getitem__() method. (However, built-in types in CPython
+        currently still implement __getslice__(). Therefore, you have to
+        override it in derived classes when implementing slicing.)
+        """  
         return self.__getitem__(slice(start, stop))
 
     def __getitem__(self, key):
