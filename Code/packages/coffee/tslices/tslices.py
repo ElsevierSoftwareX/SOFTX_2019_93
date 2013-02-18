@@ -95,7 +95,6 @@ class TimeSlice(ABCTimeSlice):
         # Putting other first ensures that if other is a timeslice
         # then the sum isn't distributed over the elements of self.data.
         try:
-            import pdb; pdb.set_trace()
             rv =  other + self.data
         except:
             raise NotImplementedError(
@@ -166,7 +165,7 @@ class TimeSlice(ABCTimeSlice):
             rv = self.data * other
         except:
             raise NotImplementedError(
-                "Multiplicatio of %s and %s is not implemented"
+                "Multiplication of %s and %s is not implemented"
                 %(self, other)
                 )
         return TimeSlice(rv, self.domain, self.time)
