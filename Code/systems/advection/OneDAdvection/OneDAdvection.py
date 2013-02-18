@@ -20,8 +20,8 @@ from coffee.system import System
 
 class OneDAdvection(System):
 
-    def timestep(self,grid):
-        ssizes = grid.step_sizes
+    def timestep(self, tslice):
+        ssizes = tslice.domain.step_sizes
         spatial_divisor = (1/ssizes[0])
         dt = self.CFL/spatial_divisor
         return dt
@@ -32,6 +32,7 @@ class OneDAdvection(System):
     def __init__(self, D, CFL, tau = None):
 #        super(OneDAdvection, self).__init__()
         self.log = logging.getLogger("OneDAdvection")
+        self.numvar = 1
         self.D = D
         self.tau = tau
         self.CFL = CFL
@@ -54,7 +55,7 @@ class OneDAdvection(System):
     
     def boundaryRight(self,t,Psi):
         return 0.5 * math.sin( 2*math.pi*(t+2) / 
-            ( Psi.domain.axes[-1] - Psi.domain.axes[0] ) )
+            ( Psi.domain.axes[0][-1] - Psi.domain.axes[0][0] ) )
         #return 0.0
         
     def boundaryLeft(self,t,Psi):
@@ -68,9 +69,9 @@ class OneDAdvection(System):
             (t,Psi,intStep))
          
         # Define useful variables
-        f0 = Psi.fields[0]
-        x   = Psi.domain
-        dx  = Psi.dx
+        f0 = Psi.data[0]
+        x   = Psi.domain.axes[0]
+        dx  = Psi.domain.step_sizes[0]
         tau = self.tau
         
         ########################################################################
@@ -98,7 +99,7 @@ class OneDAdvection(System):
                 
         # now all time derivatives are computed
         # package them into a time slice and return
-        rtslice = tslices.timeslice([Dtf],Psi.domain,time=t)
+        rtslice = tslices.TimeSlice([Dtf],Psi.domain,time=t)
         if __debug__:
             self.log.debug("Exiting evaluation with timeslice = %s"%
                 repr(rtslice))
@@ -127,10 +128,11 @@ class OneDAdvection(System):
         rtslice = tslices.timeslice([rv],grid,t0)
         return rtslice
         
-    def exp_bump(self,t0,grid):
-        mid_ind = int(grid.shape[0]/2)
-        rv = 0.5*np.exp(-40*(grid-grid[mid_ind])*(grid-grid[mid_ind]))
-        return tslices.timeslice([rv],grid,t0)
+    def exp_bump(self, t0, grid):
+        axis = grid.axes[0]
+        mid_ind = int(axis.shape[0]/2)
+        rv = 0.5*np.exp(-40*(axis-axis[mid_ind])*(axis-axis[mid_ind]))
+        return tslices.TimeSlice([rv],grid,t0)
     
     def sin(self,t0,grid):
         r = grid.axes

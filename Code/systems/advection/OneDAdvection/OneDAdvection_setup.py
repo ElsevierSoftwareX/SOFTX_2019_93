@@ -11,7 +11,9 @@ import argparse
 
 #Import standard code base
 from coffee import ibvp, actions, solvers, grid
-from coffee.diffop import fd, fft, sbp
+from coffee.actions import gp_plotter
+from coffee.diffop import fd, fft
+from coffee.diffop.sbp import sbp
 
 #import system to use
 import OneDAdvection
@@ -105,9 +107,6 @@ raxis_1D_diffop = sbp.D42()
 #raxis_1D_diffop = fft.RFFT_scipy(1)
 #raxis_1D_diffop = fft.FFT_lagrange1(N,xstop-xstart)
 
-# Configuration of IBVP
-solver = solvers.RungeKutta4()
-maxIteration = 1000000
 
 ################################################################################
 # Grid construction
@@ -122,7 +121,7 @@ ghp = 2 #raxis_1D_diffop.ghost_points()
 ghost_points = ghp    
 
 # Build grids
-grids = [grid.Interval_1D(raxis_gdp[i], [[xstart,xstop]],\
+grids = [grid.UniformCart((raxis_gdp[i],), [(xstart, xstop)],\
     comparison = raxis_gdp[i]) for i in range(num_of_grids)]
 
 ################################################################################
@@ -149,6 +148,10 @@ for i in range(num_of_grids):
         )]
 if log.isEnabledFor(logging.DEBUG):
     log.debug("Initialisation of systems complete.")
+
+# Configuration of IBVP
+solvers = [solvers.RungeKutta4(system) for system in systems]
+maxIteration = 1000000
 
 ################################################################################
 # Set up hdf file to store output
@@ -188,19 +191,20 @@ gnu_plot_settings = [\
 # Perform computation
 ################################################################################
 log.info("Simulation configuration complete.")
-for i,system in enumerate(systems):
+for i, system in enumerate(systems):
         #Construct Actions
         actionList = []
         if display_output:
-            actionList += [actions.GNUPlotter1D(\
-                *gnu_plot_settings,frequency = 1,\
-                system = system,\
-                delay = 0.\
+            actionList += [gp_plotter.Plotter1D(
+                system,
+                *gnu_plot_settings,
+                frequency = 1,
+                delay = 0.
                 )]
         if store_output:
             actionList += [actions.SimOutput(\
                 hdf_file,\
-                solver, \
+                solvers[i], \
                 system, \
                 grids[i], \
                 output_actions,\
@@ -209,7 +213,7 @@ for i,system in enumerate(systems):
                 cmp_ = grids[i].comparison\
                 )]
         log.info("Starting simulation %i with system %s"%(i,repr(system)))
-        problem = ibvp.IBVP(solver, system, grid = grids[i],\
+        problem = ibvp.IBVP(solvers[i], system, grid = grids[i],\
                 maxIteration = 1000000, action = actionList)
         problem.run(tstart, tstop)
         log.info("Simulation complete")
