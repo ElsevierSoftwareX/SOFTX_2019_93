@@ -106,13 +106,13 @@ class IBVP:
             except OverflowError as e:
                 print "Overflow error({0}): {1}".format(e.errno, e.strerror)
                 computation_valid = False
-            u.domain.mpi.comm.barrier()
+            u.domain.barrier()
             self.iteration+=1
             if __debug__:
                 self.log.debug("time slice after advance = %s"%repr(u))
         # end (while)
         self._run_actions(t, u)
-        u.domain.mpi.comm.barrier()
+        u.domain.barrier()
         self.log.info(
             "Finished computation at time %f for iteration %i"%
             (t,self.iteration)
