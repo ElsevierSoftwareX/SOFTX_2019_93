@@ -55,7 +55,7 @@ class sfpy_salm(np.ndarray):
     is implemented.
     """
     
-    cg_default = None
+    cg_default = cg_mod.CGStone()
     
     def __new__(cls, array, spins, lmax, cg=None, bandlimit_multiplication=False):
         """
@@ -92,6 +92,7 @@ class sfpy_salm(np.ndarray):
         obj.spins = spins
         obj.lmax = lmax
         obj.bl_mult = bandlimit_multiplication
+        #cg should never be None
         if cg is None:
             obj.cg = sfpy_salm.cg_default
         else:
@@ -103,7 +104,7 @@ class sfpy_salm(np.ndarray):
         self.spins = getattr(obj, 'spins', None)
         self.lmax = getattr(obj, 'lmax', None)
         self.bl_mult = getattr(obj, 'bl_mult', None)
-        self.cg = getattr(obj, "cg", None)
+        self.cg = getattr(obj, "cg", sfpy_salm.cg_default)
        
     def __str__(self):
         s = "spins = %s,\n"%repr(self.spins)
@@ -496,6 +497,7 @@ class sfpy_sralm(np.ndarray):
         obj.spins = spins
         obj.lmax = lmax
         obj.bl_mult = bandlimit_multiplication
+        # cg should never be none
         if cg is None:
             obj.cg = sfpy_salm.cg_default
         return obj
@@ -505,7 +507,7 @@ class sfpy_sralm(np.ndarray):
         self.spins = getattr(obj, 'spins', None)
         self.lmax = getattr(obj, 'lmax', None)
         self.bl_mult = getattr(obj, 'bl_mult', None)
-        self.cg = getattr(obj, "cg", None)
+        self.cg = getattr(obj, "cg", sfpy_salm.cg_default)
        
     def __str__(self):
         s = "spins = %s,\n"%repr(self.spins)
