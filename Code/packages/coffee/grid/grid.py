@@ -80,7 +80,7 @@ class ABCGrid(object):
 
     def collect_data(self, data):
         if self.mpi is None:
-            return 
+            return data
         return self.mpi.collect_data(data)
     
     @abc.abstractproperty
