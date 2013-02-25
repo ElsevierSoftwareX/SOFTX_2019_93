@@ -7,8 +7,27 @@ import logging
 from coffee.actions import Prototype
 
 class Plotter1D(Prototype):
-    
+    """This class provides convient access to GnuPlot's functions. It is not
+    suitable for animations since the GnuPlot object is persistent between
+    calls to this class. 
+    """
+
     def __init__(self, system, *args, **kwds):
+        """The constructor for Plotter1D objects.
+
+        Plotter1D subclasses actions.Prototype.
+
+        Positional Arguments:
+        all positional arguments are passed to the GnuPlot object.
+
+        Keyword Arguments:
+        delay - the delay in seconds between plotting events
+        title - the title of the plot. The default is the time of the plot
+        data_function - a function that takes the interation number,
+          a timeslice and the system. It should return a tuple consisting
+          of the domain of the data and a two dimensional array. The first
+          dimension of the array is considered to be the components. The
+          second dimenion is considered to give the domain dependence."""
         if 'start' in kwds:
             start = kwds.pop('start')
         else:
@@ -17,7 +36,6 @@ class Plotter1D(Prototype):
             frequency = kwds.pop('frequency')
         else:
             frequency = 1
-        super(Plotter1D, self).__init__(frequency = frequency, start = start)
         if 'delay' in kwds:
             self.delay = kwds.pop('delay')
         else:
@@ -36,6 +54,11 @@ class Plotter1D(Prototype):
             self.datafunc = lambda y,x,z:x.data
         if __debug__:
             self.log.debug("Initialising plotter...")
+        super(Plotter1D, self).__init__(
+            frequency = frequency,
+            start = start,
+            **kwds
+            )
         self.Device = Gnuplot.Gnuplot()
         g = self.Device
         for arg in args:
@@ -45,10 +68,12 @@ class Plotter1D(Prototype):
 
     def _doit(self, it, u):
         g = self.Device
-        x = u.domain.axes[0]
+        #x = u.domain.axes[0]
 #        if __debug__:
 #            self.log.debug("Plotting iteration %i with data %s"%(it,str(u)))
-        f = np.atleast_2d(self.datafunc(it,u,self.system))
+        #import pdb;pdb.set_trace()
+        x, f = self.datafunc(it,u,self.system)
+        f = np.atleast_2d(f)
         if __debug__:
             self.log.debug("Data after processing by self.datafunc is %s"%f)
             self.log.debug(
