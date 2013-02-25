@@ -7,6 +7,7 @@ import time
 import sys
 import logging 
 import math 
+import importlib
 
 sys.path.append("../../EvolutionSBP/")
 #import system
@@ -15,6 +16,101 @@ sys.path.append("../../EvolutionSBP/")
 #import actions
 #import solvers
 #import simulation_data
+
+#Important configuration is included after these two classes
+
+# A wrapper class that helps ease iteration over datasets with 
+# str(int) indices going from 0,1,... upwards.
+class DataGroup(object):
+    """The DataGroup class wraps a h5py group so that the setter, getter
+    and iter methods do sensible array like things.
+    """
+    global group
+    
+    @property
+    def attrs(self):
+        return self.group.attrs
+    
+    @property
+    def name(self):
+        return self.group.name
+    
+    def attrs_list(self, kwd):
+        list = []
+        for data_set in self:
+            list += data_set.attrs[kwd]
+        return list
+    
+    def index_of_attr(self, attr, value, start_index = 0, \
+        value_comparor = lambda x:x==value):
+        """Returns the index of the dataset in self whose attribute attr
+        has value value. The function value_comparor allows for fudging a 
+        little."""
+        index = -1
+        for i in range(start_index, len(self)):
+            if value_comparor(self[i].attrs[attr]):
+                index = self[i].attrs['index']
+                break
+        return index
+    
+    def __init__(self, grp, returnValue=False):
+        """The group to behave like an array. It is assumed that
+        the group has/will have a number of datasets with the labels
+        '0','1', etc... 
+        """
+        self.group = grp
+        self.rV = returnValue
+
+    def __iter__(self):
+        """Iterates in increasing numerical order 0,1,2,3,...
+        across the datasets of the group. Returns the dataset
+        at position 0,1,2,3...
+        """
+        i = 0
+        while True:
+            try:
+                yield  self[i]
+                i+=1
+            except:
+                return
+
+    def __len__(self):
+        return len(self.group)
+    
+    def __setitem__(self, i, value):
+        value = np.array(value)
+        dataset = self.group.require_dataset(str(i), value.shape,  value.dtype)
+        dataset[:] = value
+        dataset.attrs['index'] = i
+    
+    def __getitem__(self, i):
+        if self.rV:
+          return self.group[str(i)].value
+        return self.group[str(i)]
+        
+    def __repr__(self):
+        return r"<H5pyArray datagroup %s (%d)>"% (self.name, len(self))       
+        
+class DomainDataGroup(DataGroup):
+
+    def __setitem__(self, i, value):
+        value = np.array(value)
+        dataset = self.group.require_dataset(str(i), value.shape,  value.dtype)
+        dataset[:] = value
+        dataset.attrs['index'] = i
+    
+    def __getitem__(self, i):
+        dataset = self.group[str(i)]
+        axes_shape = dataset.attrs['axes_shape']
+        axes = []
+        start = 0
+        for i in range(len(axes_shape)):
+            axes += [dataset.value[start:start + axes_shape[i]]]
+            start = start + axes_shape[i]
+        return axes
+        
+    def __repr__(self):
+        return r"<H5pyArray domaindatagroup %s (%d)>"% (self.name, len(self)) 
 
 # Do not change the keys!
 #
@@ -45,6 +141,9 @@ dgTypes = {
 
 dgTypesInv = dict(zip(dgTypes.values(),dgTypes.keys()))
 
+dgTypes_DataGroups = {
+    "domain": (None, DomainDataGroup)}
+
 # SystemDataTypes stores a list of all the subgroups in the system groups.
 
 systemD = "System"
@@ -56,8 +155,6 @@ sysDTypes = {\
     "cmp": "cmp",
     "numvar": "NumVariables"
     }
-
-
 
 # An interface to ease interaction with the simulationHDF class when
 # only a specific simulation is wanted. I expect this class to be used the
@@ -80,12 +177,28 @@ class Sim(object):
         for key, item in dgTypes.items():
             if item in existing_items:
                 if self.name in self.simHDF[item].keys():
-                    if key == "domain":
-                        setattr(self,key,
-                          DomainDataGroup(self.simHDF[item+"/"+self.name],
-                            returnValue=True
-                            )
-                          )
+                    if key in dgTypes_DataGroups:
+                        if dgTypes_DataGroups[key][0] is not None:
+                            mod = __import__(
+                                dgTypes_DataGroups[key][0],
+                                fromlist=[dgTypes_DataGroups[key][1]]
+                                )
+                            dataGroup = getattr(
+                                    mod, 
+                                    dgTypes_DataGroups[key][1]
+                                    )
+                            setattr(self, key,
+                              dataGroup(self.simHDF[item+"/"+self.name],
+                                returnValue=True
+                                )
+                              )
+                        else:
+                            setattr(self, key,
+                              dgTypes_DataGroups[key][1](
+                                  self.simHDF[item+"/"+self.name],
+                                  returnValue=True
+                                )
+                              )
                     else:      
                         setattr(self,key,
                           DataGroup(self.simHDF[item+"/"+self.name],
@@ -364,112 +477,6 @@ class SimulationHDF(object):
         for key,value in self.derivedAttrs.items():
             dg[it].attrs[key] = value
 
-# A wrapper class that helps ease iteration over datasets with 
-# str(int) indices going from 0,1,... upwards.
-class DataGroup():
-    """The DataGroup class wraps a h5py group so that the setter, getter
-    and iter methods do sensible array like things.
-    """
-    global group
-    
-    @property
-    def attrs(self):
-        return self.group.attrs
-    
-    @property
-    def name(self):
-        return self.group.name
-    
-    def attrs_list(self, kwd):
-        list = []
-        for data_set in self:
-            list += data_set.attrs[kwd]
-        return list
-    
-    def index_of_attr(self, attr, value, start_index = 0, \
-        value_comparor = lambda x:x==value):
-        """Returns the index of the dataset in self whose attribute attr
-        has value value. The function value_comparor allows for fudging a 
-        little."""
-        index = -1
-        for i in range(start_index, len(self)):
-            if value_comparor(self[i].attrs[attr]):
-                index = self[i].attrs['index']
-                break
-        return index
-    
-#    def index_of(self,value):
-#        min_v = self[0]
-#        max_v = self[-1]
-#        if value <= min_v:
-#            return 0
-#        elif value>= max_v:
-#            return len(times_dg)-1
-#        else:
-#            for i,v in enumerate(self):
-#                dt = times_dg[i+1].value-time_dg.value
-#                if t-dt/2<time_dg.value<t+dt/2:
-#                    return i
-#            return None
-    
-    def __init__(self, grp, returnValue=False):
-        """The group to behave like an array. It is assumed that
-        the group has/will have a number of datasets with the labels
-        '0','1', etc... 
-        """
-        self.group = grp
-        self.rV = returnValue
-
-    def __iter__(self):
-        """Iterates in increasing numerical order 0,1,2,3,...
-        across the datasets of the group. Returns the dataset
-        at position 0,1,2,3...
-        """
-        i = 0
-        while True:
-            try:
-                yield  self[i]
-                i+=1
-            except:
-                return
-
-    def __len__(self):
-        return len(self.group)
-    
-    def __setitem__(self, i, value):
-        value = np.array(value)
-        dataset = self.group.require_dataset(str(i), value.shape,  value.dtype)
-        dataset[:] = value
-        dataset.attrs['index'] = i
-    
-    def __getitem__(self, i):
-        if self.rV:
-          return self.group[str(i)].value
-        return self.group[str(i)]
-        
-    def __repr__(self):
-        return r"<H5pyArray datagroup %s (%d)>"% (self.name, len(self))       
-        
-class DomainDataGroup(DataGroup):
-
-    def __setitem__(self, i, value):
-        value = np.array(value)
-        dataset = self.group.require_dataset(str(i), value.shape,  value.dtype)
-        dataset[:] = value
-        dataset.attrs['index'] = i
-    
-    def __getitem__(self, i):
-        dataset = self.group[str(i)]
-        axes_shape = dataset.attrs['axes_shape']
-        axes = []
-        start = 0
-        for i in range(len(axes_shape)):
-            axes += [dataset.value[start:start + axes_shape[i]]]
-            start = start + axes_shape[i]
-        return axes
-        
-    def __repr__(self):
-        return r"<H5pyArray domaindatagroup %s (%d)>"% (self.name, len(self)) 
         
 def binarysearch(a,low,high,value):
     if high<low:
@@ -534,44 +541,3 @@ def _array_value_index_mapping_recursive(correct,cor_ind,\
             raise Exception("Unable to compare %s and %s"%\
                                     (com,cor))
     return index_mapping
-
-
-#def array_value_index_mapping(\
-#    correct,\
-#    comparison,\
-#    compare_function= lambda x, y:x==y,\
-#    compare_last_axes = 0,\
-#    ):
-#    index_mapping = []
-#    _list_comparor_recursive([],  correct, [], comparison, index_mapping,\
-#        compare_function,compare_last_axes = compare_last_axes)
-#    return index_mapping
-#
-#def _list_comparor_recursive(correct_index,  correct_axes, comparison_index,\
-#        comparison_axes, reduced_comparison_axes, compare_function,\
-#        compare_last_axes = 0):
-#    if len(correct_axes.shape) == compare_last_axes and\
-#        len(comparison_axes.shape) == compare_last_axes:
-#        if compare_last_axes == 0 and compare_function(correct_axes, comparison_axes)\
-#            or compare_last_axes !=0 and all(compare_function(correct_axes, comparison_axes)):
-#            if len(correct_index) == 1:
-#                reduced_comparison_axes.append((correct_index[0], \
-#                    comparison_index[0]))
-#            else:
-#                reduced_comparison_axes.append((tuple(correct_index), \
-#                    tuple(comparison_index)))
-#    elif not len(correct_axes.shape) == compare_last_axes:
-#        for i, row in enumerate(correct_axes):
-#            correct_index.append(i)
-#            _list_comparor_recursive(correct_index, row, comparison_index, \
-#                comparison_axes,  reduced_comparison_axes, compare_function, \
-#                compare_last_axes = compare_last_axes)
-#            correct_index.pop()
-#    elif not len(comparison_axes.shape) == compare_last_axes:
-#        for i, row in enumerate(comparison_axes):
-#            comparison_index.append(i)
-#            _list_comparor_recursive(correct_index,  correct_axes, \
-#                comparison_index,\
-#                row, reduced_comparison_axes, compare_function,\
-#                compare_last_axes = compare_last_axes)
-#            comparison_index.pop()
