@@ -55,7 +55,6 @@ class IBVP:
         no returned object
 
         """
-        sol.use_system(eqn)
         self.theSolver = sol
         self.theSystem = eqn
         self.maxIteration = maxIteration
