@@ -20,7 +20,7 @@ from spinsfast import forward_transform.
 
 Some example code, both C and Python can be found in ./examples.
 """
-__all__ = ['forward','backward','salm']
+#__all__ = ['forward','backward','salm']
 
 from forward_transform import forward
 from backward_transform import backward
@@ -34,4 +34,3 @@ del delta_matrix
 
 def set_clebsch_gordan_default(cg):
     sfpy_salm.cg_default = cg
-
