@@ -76,7 +76,8 @@ class ABCGrid(object):
                 r_slice[i] = slice(-1, None, None)
                 r_slices += [(i, 1, edims_slice + tuple(r_slice))]
             return r_slices
-        return self.mpi.boundary_slices(shape)
+        else:
+            return self.mpi.boundary_slices(shape)
 
     def collect_data(self, data):
         if self.mpi is None:
@@ -143,7 +144,10 @@ class UniformCart(ABCGrid):
         if self.mpi is None:
             self._axes = _axes
         else:
-            self._axes = [axis[self.mpi.subdomain] for axis in _axes]
+            self._axes = [
+                axis[self.mpi.subdomain[i]] 
+                for i, axis in enumerate(_axes)
+                ]
 
     @property
     def axes(self):
