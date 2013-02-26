@@ -20,8 +20,8 @@ from coffee.system import System
 
 class OneDwave(System):
 
-    def timestep(self,grid):
-        ssizes = grid.step_sizes
+    def timestep(self, u):
+        ssizes = u.domain.step_sizes
         spatial_divisor = (1/ssizes[0])
         dt = self.CFL/spatial_divisor
         return dt
@@ -76,10 +76,10 @@ class OneDwave(System):
             (t,Psi,intStep))
          
         # Define useful variables
-        f0,Dtf0 = tuple(Psi.fields[k] for k in range(Psi.numFields))
+        f0, Dtf0 = Psi.data
         
         x   = Psi.domain
-        dx  = Psi.dx
+        dx  = Psi.domain.step_sizes[0]
         tau = self.tau
         
         ########################################################################
@@ -112,9 +112,9 @@ class OneDwave(System):
                 
         # now all time derivatives are computed
         # package them into a time slice and return
-        rtslice = tslices.timeslice([Dtf0,DtDtf],Psi.domain,time=t)
+        rtslice = tslices.TimeSlice([Dtf0,DtDtf],Psi.domain,time=t)
         if __debug__:
-            self.log.debug("Exiting evaluation with timeslice = %s"%repr(rtslice))
+            self.log.debug("Exiting evaluation with TimeSlice = %s"%repr(rtslice))
         return rtslice
     
     ############################################################################
@@ -136,17 +136,18 @@ class OneDwave(System):
         ru = np.vectorize(deriv_bump)(grid)
         rv = 0.5*rv/np.amax(rv)
         ru = 0.5*ru/np.amax(rv)
-        rtslice = tslices.timeslice([rv,ru],grid,t0)
+        rtslice = tslices.TimeSlice([rv,ru],grid,t0)
         return rtslice
         
     def sin(self,t0,grid):
         r = grid.axes
         print r
         rv = np.sin(2*math.pi*r/(grid[-1]-grid[0]))
-        rtslice = tslices.timeslice([rv,np.zeros_like(rv)],grid,t0)
+        rtslice = tslices.TimeSlice([rv,np.zeros_like(rv)],grid,t0)
         return rtslice
         
     def exp_bump(self,t0,grid):
-        mid_ind = int(grid.shape[0]/2)
-        rv = 0.5*np.exp(-10*(grid-grid[mid_ind])*(grid-grid[mid_ind]))
-        return tslices.timeslice([rv,np.zeros_like(rv)],grid,t0)
+        axis = grid.axes[0]
+        mid_ind = int(axis.shape[0]/2)
+        rv = 0.5*np.exp(-10*(axis-axis[mid_ind])*(axis-axis[mid_ind]))
+        return tslices.TimeSlice([rv,np.zeros_like(rv)], grid, t0)

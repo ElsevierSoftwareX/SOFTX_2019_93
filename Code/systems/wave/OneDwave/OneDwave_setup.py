@@ -10,10 +10,9 @@ import argparse
 
 #Import standard code base
 from coffee import ibvp, actions, solvers, grid
-from coffee import ibvp, actions, solvers, grid
-from coffee.diffop import fd, fft, sbp
-from coffee.diffop import fd, fft, sbp
-from coffee.io import simulation_data
+from coffee.actions import gp_plotter 
+from coffee.diffop import fd, fft
+from coffee.diffop.sbp import sbp
 from coffee.io import simulation_data
 
 #import system to use
@@ -85,7 +84,7 @@ xstop = 4
 
 # Times to run between
 tstart = 0.0
-tstop = 5
+tstop = 50
 
 # Penalty boundary parameter
 tau = 10
@@ -101,7 +100,6 @@ raxis_2D_diffop = sbp.D43_2_CNG()
 #raxis_2D_diffop = fft.FFTW(2,xstop-xstart)
 
 # Configuration of IBVP
-solver = solvers.RungeKutta4()
 maxIteration = 1000000
 
 ################################################################################
@@ -117,8 +115,11 @@ raxis_gdp = [N*2**i for i in range(num_of_grids)]
 #ghost_points = ghp    
 
 # Build grids
-grids = [grid.Interval_1D(raxis_gdp[i], [[xstart,xstop]],\
-    comparison = raxis_gdp[i]) for i in range(num_of_grids)]
+grids = [grid.UniformCart(
+    (raxis_gdp[i],), 
+    [(xstart, xstop)],
+    comparison = raxis_gdp[i]
+    ) for i in range(num_of_grids)]
 
 ################################################################################
 # Print logging information
@@ -145,6 +146,11 @@ for i in range(num_of_grids):
         )]
 if log.isEnabledFor(logging.DEBUG):
     log.debug("Initialisation of systems complete.")
+
+###############################################################################
+# Initialise Solver
+################################################################################
+RKsolvers = [solvers.RungeKutta4(system) for system in systems]
 
 ################################################################################
 # Set up hdf file to store output
@@ -187,15 +193,16 @@ for i,system in enumerate(systems):
         #Construct Actions
         actionList = []
         if display_output:
-            actionList += [actions.GNUPlotter1D(\
-                *gnu_plot_settings,frequency = 1,\
-                system = system,\
-                delay = 0.\
+            actionList += [gp_plotter.Plotter1D(\
+                system,\
+                *gnu_plot_settings, 
+                frequency = 1,\
+                delay = 0.01\
                 )]
         if store_output:
             actionList += [actions.SimOutput(\
                 hdf_file,\
-                solver, \
+                RKsolvers[i], \
                 system, \
                 grids[i], \
                 output_actions,\
@@ -204,7 +211,7 @@ for i,system in enumerate(systems):
                 cmp_ = grids[i].comparison\
                 )]
         log.info("Starting simulation %i with system %s"%(i,repr(system)))
-        problem = ibvp.IBVP(solver, system, grid = grids[i],\
+        problem = ibvp.IBVP(RKsolvers[i], system, grid = grids[i],\
                 maxIteration = 1000000, action = actionList)
         problem.run(tstart, tstop)
         log.info("Simulation complete")
