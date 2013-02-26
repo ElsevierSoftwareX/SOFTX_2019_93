@@ -48,8 +48,8 @@ class EvenCart(MPIInterface):
         self.domain_mapping = self._make_domain_mappings(domain)
 
     def boundary_slices(self, shape):
-        #if __debug__:
-            #self.log.debug("Calculating boundary slices in mpi")
+        if __debug__:
+            self.log.debug("Calculating boundary slices in mpi")
         extra_dims = len(shape) - len(self.domain)
         edims_shape = shape[:extra_dims]
         edims_slice = tuple([
