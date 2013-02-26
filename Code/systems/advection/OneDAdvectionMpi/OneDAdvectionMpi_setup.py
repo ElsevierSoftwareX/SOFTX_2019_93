@@ -12,7 +12,8 @@ from mpi4py import MPI
 
 #Import standard code base
 from coffee import ibvp, solvers, grid, actions
-from coffee.diffop import fd, fft, sbp
+from coffee.diffop import fd, fft
+from coffee.diffop.sbp import sbp
 from coffee.actions import gp_plotter
 
 #import system to use
