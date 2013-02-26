@@ -50,6 +50,13 @@ class EvenCart(MPIInterface):
     def boundary_slices(self, shape):
         if __debug__:
             self.log.debug("Calculating boundary slices in mpi")
+        ## Well I don't know what I was thinking about with regards the
+        ## extra_dims thing. It may have been a good idea... I don't know. It
+        ## doesn't work for systems with 2d domains. So I'm going to comment all
+        ## lines with edims (or something similar) out and add in a non-edims
+        ## version of the code.
+        ##
+        ## Please don't delete these commented lines! I might need them.
         extra_dims = len(shape) - len(self.domain)
         edims_shape = shape[:extra_dims]
         edims_slice = tuple([
@@ -71,12 +78,14 @@ class EvenCart(MPIInterface):
                     for d in self.domain
                     ]
                 r_slice[i] = slice(None, 1, None)
+                #r_slices += [(i, -1, tuple(r_slice))]
                 r_slices += [(i, -1, edims_slice + tuple(r_slice))]
                 #r_slice = [
                     #slice(None, None, None)
                     #for d in self.domain
                     #]
                 r_slice[i] = slice(-1, None, None)
+                #r_slices += [(i, 1, tuple(r_slice))]
                 r_slices += [(i, 1, edims_slice + tuple(r_slice))]
             elif coords[i] == 0:
                 r_slice = [
@@ -84,6 +93,7 @@ class EvenCart(MPIInterface):
                     for d in self.domain
                     ]
                 r_slice[i] = slice(None, 1, None)
+                #r_slices += [(i, -1, tuple(r_slice))]
                 r_slices += [(i, -1, edims_slice + tuple(r_slice))]
             elif coords[i] == dim-1:
                 r_slice = [
@@ -92,6 +102,7 @@ class EvenCart(MPIInterface):
                     ]
                 r_slice[i] = slice(-1, None, None)
                 r_slices += [(i, 1, edims_slice + tuple(r_slice))]
+                #r_slices += [(i, 1, tuple(r_slice))]
         return r_slices
 
 
@@ -198,17 +209,17 @@ class EvenCart(MPIInterface):
         #if self.comm.size == 1:
             #return []
         nslices = self._neighbour_slices(data.shape)
-        #if __debug__:
-            #self.log.debug("about to perform communication")
-            #self.log.debug("nslices = %s"%(repr(nslices)))
-            #self.log.debug("data is %s"%repr(data))
+        if __debug__:
+            self.log.debug("about to perform communication")
+            self.log.debug("nslices = %s"%(repr(nslices)))
+            self.log.debug("data is %s"%repr(data))
         r_data = []
         for source, dest, send_slice, recv_slice in nslices:
-            #if __debug__:
-                #self.log.debug(
-                    #"source=%d, dest=%d, send_slice=%s, recv_slice=%s"%
-                    #(source, dest, repr(send_slice), repr(recv_slice))
-                    #)
+            if __debug__:
+                self.log.debug(
+                    "source=%d, dest=%d, send_slice=%s, recv_slice=%s"%
+                    (source, dest, repr(send_slice), repr(recv_slice))
+                    )
             if dest < 0:
                 send_data = None
             else:
@@ -226,23 +237,23 @@ class EvenCart(MPIInterface):
                 #when testing the above assertion I suggest changing this
                 #line to np.ones_like, rather than np.empty_like
                 recv_data = np.empty_like(data[recv_slice])
-            #if __debug__:
-                #self.log.debug("About to sendrecv")
-                #self.log.debug("data to be sent is %s"%send_data)
+            if __debug__:
+                self.log.debug("About to sendrecv")
+                self.log.debug("data to be sent is %s"%send_data)
             self.comm.Sendrecv(
                 send_data,
                 dest=dest,
                 recvbuf=recv_data,
                 source=source
                 )
-            #if __debug__:
-                #self.log.debug("Received data = %s"%recv_data)
-                #self.log.debug("Sendrecv completed")
+            if __debug__:
+                self.log.debug("Received data = %s"%recv_data)
+                self.log.debug("Sendrecv completed")
             if source >= 0:
                 r_data += [(recv_slice, recv_data)]
-        #if __debug__:
-            #self.log.debug("r_data = %s"%repr(r_data))
-            #self.log.debug("communication complete")
+        if __debug__:
+            self.log.debug("r_data = %s"%repr(r_data))
+            self.log.debug("communication complete")
         return r_data
 
     def collect_data(self, data):

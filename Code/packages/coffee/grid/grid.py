@@ -54,6 +54,8 @@ class ABCGrid(object):
         #At some point this reuse of code will need to be resolved.
         #The problem boils down to which object should handle boundary
         #slices when no mpi is used.
+        if __debug__:
+            self.log.debug("In grid.boundary_slices")
         if self.mpi is None:
             if __debug__:
                 self.log.debug(
@@ -73,10 +75,16 @@ class ABCGrid(object):
                     ]
                 r_slice[i] = slice(None, 1, None)
                 r_slices += [(i, -1, edims_slice + tuple(r_slice))]
+                #r_slices += [(i, -1, tuple(r_slice))]
                 r_slice[i] = slice(-1, None, None)
                 r_slices += [(i, 1, edims_slice + tuple(r_slice))]
+                #r_slices += [(i, 1, tuple(r_slice))]
             return r_slices
         else:
+            if __debug__:
+                self.log.debug(
+                    "Boundary slices to be calcualted by mpi"
+                    )
             return self.mpi.boundary_slices(shape)
 
     def collect_data(self, data):

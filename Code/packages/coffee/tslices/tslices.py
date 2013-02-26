@@ -101,6 +101,8 @@ class ABCTimeSlice(object):
                   self.domain.boundary_slices(self.data.shape)
 
         """
+        if __debug__:
+            self.log.debug("calling self.domain.boundary_slices")
         return self.domain.boundary_slices(self.data.shape)
     
     def communicate(self):
