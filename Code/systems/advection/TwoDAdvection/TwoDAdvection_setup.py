@@ -114,7 +114,7 @@ ystop = 2
 
 # Times to run between
 tstart = 0.0
-tstop = 3
+tstop = 2
 
 # Configuration of System
 CFLs = [0.5 for i in range(num_of_grids)]
@@ -172,7 +172,7 @@ if __debug__:
     log.debug("Initialising systems.")
 for i in range(num_of_grids):
     systems += [TwoDAdvection.TwoDadvection(\
-        -1,-1,\
+        1, 1,\
         xaxis_1D_diffop,\
         yaxis_1D_diffop,\
         CFL = CFLs[i],\

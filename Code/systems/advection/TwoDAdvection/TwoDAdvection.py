@@ -54,6 +54,9 @@ class TwoDadvection(System):
     def initial_data(self,t0,r):
         self.log.info("Initial value routine = central bump")
         return self.centralBump(t0,r)
+
+    def boundary(self, t, Psi):
+        return np.zeros_like(Psi.data[0])
     
     def first_right(self,t,Psi):
         return np.zeros_like(Psi.domain.axes[0])
@@ -72,31 +75,31 @@ class TwoDadvection(System):
         # Define useful variables
         f0, = Psi.data
         
-        r = Psi.domain.axes[0]
-        theta = Psi.domain.axes[1]
-        dr  = Psi.domain.step_sizes[0]
-        dphi = Psi.domain.step_sizes[1]
+        x = Psi.domain.axes[0]
+        y = Psi.domain.axes[1]
+        dx  = Psi.domain.step_sizes[0]
+        dy = Psi.domain.step_sizes[1]
         tau = self.tau
         
         ########################################################################
         # Calculate derivatives and impose boundary conditions
         ########################################################################
         Dxf = np.apply_along_axis(
-            lambda x:self.Dx(x, dr),
-            1, 
+            lambda x:self.Dx(x, dx),
+            0, 
             f0
             )
         #if __debug__:
         #    self.log.debug("Dxf is %s"%repr(Dxf))
         Dyf = np.apply_along_axis(
-            lambda x:self.Dy(x,dphi),
-            0,
+            lambda y:self.Dy(y,dy),
+            1,
             f0
             )
-        Dtf = self.xcoef*Dxf + self.ycoef*Dyf
                 
         if __debug__:
-            self.log.debug("""Derivatives are: Dtf0 = %s"""%(repr(Dtf)))
+            self.log.debug("""Derivatives are: Dxf = %s"""%(repr(Dxf)))
+            self.log.debug("""Derivatives are: Dyf = %s"""%(repr(Dyf)))
         
         ########################################################################
         # Impose boundary conditions 
@@ -112,19 +115,20 @@ class TwoDadvection(System):
         # values depending on the operator.
         #
         
-        pt_x_r = self.Dx.penalty_boundary(dr, "right")
+        pt_x_r = self.Dx.penalty_boundary(dx, "right")
         pt_x_r_shape = pt_x_r.size 
-        pt_x_l = self.Dx.penalty_boundary(dr, "left")
+        pt_x_l = self.Dx.penalty_boundary(dx, "left")
         pt_x_l_shape = pt_x_l.size 
 
-        pt_y_r = self.Dy.penalty_boundary(dr, "right")
+        pt_y_r = self.Dy.penalty_boundary(dy, "right")
         pt_y_r_shape = pt_y_r.size 
-        pt_y_l = self.Dy.penalty_boundary(dr, "left")
+        pt_y_l = self.Dy.penalty_boundary(dy, "left")
         pt_y_l_shape = pt_y_l.size 
 
         #First do internal boundaries
         if __debug__:
             self.log.debug("Implementing internal boundaries")
+        #import pdb; pdb.set_trace()
         b_values = Psi.communicate()
         if __debug__:
             self.log.debug("b_values = %s"%repr(b_values))
@@ -144,41 +148,43 @@ class TwoDadvection(System):
             #Note that sigma3 = sigma1 - eigenvalue_on_boundary, at least when
             #the eigenvalue is positive. For negative eigenvalue it seems to me
             #that the roles of sigma3 and sigma1 are reversed.
-            psi0_chara = kappa[d_slice[1]]/(1+tkappap[d_slice[1]])
-            psi4_chara = -kappa[d_slice[1]]/(1-tkappap[d_slice[1]])
-            sigma3psi0 = 0
-            sigma1psi0 = sigma3psi0 - 1
-            sigma1psi4 = 0
-            sigma3psi4 = sigma1psi4 - 1
-            #sigma1drpsi4r0 = 1 #a2/(1 - t)
-            #sigma3drpsi4r0 = 1 #sigma1drpsi4r0 - a2/(1 - t)
-            #if __debug__:
-                #self.log.debug("psi0_chara = %f"%psi0_chara)
-                #self.log.debug("psi4_chara = %f"%psi4_chara)
-                #self.log.debug("sigma1psi0 = %f"%sigma1psi0)
-                #self.log.debug("sigma3psi0 = %f"%sigma3psi0)
-                #self.log.debug("sigma1psi4 = %f"%sigma1psi4)
-                #self.log.debug("sigma3psi4 = %f"%sigma3psi4)
+            x_chara = self.xcoef
+            y_chara = self.ycoef
+            if x_chara > 0:
+                sigma3x = 0
+            else:
+                sigma3x = 1
+            sigma1x = sigma3x - 1
+            if y_chara > 0:
+                sigma1y = 0
+            else:
+               sigma1y = 1
+            sigma3y = sigma1y - 1
             if d_slice[1] == slice(-1, None, None):
                 if __debug__:
-                    self.log.debug("Calculating right boundary")
-                dpsi0[-pt_r_shape:] += sigma1psi0 * psi0_chara * pt_r * (
-                    psi0[d_slice[1]] - data[0]
+                    self.log.debug("Calculating right x boundary")
+                Dxf[-pt_x_r_shape:] += sigma1x * x_chara * pt_x_r * (
+                        f0[d_slice[1:]] - data[0]
                     )
-                dpsi4[-pt_r_shape:] += sigma1psi4 * psi4_chara * pt_r * (
-                    psi4[d_slice[1]] - data[4]
-                    )
-                #dtdrpsi4r0[:] = data[5]
-            else:
+            elif d_slice[1] == slice(None, 1, None):
                 if __debug__:
-                    self.log.debug("Calculating left boundary")
-                dpsi0[:pt_l_shape] += sigma3psi0 * psi0_chara * pt_l * (
-                    psi0[d_slice[1]] - data[0]
-                    )
-                dpsi4[:pt_l_shape] += sigma3psi4 * psi4_chara * pt_l * (
-                    psi4[d_slice[1]] - data[4]
-                    )
-                dtdrpsi4r0[:] = 0.0
+                    self.log.debug("Calculating left x boundary")
+                Dxf[:pt_x_l_shape] += sigma3x * x_chara * pt_x_l * (
+                        f0[d_slice[1:]] - data[0]
+                        )
+            elif d_slice[1] == slice(None, None, None):
+                if d_slice[2] == slice(-1, None, None):
+                    if __debug__:
+                        self.log.debug("Calculating right y boundary")
+                    Dyf[-pt_y_r_shape:] += sigma1y * y_chara * pt_y_r * (
+                            f0[d_slice[1:]] - data[0]
+                        )
+                elif d_slice[2] == slice(None, 1, None):
+                    if __debug__:
+                        self.log.debug("Calculating left y boundary")
+                    Dyf[:pt_y_l_shape] += sigma3y * y_chara * pt_y_l * (
+                            f0[d_slice[1:]] - data[0]
+                            )
 
         #Now do the external boundaries
         if __debug__:
@@ -189,22 +195,34 @@ class TwoDadvection(System):
         for dim, direction, d_slice in b_data:
             if __debug__:
                 self.log.debug("Boundary slice is %s"%repr(d_slice))
-            if direction == 1:
-                if __debug__:
-                    self.log.debug("Doing external boundary")
-                dpsi0[-pt_r_shape:] -= tau * (kappa[-1]/(1 + tkappap[-1])) \
-                    * (psi0[-1] - self.right(t,Psi)) * pt_r
-        #oned_pt = self.Dx.penalty_boundary(dr, "left")
-        #oned_pt_shape = oned_pt.size
-        #penalty_term = np.lib.stride_tricks.as_strided(
-            #oned_pt,
-            #shape = (oned_pt_shape, r.size),
-            #strides = (oned_pt.itemsize, 0)
-            #)
-        #Dxf[:oned_pt_shape] -= self.tau * \
-            #(f0[:oned_pt_shape] - self.first_right(t, Psi)) * \
-            #penalty_term
-                
+                self.log.debug("Dimension is %d"%dim)
+                self.log.debug("Direction is %d"%direction)
+            d_slice = d_slice[1:]
+            if dim == 0:
+                if self.xcoef > 0 and direction == 1:
+                    if __debug__:
+                        self.log.debug("Doing right hand x boundary")
+                    Dxf[-pt_x_r_shape:] -= tau * self.xcoef * \
+                        (f0[d_slice] - self.boundary(t,Psi)[d_slice]) * pt_x_r
+                if self.xcoef < 0 and direction == -1:
+                    if __debug__:
+                        self.log.debug("Doing left hand x boundary")
+                    Dxf[:pt_x_l_shape] += tau * self.xcoef * \
+                        (f0[d_slice] - self.boundary(t,Psi)[d_slice]) * pt_x_l
+            elif dim == 1:
+                if self.ycoef > 0 and direction == 1:
+                    if __debug__:
+                        self.log.debug("Doing right hand y boundary")
+                    Dyf[:,-pt_y_r_shape:] -= tau * self.ycoef * \
+                        (f0[d_slice] - self.boundary(t,Psi)[d_slice]) * pt_y_r
+                if self.ycoef < 0 and direction == -1:
+                    if __debug__:
+                        self.log.debug("Doing left hand y boundary")
+                    Dyf[:,:pt_y_l_shape] += tau * self.ycoef * \
+                        (f0[d_slice] - self.boundary(t,Psi)[d_slice]) * pt_y_l
+
+        Dtf = self.xcoef*Dxf + self.ycoef*Dyf
+
         # now all time derivatives are computed
         # package them into a time slice and return
         rtslice = tslices.TimeSlice([Dtf],Psi.domain,time=t)
