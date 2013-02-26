@@ -139,9 +139,9 @@ class Plotter2D(Prototype):
         if __debug__:
             self.log.debug("Data after processing by self.datafunc is %s"%f)
             self.log.debug(
-                "Shape of domain to plot over is %s"%x.shape
+                "Shape of domain to plot over is (%s,%s)"%
+                (x[0].shape[0], x[1].shape[0])
                 )
-            self.log.debug("Domain to plot over is %s"%repr(x))
         graphs = []
         self.device('set title "%s" enhanced'%self.title%(it, u.time))
         for i in range(f.shape[0]):
