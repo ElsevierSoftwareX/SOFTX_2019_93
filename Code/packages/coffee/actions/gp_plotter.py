@@ -44,14 +44,14 @@ class Plotter1D(Prototype):
         if 'title' in kwds:
             self.title = kwds.pop('title')
         self.system = system
-        self.log = logging.getLogger("GNUplotter")
+        self.log = logging.getLogger("Plotter1D")
         try:
             if kwds['data_function'] is not None:
                 self.datafunc = kwds.pop('data_function') 
             else:
-                self.datafunc = lambda y,x,z:x.data
+                self.datafunc = lambda y,x,z:(x.domain.axes[0], x.data)
         except:
-            self.datafunc = lambda y,x,z:x.data
+            self.datafunc = lambda y,x,z:(x.domain.axes[0],x.data)
         if __debug__:
             self.log.debug("Initialising plotter...")
         super(Plotter1D, self).__init__(
@@ -68,10 +68,8 @@ class Plotter1D(Prototype):
 
     def _doit(self, it, u):
         g = self.Device
-        #x = u.domain.axes[0]
-#        if __debug__:
-#            self.log.debug("Plotting iteration %i with data %s"%(it,str(u)))
-        #import pdb;pdb.set_trace()
+        if __debug__:
+            self.log.debug("Plotting iteration %i with data %s"%(it,str(u)))
         x, f = self.datafunc(it,u,self.system)
         f = np.atleast_2d(f)
         if __debug__:
@@ -115,24 +113,15 @@ class Plotter2D(Prototype):
             self.components = None
         
         self.system = kwds.pop('system')
-        #self.log = logging.getLogger("GNUPlotter2D")
+        self.log = logging.getLogger("Plotter2D")
         try:
             if kwds['data_function'] is not None:
                 self.datafunc = kwds.pop('data_function') 
             else:
-                self.datafunc = lambda y,x,z:x.data
+                self.datafunc = lambda y,x,z:(x.domain.axes, x.data)
         except:
-            self.datafunc = lambda y,x,z:x.data
+            self.datafunc = lambda y,x,z:(x.domain.axes, x.data)
 
-#        if 'start' in kwds:
-#            start = kwds.pop('start')
-#        else:
-#            start = -float('Infinity')
-#        if 'frequency' in kwds:
-#            frequency = kwds.pop('frequency')
-#        else:
-#            frequency = 1
-#        super(GNUPlotter2D,self).__init__(frequency = frequency, start = start)
 #        if __debug__:
 #            self.log.debug("Initialising plotter...")
         self.device = Gnuplot.Gnuplot()
@@ -143,20 +132,24 @@ class Plotter2D(Prototype):
 #            self.log.debug("Done.-")
 
     def _doit(self, it, u):
-        x = u.x
-#        if __debug__:
-#            self.log.debug("Plotting iteration %i with data %s"%(it,str(u)))
-        f = np.atleast_2d(self.datafunc(it, u, self.system))
-#        if __debug__:
-#            self.log.debug("Data after processing by self.datafunc is %s"%f)
+        if __debug__:
+            self.log.debug("Plotting iteration %i with data %s"%(it,str(u)))
+        x, f = self.datafunc(it, u, self.system)
+        f = np.atleast_2d(f)
+        if __debug__:
+            self.log.debug("Data after processing by self.datafunc is %s"%f)
+            self.log.debug(
+                "Shape of domain to plot over is %s"%x.shape
+                )
+            self.log.debug("Domain to plot over is %s"%repr(x))
         graphs = []
         self.device('set title "%s" enhanced'%self.title%(it, u.time))
         for i in range(f.shape[0]):
             if self.components is None:
                 graphs += [Gnuplot.GridData(
                     f[i,:,:],
-                    xvals = x.axes[0],
-                    yvals = x.axes[1],
+                    xvals = x[0],
+                    yvals = x[1],
                     filename="deleteme.gp",
                     title = "Component %i"%i,
                     binary = 0
@@ -164,8 +157,8 @@ class Plotter2D(Prototype):
             else:
                 graphs += [Gnuplot.GridData(
                     f[i,:,:],
-                    xvals = x.axes[0],
-                    yvals = x.axes[1],
+                    xvals = x[0],
+                    yvals = x[1],
                     filename="deleteme.gp",
                     title = self.components[i],
                     binary = 0
