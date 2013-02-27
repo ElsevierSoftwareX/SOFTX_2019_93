@@ -46,8 +46,8 @@ class ABCGrid(object):
 
     def barrier(self):
         if self.mpi is None:
-            return
-        return self.mpi.comm.barrier()
+            return 
+        return self.mpi.barrier()
 
     def boundary_slices(self, shape):
         #Note that essentailly the same code is used in mpiinterfaces.py

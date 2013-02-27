@@ -118,6 +118,9 @@ class ABCTimeSlice(object):
         """
         return self.domain.communicate(self.data)
 
+    def barrier(self):
+        return self.domain.barrier()
+
     def collect_data(self):
         """Returns a timeslice containing the almalgum of all data and domains
         across all subdomains.

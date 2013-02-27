@@ -35,6 +35,11 @@ class MPIInterface(object):
         """Returns slices which represent the portions of the domain which
         are on a external boundary."""
 
+    def barrier(self):
+        if self.comm is None:
+            return
+        return self.comm.barrier()
+
 ###############################################################################
 # Concrete implementations
 ###############################################################################

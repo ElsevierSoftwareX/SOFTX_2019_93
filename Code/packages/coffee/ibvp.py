@@ -175,7 +175,7 @@ class IBVP:
             # If we're using an mpi enable grid, this ensures that all
             # processes have gotten to the same point before continuing the
             # simulation.
-            u.domain.barrier()
+            u.barrier()
             # On to the next iteration.
             self.iteration+=1
             if __debug__:
@@ -183,10 +183,11 @@ class IBVP:
         # end (while)
         # Run the actions once more before exiting.
         self._run_actions(t, u)
+
         # This statement might be unnecessary. In principle it ensures that all
         # processes are about to complete the current simulation before exit
         # occurs.
-        u.domain.barrier()
+        u.barrier()
         self.log.info(
             "Finished computation at time %f for iteration %i"%
             (t,self.iteration)
