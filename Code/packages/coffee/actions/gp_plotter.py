@@ -1,3 +1,10 @@
+"""A module containing actions that interface with GnuPlot.
+
+Classes:
+Plotter1D - plots one dimensional data
+Plotter2D - plots two dimensional data
+
+"""
 import Gnuplot
 import time
 import os
@@ -7,9 +14,18 @@ import logging
 from coffee.actions import Prototype
 
 class Plotter1D(Prototype):
-    """This class provides convient access to GnuPlot's functions. It is not
+    """This class provides convient access to GnuPlot's functions for one
+    dimensional data.
+    
+    It is not
     suitable for animations since the GnuPlot object is persistent between
     calls to this class. 
+
+    The simulation it self does not need to be one dimensional. The data to be
+    plotted is 'pre-processed' by an function that is passed by the user. In
+    this way the user can, for example, specify if the modulus, or argument
+    of complex data is to be plotted.
+
     """
 
     def __init__(self, system, *args, **kwds):
@@ -18,7 +34,9 @@ class Plotter1D(Prototype):
         Plotter1D subclasses actions.Prototype.
 
         Positional Arguments:
-        all positional arguments are passed to the GnuPlot object.
+        all positional arguments are passed to the GnuPlot object. These
+        arguments should be strings respecting the documentation of GnuPlot.
+        They are passed to the Gnuplot object g as g(pos_argument)
 
         Keyword Arguments:
         delay - the delay in seconds between plotting events
@@ -27,7 +45,10 @@ class Plotter1D(Prototype):
           a timeslice and the system. It should return a tuple consisting
           of the domain of the data and a two dimensional array. The first
           dimension of the array is considered to be the components. The
-          second dimenion is considered to give the domain dependence."""
+          second dimenion is considered to give the domain dependence.
+
+        """
+
         if 'start' in kwds:
             start = kwds.pop('start')
         else:
@@ -95,8 +116,41 @@ class Plotter1D(Prototype):
         del self.Device
 
 class Plotter2D(Prototype):
+    """This class provides convient access to GnuPlot's functions for two
+    dimensional data.
+    
+    It is not
+    suitable for animations since the GnuPlot object is persistent between
+    calls to this class. 
+
+    The simulation it self does not need to be two dimensional. The data to be
+    plotted is 'pre-processed' by an function that is passed by the user. 
+    
+    """
     
     def __init__(self, *args, **kwds):
+        """The constructor for Plotter1D objects.
+
+        Plotter1D subclasses actions.Prototype.
+
+        Positional Arguments:
+        all positional arguments are passed to the GnuPlot object. These
+        arguments should be strings respecting the documentation of GnuPlot.
+        They are passed to the Gnuplot object g as g(pos_argument)
+
+        Keyword Arguments:
+        delay - the delay in seconds between plotting events
+        title - the title of the plot. The default is the time of the plot
+        components - a list of strings that are used to label the `components'
+                     being plotted.
+        data_function - a function that takes the interation number,
+          a timeslice and the system. It should return a tuple consisting
+          of the domain of the data and a three dimensional array. The first
+          dimension of the array is considered to be a number of `components'
+          each of which is to be plotted. The
+          second and third dimenions is considered to give the domain dependence.
+
+        """
         if 'delay' in kwds:
             self.delay = kwds.pop('delay')
         else:

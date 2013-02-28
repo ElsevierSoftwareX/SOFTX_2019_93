@@ -1,3 +1,18 @@
+"""This module writes the data of a timeslice to an hdf file. 
+
+The main class SimOutput uses objects of class SimOutput.SimOutputType to
+actually write the data. By subclassing SimOutput.SimOutputType in the mannor
+specified below non - numpy array data can be stored conviently.
+
+I think of this method as a plugin in system. The user writes a new output
+method for some kind of new data type in a sub class of SimOutputType and
+'plugs' this method into the 'action' list of SimOutput.
+
+Class:
+SimOutput - an action which manages the writing out of data as given in the
+            SimOutputType objects.
+
+"""
 import logging
 import numpy as np
 
@@ -12,7 +27,7 @@ class SimOutput(Prototype):
     Each piece of data to be output is passed, as an object, to this class in 
     the array actionTypes.
     
-    These objects are subclasses of SimOutputType and class which is accessible
+    These objects are subclasses of SimOutputType a class which is accessible
     as an attribute of SimOutput.
     
     The existing subclasses of SimOutputType are:
@@ -32,17 +47,53 @@ class SimOutput(Prototype):
               
     For information about how to access this data please see the simulation_data
     module.
+
+    Details on how to subclass SimOutputType are given in the documentation for
+    the SimOutputType class.
     """
 
     def __init__(self, hdf_file, solver, theSystem, theInterval, 
             actionTypes, 
-#            frequency = 1, 
             cmp_ = None, 
             overwrite = True, 
             name = None, 
-#            start = -float('infinity'), 
-#            stop = float('infinity'),
-            **kwds):
+            **kwds
+            ):
+        """The constructor for the SimOutput action.
+        
+        The goal for this object is to allow for complete replication of the
+        simulation by storing the needed information in the hdf file. This
+        requires that the system and solver being used have sensible string
+        representations that allow for rebuilding exact duplicates of the
+        corresponding objects used in the original simulation.
+
+        Needless to say that this is not currently the case, but I think its a
+        good idea.
+
+        Arguments:
+        hdf_file - an instance of h5py.File. This is the file to which data
+                   will be written.
+        solver - an instance of solvers.Solver.
+        theSystem - an instance of systems.System.
+        theInterval - an instance of grid.ABCGrid
+        actiontypes - a list of SimOutputType objects. Each time the SimOutput
+                      action is run this list is iterated through and each
+                      SimOutputType object is called. This object writes out
+                      data according to it's own routine and stores it in the
+                      given hdf file.
+
+        Keyword Arguments:
+        cmp_ - something that allows for comparison of simulations. In one
+               dimensional simulations this is the number of grid points. This
+               is used by the error script to work out which simulations should
+               be compared. 
+
+               This will need to be replaced by something more robust.
+        overwrite - If you are outputting a simulation into an existing hdf
+                    file do you want to allow the simulation to overwrite the
+                    existing data? Defaults to True.
+        name - What is the name of this simulation?
+        """
         self.log = logging.getLogger("SimOutput")
         if __debug__:
             self.log.debug("Setting up HDF output...")
@@ -74,14 +125,49 @@ class SimOutput(Prototype):
                 self.log.debug("Output done")
 
     class SimOutputType(object):
+        """If you want to customise the output to the hdf file subclass this
+        class.
 
+        This class handles the organisation of the hdf file structure so that
+        you don't have to. It slices, it dices, it picks the group to store the
+        datasets that will contain your data. That data group is stored in the
+        atribute self.data_group.
+
+        It also handles the inclusion of derived attribute in the .attrs
+        variable of the relevant data_set. Sometimes this is needed if more
+        than a numpy array needs to be retreived.
+
+        """
         def __init__(self, derivedAttrs = None):
+            """Constructor
+
+            Keyword Arguments:
+            derivedAttrs - A dictionary of keywords and functions. The
+                           functions must have signature function(iteration,
+                           tslice, system) and must return an object that h5py
+                           knows how to store in an hdf file. That object is
+                           stored in self.data_group[it].attrs[key].
+            """
             if derivedAttrs is None:
                 self.derivedAttrs = {}
             else:
                 self.derivedAttrs = derivedAttrs
         
-        def setup(self,parent):
+        def setup(self, parent):
+            """This method is called by SimOuput on construction.
+
+            Overide this is additional setup as needed, in particular if data
+            should be extracted from parent. See SimOutputType.System
+            for an example.
+
+            This method should always to called so if you do override it, make
+            sure to include a call to super(YourClass, self).setup(partent).
+            This is necessary because without the call the data_group may not
+            be configured correctly.
+
+            Arguements - parent the SimOutput class that this SimOutputType
+                         belongs to.
+            """
             if parent.overwrite:
                 self.data_group = DataGroup(parent.hdf.require_group(\
                     self.groupname\
@@ -102,7 +188,12 @@ class SimOutput(Prototype):
                 self.data_group[it].attrs[key] = v
          
     class Data(SimOutputType):
+        """Writes out tslices.TimeSlice.data.
 
+        This class assumes that tslice.TimeSlice.data has a type that h5py
+        understands.
+
+        """
         groupname = dgTypes["raw"]
 
         def __call__(self,it,u):
@@ -111,7 +202,12 @@ class SimOutput(Prototype):
             super(SimOutput.Data,self).__call__(it,u)
 
     class Exact(SimOutputType):
+        """Calls system.exact_value to write out the exact value of the system.
 
+        This is useful if, during error calculation, you want the error rates
+        against an exact solution.
+
+        """
         groupname = dgTypes["exact"]
 
         def __call__(self,it,u):
@@ -121,7 +217,12 @@ class SimOutput(Prototype):
             super(SimOutput.Exact, self).__call__(it, u)
 
     class Times(SimOutputType):
-        
+        """Would you like to know what time the data at a particular data_set
+        is meant to correspond to?
+
+        Then you need this SimOutputType.
+
+        """
         groupname = dgTypes["time"]
         
         def __call__(self,it,u):
@@ -130,7 +231,12 @@ class SimOutput(Prototype):
             super(SimOutput.Times,self).__call__(it,u)
          
     class TimeStep(SimOutputType):
-        
+        """Just like time buts tells you what the calculated dt was.
+
+        This can be calculated from the data is Times, only if you are
+        recording the data in the next timestep...
+
+        """
         groupname = dgTypes["dt"]
         
         def __call__(self,it,u):
@@ -139,7 +245,21 @@ class SimOutput(Prototype):
             super(SimOutput.TimeStep,self).__call__(it,u)   
       
     class Domains(SimOutputType):
+        """Records domains of the simulation.
 
+        This SimOutputType does not record the grid object, but rather the axes
+        and comarison variables of the grid. Hence no mpi information is
+        collected here.
+
+        Currently this is because ibvp.IBVP before it runs actions collates all
+        the data together so that, from the point of view of the hdf file there
+        is only one process accessing it.
+
+        This will need to be changed at some point. h5py has routines to allow
+        more than one process to write to ta file. But coffee does not
+        currently capitalise on these routines.
+
+        """
         groupname = dgTypes["domain"]
         
         def __call__(self,it,u):
@@ -161,18 +281,20 @@ class SimOutput(Prototype):
             dg[it].attrs["comparison"] = u.domain.comparison
             super(SimOutput.Domains,self).__call__(it,u)
 
-    class Constraints(SimOutputType):
-
-        groupname = dgTypes["constraint"]
-        
-        def __call__(self,it,u):
-            dg = self.data_group
-            parent = self.parent
-            dg[it] = parent.system.constraint_violation(u)
-            super(SimOutput.Constraints,self).__call__(it,u)
-
     class DerivedData(SimOutputType):
+        """Runs the data through a use defined function before writing out to
+        the data_set.
+
+        The function must have the signature function(int,
+        tslice.TimeSlice) and must return data of a type that h5py recognises.
+
+        Note that there is a size limitation on the .attrs variable and
+        therefore this SimOutputType maybe more appropriate.
+
+        Arguments:
+        function - the function with signature (int, tslice.TimeSlice)
         
+        """
         def __init__(self, name, function, derivedAttrs = None):
             self.func = function
             self.groupname = name
@@ -184,7 +306,13 @@ class SimOutput(Prototype):
             super(SimOutput.DerivedData,self).__call__(it,u)
 
     class System(SimOutputType):
-        
+        """Attempts to writer out enough information about the system to allow
+        for exact reconstruction of the simulation that produced the data being
+        stored.
+
+        Of cause most things arn't that simple...
+
+        """
         groupname = systemD
         
         def setup(self, parent):
