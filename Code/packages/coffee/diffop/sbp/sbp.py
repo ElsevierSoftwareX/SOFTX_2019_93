@@ -289,7 +289,8 @@ class D43_Tiglioetal(SBP):
 class D43_CNG(SBP):
     """
     Taken from "A stable and conservative interface treatment of arbitrary
-    spatial accuracy", the matrix H is the identity.
+    spatial accuracy", the matrix H is the identity. 
+    Note that the P[1,3] entry of the norm matrix given in the paper is wrong!  
     """
     r1 = -(2177.*math.sqrt(295369.) - 1166427.)/(25488.)
     r2 = (66195.*math.sqrt(53.*5573.) - 35909375.)/101952.
@@ -339,7 +340,7 @@ class D43_CNG(SBP):
         P[1,0] = P[0,1]
         P[1,1] = -(4104*b + 32400*a + 11225)/4320
         P[1,2] = (1836*b + 14580*a + 7295)/2160
-        P[1,3] = -(216*b + 2160*a + 665)/(4320)
+        P[1,3] = 0.1440313966023679    #-(216*b + 2160*a + 665)/(4320)
         
         P[2,0] = P[0,2]
         P[2,1] = P[1,2]
