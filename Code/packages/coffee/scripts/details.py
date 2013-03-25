@@ -11,9 +11,8 @@ def printTimes(simulationHDF):
     for sim in sims:
         print "==========================="
         print sim
-        print "Start Time: %f"%sim.time[0]
-        print "Stop Time:  %f"%sim.time[len(sim.time)-1]
-        print "Time Step:  %f"%sim.dt[0]
+        print "Times: \n%s"%repr(sorted([sim.time[i] for i in sim.indices]))
+        print "Time Step: \n%s"%repr(sorted([sim.dt[i] for i in sim.indices]))
         
 def _validate(group):
     """If group is an instance of sd.SimulationHDF then group.file is return. 
