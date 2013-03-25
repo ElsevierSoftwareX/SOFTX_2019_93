@@ -11,7 +11,7 @@ from __future__ import division
 import cmath, math
 import numpy as np
 import scipy
-#import fftw3 as fftw
+import fftw3 as fftw
 from scipy import fftpack
 import pdb
 
