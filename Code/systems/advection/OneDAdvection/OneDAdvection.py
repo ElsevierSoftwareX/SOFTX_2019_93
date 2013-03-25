@@ -93,12 +93,12 @@ class OneDAdvection(System):
         ########################################################################
         # Impose boundary conditions 
         ########################################################################
-        #Dtf[-1]= 0.#self.boundaryRight(t,Psi)
+        #Dtf[-1]= 0. #self.boundaryRight(t,Psi)
         #Dtf[0]= self.boundaryLeft(t,Psi)
         #Dtf[-1] = Dtf[0]
                 
-        # now all time derivatives are computed
-        # package them into a time slice and return
+        #now all time derivatives are computed
+        #package them into a time slice and return
         rtslice = tslices.TimeSlice([Dtf],Psi.domain,time=t)
         if __debug__:
             self.log.debug("Exiting evaluation with timeslice = %s"%
