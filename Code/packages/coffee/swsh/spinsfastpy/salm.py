@@ -665,7 +665,7 @@ class sfpy_sralm(np.ndarray):
                             )
             else:
                 #spin dependence still exists
-                if len(rv.shape) < 2:
+                if len(rv.shape) <= 2:
                     #the r dependence has been removed
                     return sfpy_salm(
                         rv,
