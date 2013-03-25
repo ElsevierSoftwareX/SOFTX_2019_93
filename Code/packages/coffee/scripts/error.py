@@ -6,6 +6,7 @@ import argparse
 import os
 import numpy as np
 
+#from coffee.swsh.spinsfastpy import io as swsh_io
 from coffee.io import simulation_data as sd
 
 def exact(args):
@@ -194,8 +195,8 @@ def numer(args):
                     print "Calculating error for dgType %s"%dgType
                     
                     #Collecting dgType data
-                    subtrahend_dg = subtrahend.getDgType(dgType)
-                    minuend_dg = minuend.getDgType(dgType)
+                    subtrahend_dg = getattr(subtrahend, dgType)
+                    minuend_dg = getattr(minuend, dgType)
                     
                     #Calculating difference in values of common domains
                     diff = np.ones_like(minuend_dg[minuend_index])
@@ -249,11 +250,11 @@ def Lp(errors, stepsizes, p):
         rerrors = np.max(errors)
     else:
         rerrors = np.power(
-            np.apply_over_axes(
+            np.squeeze(np.apply_over_axes(
                 np.sum,
                 np.power(errors,p),
                 range(1,len(errors.shape))
-                )[:,0],
+                )),
             1/p
             )
     return rerrors    
