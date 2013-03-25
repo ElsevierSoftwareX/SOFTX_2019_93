@@ -53,6 +53,7 @@ mathplot lib and pylab break on vulcan.
 the actions.hdf_output module.
 
 --) Move cfl condition from ibvp to system files
+--) Move tau settings to system files (keyword argument)
 
 SHORT TERM
 1) update advect and wave for free_data
