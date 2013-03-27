@@ -92,7 +92,9 @@ def backward(salm, Ntheta, Nphi, delta_method="TN_PLANE"):
          section 2.3
     """
     Gmm_set = _Gmm(salm, delta_method)
-    return _backward_Gmm(Ntheta, Nphi, salm.lmax, salm.spins.shape[0], Gmm_set)
+    return _backward_Gmm(
+        Ntheta, Nphi, salm.lmax, np.atleast_1d(salm.spins).shape[0], Gmm_set
+        )
 
 def _backward_Gmm(Ntheta, Nphi, lmax, Nmaps, Gmm):
     """
@@ -113,11 +115,13 @@ def _backward_Gmm(Ntheta, Nphi, lmax, Nmaps, Gmm):
          function on S^2, parameterised via the ecp discretisation, see
          section 2.3
     """
-    f = np.empty((Nmaps,Ntheta*Nphi), dtype = typeDict['complex'])
+    f = np.empty((Nmaps, Ntheta*Nphi), dtype = typeDict['complex'])
     Nm = 2 * lmax + 1
     NGmm = Nm * Nm
     for i in range(Nmaps):
-        sf.spinsfast_backward_transform(f[i], Ntheta, Nphi, lmax, Gmm[i*NGmm:(i+1)*NGmm])
+        sf.spinsfast_backward_transform(
+            f[i], Ntheta, Nphi, lmax, Gmm[i*NGmm:(i+1)*NGmm]
+            )
     if Nmaps == 1:
         return f.reshape(Nmaps,Ntheta,Nphi)[0]
     else:
@@ -142,16 +146,21 @@ def _Gmm(salm, delta_method="TN"):
            Gmm[i,:,:] corresponds to Gmm for spins[i]. The array Gmm is 
            calculated from equation (13).
     """
-    spins = salm.spins
+    spins = np.atleast_1d(salm.spins)
     Ntransform = spins.shape[0]
     lmax = salm.lmax
     if len(spins.shape) != 1:
         raise ValueError('spins must be an int or a one dimensional array of ints')
     Nm = 2*lmax+1
     Gmm_set = np.empty(Nm*Nm*Ntransform, dtype=typeDict['complex'])
-    alm_flat = np.asarray(salm.coefs,dtype=typeDict['complex']).flatten('C')
+    alm_flat = np.asarray(
+        np.atleast_2d(salm.coefs),
+        dtype=typeDict['complex']
+        ).flatten('C')
     DeltaMethod, Deltawork = dm.methods[delta_method](lmax)
-    sf.spinsfast_backward_Gmm(alm_flat, Ntransform, spins, lmax, Gmm_set, DeltaMethod, Deltawork)
+    sf.spinsfast_backward_Gmm(
+        alm_flat, Ntransform, spins, lmax, Gmm_set, DeltaMethod, Deltawork
+        )
     return Gmm_set
     
     
