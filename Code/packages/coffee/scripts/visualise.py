@@ -88,7 +88,10 @@ def error(args):
                 else:
                     plot_data += [Gnuplot.Data(domain[0],np.log2(error), \
                         title = name)]
-            if "scri" in sim.raw.group[str(index)].attrs.keys():
+            if (
+                "scri" in 
+                sims[-1].raw.group[str(sims[-1].indexOfTime(args.t))].attrs.keys()
+                ):
                 scri = sim.raw.group[str(index)].attrs["scri"]
                 g(r'set arrow from %f,graph(0,0) to %f,graph(1,1) nohead'
                     %(scri,scri)
