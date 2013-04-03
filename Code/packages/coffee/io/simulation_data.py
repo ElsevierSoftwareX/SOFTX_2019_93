@@ -17,6 +17,7 @@ sys.path.append("../../EvolutionSBP/")
 #import solvers
 #import simulation_data
 
+NUMERICAL_TOLERANCE = 1e-15
 #Important configuration is included after these two classes
 
 # A wrapper class that helps ease iteration over datasets with 
@@ -388,7 +389,7 @@ class SimulationHDF(object):
             ])
         #If only one index
         if len(indices) == 1:
-            if t==times_dg[indices[0]].value[0]:
+            if abs(times_dg[indices[0]].value[0] - t) <= NUMERICAL_TOLERANCE:
                 return indices[0]
             else:
                 return -1
@@ -399,7 +400,7 @@ class SimulationHDF(object):
             if t<=time_dg.value<t+dt/2:
                 return indices[0]
         else:
-            if t == time_dg.value[0]:
+            if abs(time_dg.value[0] - t) <= NUMERICAL_TOLERANCE:
                 return indices[0]
         #Check all other steps except final
         for i in range(1, len(indices)-1):
@@ -409,7 +410,7 @@ class SimulationHDF(object):
                 if t-dt/2<=time_dg.value<t+dt/2:
                     return indices[i]
             else:
-                if t == time_dg.value[0]:
+                if abs(time_dg.value[0] - t) <= NUMERICAL_TOLERANCE:
                     return indices[i]
         i = len(indices)-1
         time_dg = times_dg[indices[i]]
@@ -418,7 +419,7 @@ class SimulationHDF(object):
             if t-dt/2<=time_dg.value<=t:
                 return indices[i]
         else:
-            if t == time_dg.value[0]:
+            if abs(time_dg.value[0] - t) <= NUMERICAL_TOLERANCE:
                 return indices[i]
         return -1
         
