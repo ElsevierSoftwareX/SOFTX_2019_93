@@ -302,7 +302,7 @@ class SimOutput(Prototype):
         
         def __call__(self,it,u):
             dg = self.data_group
-            dg[it] = self.func(it,u)
+            dg[it] = self.func(it, u, self.parent.system)
             super(SimOutput.DerivedData,self).__call__(it,u)
 
     class System(SimOutputType):
