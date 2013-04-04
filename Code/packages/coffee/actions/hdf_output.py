@@ -282,11 +282,12 @@ class SimOutput(Prototype):
             super(SimOutput.Domains,self).__call__(it,u)
 
     class DerivedData(SimOutputType):
-        """Runs the data through a use defined function before writing out to
+        """Runs the data through a user defined function before writing out to
         the data_set.
 
         The function must have the signature function(int,
-        tslice.TimeSlice) and must return data of a type that h5py recognises.
+        tslice.TimeSlice, system.System) and must return 
+        data of a type that h5py recognises.
 
         Note that there is a size limitation on the .attrs variable and
         therefore this SimOutputType maybe more appropriate.
@@ -302,7 +303,7 @@ class SimOutput(Prototype):
         
         def __call__(self,it,u):
             dg = self.data_group
-            dg[it] = self.func(it,u)
+            dg[it] = self.func(it, u, parent.system)
             super(SimOutput.DerivedData,self).__call__(it,u)
 
     class System(SimOutputType):

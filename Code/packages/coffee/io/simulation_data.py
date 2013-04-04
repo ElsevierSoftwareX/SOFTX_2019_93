@@ -17,7 +17,7 @@ sys.path.append("../../EvolutionSBP/")
 #import solvers
 #import simulation_data
 
-NUMERICAL_TOLERANCE = 1e-15
+NUMERICAL_TOLERANCE = 1e-14
 #Important configuration is included after these two classes
 
 # A wrapper class that helps ease iteration over datasets with 
