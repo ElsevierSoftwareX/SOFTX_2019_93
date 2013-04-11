@@ -83,13 +83,13 @@ def _eth_eigen(s, j):
     if abs(s+1) > j:
         return 0
     else:
-        return math.sqrt(j*(j+1)-s*(s+1))
+        return -math.sqrt(j*(j+1)-s*(s+1))
         
 def _ethp_eigen(s, j):
     if abs(s-1) > j:
         return 0
     else:
-        return -math.sqrt(j*(j+1)-s*(s-1))
+        return math.sqrt(j*(j+1)-s*(s-1))
 
 def _transform_to_harmonic_space(u, spins, lmax, Nthetea, Nphi):
     if spins is not None and lmax is not None:
