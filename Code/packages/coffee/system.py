@@ -43,7 +43,7 @@ class System(object):
         tslice - a time slice with the current data
 
         Returns - a number giving the dt for which the next data will be
-                  calcualted in the next iteration.
+                  calculated in the next iteration.
 
         """
         return NotImplementedError("You need to implement this function")
