@@ -593,7 +593,8 @@ class sfpy_sralm(np.ndarray):
                     self.bl_mult
                     )
         elif len(key) == 2:
-            if not isinstance(rv, np.ndarray) or len(rv.shape) < 2:
+            if not isinstance(rv, np.ndarray) or len(rv.shape) < 2 or \
+                rv.shape[1] != _lmax_Nlm(self.lmax):
                 return rv
             else:
                 if rv.shape[0] == 1:
