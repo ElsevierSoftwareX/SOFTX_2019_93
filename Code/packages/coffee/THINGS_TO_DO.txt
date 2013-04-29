@@ -54,6 +54,14 @@ the actions.hdf_output module.
 
 --) Move cfl condition from ibvp to system files
 --) Move tau settings to system files (keyword argument)
+--) The __init__ method of Sim object contains code to produce a list of the
+indices of stored timeslices. This is currently very inefficient as it is
+effectively two for loops followed by a sort. There are two ways to fix this.
+(i) the list of indices is already in lexigraphic order, perhaps there is some
+niffty algorithm to convert ints in lexographic order to ints in numerical
+order. (ii) write a SimOutputType that stores a list of all indices as they are
+writen out to the hdf file and then puts this list into a dataset when the file
+is closed. 
 
 SHORT TERM
 1) update advect and wave for free_data
