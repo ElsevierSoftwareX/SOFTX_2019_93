@@ -206,15 +206,23 @@ class Sim(object):
                             returnValue=True
                             )
                           )
-        setattr(
-            self,
-            "indices", 
-            sorted([
-                int(key) 
-                for key in 
-                self.simHDF[self.simHDF.file.keys()[0]+"/"+self.name].keys()
-                ])
+        setattr(self, "indices",
+            sorted(
+                map(
+                    int,
+                    self.simHDF[self.simHDF.file.keys()[0]+"/"+self.name].keys()
+                    )
+                )
             )
+        #setattr(
+            #self,
+            #"indices", 
+            #sorted([
+                #int(key) 
+                #for key in 
+                #self.simHDF[self.simHDF.file.keys()[0]+"/"+self.name].keys()
+                #])
+            #)
     
     def tslice(self,i):
         return self.simHDF.tslice(i,self.name,dgType = dgType["raw"])
