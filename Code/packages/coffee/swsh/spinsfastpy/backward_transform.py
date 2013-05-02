@@ -58,12 +58,22 @@ sf.spinsfast_backward_Gmm.argtypes = [\
     ctypeslib.ndpointer(dtype=typeDict['complex'], ndim=1, \
         flags='contiguous, writeable, aligned'),\
     ctypes.c_int, \
-    ctypeslib.ndpointer(dtype=typeDict['int'], ndim=1, \
+    ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=1, \
         flags='contiguous, writeable, aligned'),\
     ctypes.c_int, \
     ctypeslib.ndpointer(dtype=typeDict['complex'], ndim=1, \
         flags='contiguous, writeable, aligned'),\
     ctypes.c_int, ctypes.c_void_p]
+#sf.spinsfast_backward_Gmm.argtypes = [\
+    #ctypeslib.ndpointer(dtype=typeDict['complex'], ndim=1, \
+        #flags='contiguous, writeable, aligned'),\
+    #ctypes.c_int, \
+    #ctypeslib.ndpointer(dtype=typeDict['int'], ndim=1, \
+        #flags='contiguous, writeable, aligned'),\
+    #ctypes.c_int, \
+    #ctypeslib.ndpointer(dtype=typeDict['complex'], ndim=1, \
+        #flags='contiguous, writeable, aligned'),\
+    #ctypes.c_int, ctypes.c_void_p]
 
 ################################################################################
 # the python functions
@@ -154,10 +164,12 @@ def _Gmm(salm, delta_method="TN"):
     Nm = 2*lmax+1
     Gmm_set = np.empty(Nm*Nm*Ntransform, dtype=typeDict['complex'])
     alm_flat = np.asarray(
-        np.atleast_2d(salm.coefs),
+        np.atleast_2d(np.asarray(salm)),
         dtype=typeDict['complex']
         ).flatten('C')
     DeltaMethod, Deltawork = dm.methods[delta_method](lmax)
+    #print "alm_flat"
+    #print repr(alm_flat)
     sf.spinsfast_backward_Gmm(
         alm_flat, Ntransform, spins, lmax, Gmm_set, DeltaMethod, Deltawork
         )

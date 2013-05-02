@@ -50,17 +50,25 @@ sf.spinsfast_forward_multi_Imm.restype = ctypes.c_void_p
 sf.spinsfast_forward_multi_Imm.argtypes = [ \
     ctypeslib.ndpointer(dtype=typeDict['complex'], ndim=1, \
         flags='contiguous, writeable, aligned'), \
-    ctypeslib.ndpointer(dtype=typeDict['int'], ndim=1, \
+    ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=1, \
         flags='contiguous, writeable, aligned'), \
     ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, 
     ctypeslib.ndpointer(dtype=typeDict['complex'], ndim=1, \
         flags='contiguous, writeable, aligned') ]
+#sf.spinsfast_forward_multi_Imm.argtypes = [ \
+    #ctypeslib.ndpointer(dtype=typeDict['complex'], ndim=1, \
+        #flags='contiguous, writeable, aligned'), \
+    #ctypeslib.ndpointer(dtype=typeDict['int'], ndim=1, \
+        #flags='contiguous, writeable, aligned'), \
+    #ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, 
+    #ctypeslib.ndpointer(dtype=typeDict['complex'], ndim=1, \
+        #flags='contiguous, writeable, aligned') ]
 
 sf.spinsfast_forward_multi_Jmm.restype = ctypes.c_void_p
 sf.spinsfast_forward_multi_Jmm.argtypes = [ \
     ctypeslib.ndpointer(dtype=typeDict['complex'], ndim=1, \
         flags='contiguous, writeable, aligned'), \
-    ctypeslib.ndpointer(dtype=typeDict['int'], ndim=1, \
+    ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=1, \
         flags='contiguous, writeable, aligned'), \
     ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, 
     ctypeslib.ndpointer(dtype=typeDict['complex'], ndim=1, \
@@ -75,7 +83,7 @@ sf.spinsfast_forward_transform.argtypes = [
         ),
     ctypes.c_int,
     ctypeslib.ndpointer(
-        dtype=typeDict['int'], 
+        dtype=ctypes.c_int, 
         ndim=1,
         flags='contiguous, writeable, aligned'
         ),
@@ -87,24 +95,56 @@ sf.spinsfast_forward_transform.argtypes = [
         ),
     ctypes.c_int, 
     ctypes.c_void_p ]
+#sf.spinsfast_forward_transform.argtypes = [
+    #ctypeslib.ndpointer(
+        #dtype=typeDict['complex'], 
+        #ndim=1,
+        #flags='contiguous, writeable, aligned'
+        #),
+    #ctypes.c_int,
+    #ctypeslib.ndpointer(
+        #dtype=typeDict['int'], 
+        #ndim=1,
+        #flags='contiguous, writeable, aligned'
+        #),
+    #ctypes.c_int,
+    #ctypeslib.ndpointer(
+        #dtype=typeDict['complex'], 
+        #ndim=1,
+        #flags='contiguous, writeable, aligned'
+        #),
+    #ctypes.c_int, 
+    #ctypes.c_void_p ]
 
 sf.spinsfast_forward_transform_eo.restype = ctypes.c_void_p
 sf.spinsfast_forward_transform_eo.argtypes = [ \
     ctypeslib.ndpointer(dtype=typeDict['complex'], ndim=1, \
         flags='contiguous, writeable, aligned'), \
     ctypes.c_int, \
-    ctypeslib.ndpointer(dtype=typeDict['int'], ndim=1, \
+    ctypeslib.ndpointer(dtype=ctypes.c_int, ndim=1, \
         flags='contiguous, writeable, aligned'), \
     ctypes.c_int, \
     ctypeslib.ndpointer(dtype=typeDict['complex'], ndim=1, \
         flags='contiguous, writeable, aligned'), \
     ctypes.c_int, ctypes.c_void_p ]
+#sf.spinsfast_forward_transform_eo.argtypes = [ \
+    #ctypeslib.ndpointer(dtype=typeDict['complex'], ndim=1, \
+        #flags='contiguous, writeable, aligned'), \
+    #ctypes.c_int, \
+    #ctypeslib.ndpointer(dtype=typeDict['int'], ndim=1, \
+        #flags='contiguous, writeable, aligned'), \
+    #ctypes.c_int, \
+    #ctypeslib.ndpointer(dtype=typeDict['complex'], ndim=1, \
+        #flags='contiguous, writeable, aligned'), \
+    #ctypes.c_int, ctypes.c_void_p ]
 
 ################################################################################
 # the python functions
 ################################################################################
 def forward(f, spins, lmax, delta_method="TN_PLANE", real=False):
     Jmm_set = _Jmm(f, spins, lmax)
+    #print "Jmm"
+    #print repr(Jmm_set)
     return _forward_Jmm(spins, lmax, Jmm_set, delta_method, real)
 
 def _Imm(f, spins, lmax):
@@ -165,6 +205,7 @@ def _Jmm(f, spins, lmax):
         raise ValueError('spins must be an int or a one dimensional array of ints')
     Nm = 2 * lmax + 1
     NJmm = Nm * (lmax + 1)
+    #import pdb; pdb.set_trace()
     Jmm = np.empty(Nmaps*NJmm, dtype = typeDict['complex'])
     sf.spinsfast_forward_multi_Jmm(f_flat, spins, Nmaps, Ntheta, Nphi, lmax, Jmm)
     return Jmm

@@ -135,9 +135,9 @@ class sfpy_salm(np.ndarray):
             )
         return s
 
-    @property
-    def coefs(self):
-        return self.view(np.ndarray)[0]
+    #@property
+    #def coefs(self):
+        #return self.view(np.ndarray)
 
     def multiplication_bandlimit(self, bool):
         self.bl_mult = bool
