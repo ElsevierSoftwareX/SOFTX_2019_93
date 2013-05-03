@@ -10,7 +10,6 @@ from coffee.swsh import spinsfastpy as sfpy
 #having copies of essentially the same code, but this would completely
 #remove this remainin duplicates
 
-
 class _ghp_operator(object):
 
     def __init__(self, prime):
@@ -25,8 +24,10 @@ class _ghp_operator(object):
     def _eval_salm(self, u, spins = None, lmax = None):
         Ntheta = None
         Nphi = None
+        if spins is not None and lmax is not None:
+            Ntheta, Nphi = u.shape
         salm, spins, lmax = _transform_to_harmonic_space(
-            u, spins, lmax, Ntheta, Nphi
+            u, spins, lmax
             )
         if self.prime:
             r_salm = sfpy.salm.sfpy_salm(
@@ -91,9 +92,8 @@ def _ethp_eigen(s, j):
     else:
         return math.sqrt(j*(j+1)-s*(s-1))
 
-def _transform_to_harmonic_space(u, spins, lmax, Nthetea, Nphi):
+def _transform_to_harmonic_space(u, spins, lmax):
     if spins is not None and lmax is not None:
-        Ntheta, Nphi = u.shape
         salm = sfpy.forward(u, spins, lmax)
         spins = np.asarray(spins)
     else:
