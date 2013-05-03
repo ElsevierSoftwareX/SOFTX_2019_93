@@ -143,8 +143,6 @@ sf.spinsfast_forward_transform_eo.argtypes = [ \
 ################################################################################
 def forward(f, spins, lmax, delta_method="TN_PLANE", real=False):
     Jmm_set = _Jmm(f, spins, lmax)
-    #print "Jmm"
-    #print repr(Jmm_set)
     return _forward_Jmm(spins, lmax, Jmm_set, delta_method, real)
 
 def _Imm(f, spins, lmax):
@@ -207,7 +205,12 @@ def _Jmm(f, spins, lmax):
     NJmm = Nm * (lmax + 1)
     #import pdb; pdb.set_trace()
     Jmm = np.empty(Nmaps*NJmm, dtype = typeDict['complex'])
+    #print "f_flat"
+    #print repr(f_flat)
     sf.spinsfast_forward_multi_Jmm(f_flat, spins, Nmaps, Ntheta, Nphi, lmax, Jmm)
+    #print "in _Jmm (python)"
+    #print "Jmm"
+    #print repr(Jmm)
     return Jmm
 
 def _forward_Jmm(spins, lmax, Jmm, delta_method="TN_PLANE", real=False):
@@ -246,6 +249,7 @@ def _forward_Jmm(spins, lmax, Jmm, delta_method="TN_PLANE", real=False):
         sf.spinsfast_forward_transform_eo(a, Ntransform, spins, lmax, Jmm, \
             DeltaMethod, Deltawork)
     else:    
+        #import pdb; pdb.set_trace()
         sf.spinsfast_forward_transform(
             a, 
             Ntransform, 
