@@ -123,7 +123,7 @@ class eth(_ghp_operator):
     def __init__(self):
         """
         Implements the differential operator given by
-        \eth{}_sY_{lm} = \sqrt{l(l+1)-s(s+1)}{}_{s+1}Y_{lm}
+        \eth{}_sY_{lm} = -\sqrt{l(l+1)-s(s+1)}{}_{s+1}Y_{lm}
         """
         super(eth, self).__init__(False)
   
@@ -136,7 +136,7 @@ class ethp(_ghp_operator):
     def __init__(self):
         """
         Implements the differential operator given by
-        \eth'{}_sY_{lm} = -\sqrt{l(l+1)-s(s-1)}{}_{s-1}Y_{lm}
+        \eth'{}_sY_{lm} = \sqrt{l(l+1)-s(s-1)}{}_{s-1}Y_{lm}
         """
         super(ethp, self).__init__(True)
   
