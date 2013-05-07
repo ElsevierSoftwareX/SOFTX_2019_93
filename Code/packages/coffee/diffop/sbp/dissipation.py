@@ -142,11 +142,11 @@ class DissRestFull(Diss):
             self.log.debug("A.u = %s"%repr(diss_u_int))
         for i in range(size):
             diss_u_int[i] = self.B(i, dx, size) * diss_u_int[i]
-        B_string = "[ "
-        for i in range(size-1):
-            B_string += "%f, "%diss_u_int[i]
-        B_string += "%f ]"%diss_u_int[size-1]
         if __debug__:
+            B_string = "[ "
+            for i in range(size-1):
+                B_string += "%f, "%diss_u_int[i]
+            B_string += "%f ]"%diss_u_int[size-1]
             self.log.debug("B.A.u = " + B_string)
 
         #To multiply my Transpose[A], requires some care. The zero'd rows now
@@ -198,11 +198,11 @@ class DissRestFull(Diss):
                 self.log.debug("Q.u = %s"%repr(diss_u_b))
             for i in range(size):
                 diss_u_b[i] = self.B(i, dx, size) * diss_u_b[i]
-            B_string = "[ "
-            for i in range(size-1):
-                B_string += "%f, "%diss_u_b[i]
-            B_string += "%f ]"%diss_u_b[size-1]
             if __debug__:
+                B_string = "[ "
+                for i in range(size-1):
+                    B_string += "%f, "%diss_u_b[i]
+                B_string += "%f ]"%diss_u_b[size-1]
                 self.log.debug("B.Q.u = " + B_string)
             diss_u_b[0:c] = np.dot(diss_u_b[0:r], self.Ql)
             diss_u_b[-c:] = np.dot(diss_u_b[-r:], self.Qr)
