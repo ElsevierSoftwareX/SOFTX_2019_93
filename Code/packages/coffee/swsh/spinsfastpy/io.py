@@ -56,7 +56,7 @@ class SralmDataGroup(simulation_data.DataGroup):
         super(SralmDataGroup, self).__init__(*args, **kwds)
 
     def __setitem__(self, i, sralm):
-        import pdb; pdb.set_trace()
+        #import pdb; pdb.set_trace()
         if len(sralm.shape) == 1:
 
             #value = np.array([
