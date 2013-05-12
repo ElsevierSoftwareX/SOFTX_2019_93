@@ -29,6 +29,7 @@ import math
 import os
 import inspect
 from abc import ABCMeta
+import logging
 
 # Package internal imports
 from coffee.swsh import w3j
@@ -92,6 +93,7 @@ class sfpy_salm(np.ndarray):
         obj.spins = spins
         obj.lmax = lmax
         obj.bl_mult = bandlimit_multiplication
+        obj.log = logging.getLogger("sfpy_salm")
         #cg should never be None
         if cg is None:
             obj.cg = sfpy_salm.cg_default
@@ -105,6 +107,7 @@ class sfpy_salm(np.ndarray):
         self.lmax = getattr(obj, 'lmax', None)
         self.bl_mult = getattr(obj, 'bl_mult', None)
         self.cg = getattr(obj, "cg", sfpy_salm.cg_default)
+        self.log = getattr(obj, "log", None)
        
     def __str__(self):
         s = "spins = %s,\n"%repr(self.spins)
@@ -172,6 +175,10 @@ class sfpy_salm(np.ndarray):
     def __setitem__(self, key, value):
         alt_key = self.convert_key(key)
         self.view(np.ndarray)[alt_key] = value
+
+    #def __iter__(self):
+        #for spin in self.spins:
+            #yield self[spin]
         
     def convert_key(self, key):
         # convert ket into a tuple of ints and slices
@@ -197,7 +204,16 @@ class sfpy_salm(np.ndarray):
     def _addsub(self, other, add):
         #check object types and delegate addition if not sfpy_salm
         if not isinstance(other, sfpy_salm):
+            if __debug__:
+                self.log.debug("self is = %s"%repr(self))
+                self.log.debug("other is = %s"%repr(other))
+                self.log.debug("self.spins is = %s"%repr(self.spins))
+                self.log.debug("self.lmax is = %s"%repr(self.lmax))
             if add:
+                if __debug__:
+                    self.log.debug("self.view(np.adarray) + other = %s"%
+                        repr(self.view(np.ndarray) + other)
+                        )
                 return sfpy_salm(
                     self.view(np.ndarray) + other, 
                     self.spins, 
@@ -206,6 +222,10 @@ class sfpy_salm(np.ndarray):
                     self.bl_mult
                     )
             else:
+                if __debug__:
+                    self.log.debug("self.view(np.adarray) - other = %s"%
+                        repr(self.view(np.ndarray) - other)
+                        )
                 return sfpy_salm(
                     self.view(np.ndarray) - other, 
                     self.spins, 
@@ -410,9 +430,19 @@ def _convert_lm_key(key, lmax):
         l_ind = _lm_ind(key[0],-key[0])
         return slice(l_ind, l_ind + 2*key[0] +1)
     elif isinstance(key, slice):
-        raise IndexError("The order index cannot be a slice")
+        if key == slice(None, None, None):
+            return key
+        else:
+            raise IndexError("The order index cannot be a slice")
     else:
         if isinstance(key[0], slice):
+            if key[0] == slice(None, None, None):
+                if len(key) == 1:
+                    return key[0]
+                elif len(key) == 2 and key[1] == slice(None, None, None):
+                    return key
+                else:
+                    raise IndexError("The order/degree index cannot be a slice")
             raise IndexError("The order index cannot be a slice")
         elif key[0] <= lmax and key[0] >= 0:
             if len(key) == 1:
@@ -420,7 +450,11 @@ def _convert_lm_key(key, lmax):
                 return slice(l_ind, l_ind + 2*key[0] +1)
             elif len(key) == 2:
                 if isinstance(key[1], slice):
-                    raise IndexError("The degree index cannot be a slice")
+                    if key[1] == slice(None, None, None):
+                        l_ind = _lm_ind(key[0],-key[0])
+                        return slice(l_ind, l_ind + 2*key[0] +1)
+                    else:
+                        raise IndexError("The degree index cannot be a slice")
                 elif abs(key[1]) <= key[0]:
                     return _lm_ind(key[0],key[1])
                 else:
@@ -555,6 +589,10 @@ class sfpy_sralm(np.ndarray):
         override it in derived classes when implementing slicing.)
         """  
         return self.__getitem__(slice(start, stop))
+
+    #def __iter__(self):
+        #for spin in self.spins:
+            #yield self[spin]
 
     def __getitem__(self, key):
         #import pdb; pdb.set_trace()
@@ -728,7 +766,7 @@ class sfpy_sralm(np.ndarray):
                 for i in range(1, rv.shape[0]):
                     rv[i] = self[i] + other[i]
             else:
-                rv_temp = self[:,0] + other[:, 0]
+                rv_temp = self[:, 0] + other[:, 0]
                 rv = np.empty(
                     (rv_temp.shape[0],) + (self.shape[1],) + (rv_temp.shape[1],),
                     dtype = self.dtype
