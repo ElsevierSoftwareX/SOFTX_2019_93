@@ -594,6 +594,10 @@ class sfpy_sralm(np.ndarray):
         #for spin in self.spins:
             #yield self[spin]
 
+    def __setitem__(self, key, value):
+        alt_key = self.convert_key(key)
+        self.view(np.ndarray)[alt_key] = value
+
     def __getitem__(self, key):
         #import pdb; pdb.set_trace()
         key = self.convert_key(key)
@@ -772,7 +776,7 @@ class sfpy_sralm(np.ndarray):
                     dtype = self.dtype
                     )
                 rv[:, 0] = rv_temp
-                for i in range(1, rv.shape[0]):
+                for i in range(1, rv.shape[1]):
                     rv[:, i] = self[:, i] + other[:, i]
             return sfpy_sralm(
                 rv,
