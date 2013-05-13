@@ -143,6 +143,143 @@ class ABCTimeSlice(object):
                 )
         return r_tslice
 
+    def __add__(self, other):
+        # It is very important that the rv is other + self.data not
+        # self.data + other.
+        # The reason (seems) is because as self.data can be an 
+        # nd.array the sum self.data + other
+        # ends up being computed as the elements of self.other
+        # plus other, itself an nd.array.
+        # This screws up the array of elements.
+        # Putting other first ensures that if other is a timeslice
+        # then the sum isn't distributed over the elements of self.data.
+        try:
+            rv =  other + self.data
+        except:
+            raise NotImplementedError(
+                "Addition of %s and %s is not implemented"
+                %(self, other)
+                )
+        if isinstance(rv, self.__class__):
+            return rv
+        else:
+            return self.__class__(rv, self.domain, self.time, name=self.name)
+
+    def __iadd__(self, other):
+        if isinstance(other, self.__class__):
+            self.data += other.data
+        else:
+            try:
+                self.data += other
+            except:
+                raise NotImplementedError(
+                    "Addition of %s and %s is not implemented"
+                    %(self, other)
+                    )
+        return self
+
+    def __radd__(self, other):
+        return self + other
+
+    def __sub__(self, other):
+        try:
+            rv = self.data - other
+        except:
+            raise NotImplementedError(
+                "Subtraction of %s and %s is not implemented"
+                %(self, other)
+                )
+        return self.__class__(rv, self.domain, self.time)
+
+    def __isub__(self, other):
+        try:
+            self.data -= other
+        except:
+            raise NotImplementedError(
+                "In place subraction of %s and %s is not implemented"
+                %(self, other)
+                )
+        return self
+
+    def __rsub__(self, other):
+        try:
+            r_time_slice = other - self.data
+        except:
+            raise NotImplementedError(
+                "Reflected subtraction of %s and %s is not implemented"
+                %(other, self)
+                )
+        return r_time_slice
+    
+    def __mul__(self, other):
+        try:
+            rv = self.data * other
+        except:
+            raise NotImplementedError(
+                "Multiplication of %s and %s is not implemented"
+                %(self, other)
+                )
+        return self.__class__(rv, self.domain, self.time)
+
+    def __imul__(self, other):
+        try:
+            self.data *= other
+        except:
+            raise NotImplementedError(
+                "In place multiplicatio of %s and %s is not implemented"
+                %(self, other)
+                )
+        return self
+
+    def __rmul__(self, other):
+        return self * other
+    
+    def __div__(self, other):
+        try:
+            rv = self.data / other
+        except:
+            raise NotImplementedError(
+                "Division of %s and %s is not implemented"
+                %(self, other)
+                )
+        return self.__class__(rv, self.domain, self.time)
+
+    def __idiv__(self, other):
+        try:
+            self.data /= other
+        except:
+            raise NotImplementedError(
+                "In place division of %s and %s is not implemented"
+                %(self, other)
+                )
+        return self
+    
+    def __truediv__(self, other):
+        return self.__div__(other)
+
+    def __itruediv__(self, other):
+        return self.idiv(other)
+
+    def __pow__(self, other):
+        try:
+            rv = self.data ** other
+        except:
+            raise NotImplementedError(
+                "Exponentiation of %s by %s is not implemented"
+                %(self, other)
+                )
+        return self.__class__(rv, self.domain, self.time)
+
+    def __ipow__(self, other):
+        try:
+            self.data **= other
+        except:
+            raise NotImplementedError(
+                "In place exponentiation of %s by %s is not implemented"
+                %(self, other)
+                )
+        return self
+
 ###############################################################################
 # Concrete implementations
 ###############################################################################
@@ -177,141 +314,3 @@ class TimeSlice(ABCTimeSlice):
         if "name" not in kwds:
             kwds["name"] = "TimeSlice"
         super(TimeSlice, self).__init__(data, *args, **kwds) 
-
-
-    def __add__(self, other):
-        # It is very important that the rv is other + self.data not
-        # self.data + other.
-        # The reason (seems) is because as self.data can be an 
-        # nd.array the sum self.data + other
-        # ends up being computed as the elements of self.other
-        # plus other, itself an nd.array.
-        # This screws up the array of elements.
-        # Putting other first ensures that if other is a timeslice
-        # then the sum isn't distributed over the elements of self.data.
-        try:
-            rv =  other + self.data
-        except:
-            raise NotImplementedError(
-                "Addition of %s and %s is not implemented"
-                %(self, other)
-                )
-        if isinstance(rv, TimeSlice):
-            return rv
-        else:
-            return TimeSlice(rv, self.domain, self.time, name=self.name)
-
-    def __iadd__(self, other):
-        if isinstance(other, TimeSlice):
-            self.data += other.data
-        else:
-            try:
-                self.data += other
-            except:
-                raise NotImplementedError(
-                    "Addition of %s and %s is not implemented"
-                    %(self, other)
-                    )
-        return self
-
-    def __radd__(self, other):
-        return self + other
-
-    def __sub__(self, other):
-        try:
-            rv = self.data - other
-        except:
-            raise NotImplementedError(
-                "Subtraction of %s and %s is not implemented"
-                %(self, other)
-                )
-        return TimeSlice(rv, self.domain, self.time)
-
-    def __isub__(self, other):
-        try:
-            self.data -= other
-        except:
-            raise NotImplementedError(
-                "In place subraction of %s and %s is not implemented"
-                %(self, other)
-                )
-        return self
-
-    def __rsub__(self, other):
-        try:
-            r_time_slice = other - self.data
-        except:
-            raise NotImplementedError(
-                "Reflected subtraction of %s and %s is not implemented"
-                %(other, self)
-                )
-        return r_time_slice
-    
-    def __mul__(self, other):
-        try:
-            rv = self.data * other
-        except:
-            raise NotImplementedError(
-                "Multiplication of %s and %s is not implemented"
-                %(self, other)
-                )
-        return TimeSlice(rv, self.domain, self.time)
-
-    def __imul__(self, other):
-        try:
-            self.data *= other
-        except:
-            raise NotImplementedError(
-                "In place multiplicatio of %s and %s is not implemented"
-                %(self, other)
-                )
-        return self
-
-    def __rmul__(self, other):
-        return self * other
-    
-    def __div__(self, other):
-        try:
-            rv = self.data / other
-        except:
-            raise NotImplementedError(
-                "Division of %s and %s is not implemented"
-                %(self, other)
-                )
-        return TimeSlice(rv, self.domain, self.time)
-
-    def __idiv__(self, other):
-        try:
-            self.data /= other
-        except:
-            raise NotImplementedError(
-                "In place division of %s and %s is not implemented"
-                %(self, other)
-                )
-        return self
-    
-    def __truediv__(self, other):
-        return self.__div__(other)
-
-    def __itruediv__(self, other):
-        return self.idiv(other)
-
-    def __pow__(self, other):
-        try:
-            rv = self.data ** other
-        except:
-            raise NotImplementedError(
-                "Exponentiation of %s by %s is not implemented"
-                %(self, other)
-                )
-        return TimeSlice(rv, self.domain, self.time)
-
-    def __ipow__(self, other):
-        try:
-            self.data **= other
-        except:
-            raise NotImplementedError(
-                "In place exponentiation of %s by %s is not implemented"
-                %(self, other)
-                )
-        return self
