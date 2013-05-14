@@ -265,7 +265,7 @@ class EvenCart(MPIInterface):
                 )
             if __debug__:
                 self.log.debug("Received data = %s"%repr(recv_data))
-                self.log.debug("data[0] is %s"%repr(data[0]))
+                #self.log.debug("data[0] is %s"%repr(data[0]))
                 self.log.debug("Sendrecv completed")
             if source >= 0:
                 r_data += [(recv_slice, recv_data)]

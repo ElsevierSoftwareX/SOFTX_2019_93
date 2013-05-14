@@ -38,9 +38,9 @@ class SBP(object):
 
     def __call__(self, u, dx, boundary_ID=None):
         r,c = self.bdyRegion
-        if __debug__:
-            self.log.info("u.shape[0] = %s"%repr(u.shape[0]))
-            self.log.info("c = %s"%repr(c))
+        #if __debug__:
+            #self.log.info("u.shape[0] = %s"%repr(u.shape[0]))
+            #self.log.info("c = %s"%repr(c))
         if u.shape[0] + 1 <= 2 * c:
             self.log.error("Domain too small for application of operator")
             raise ValueError("Domain too small for application of operator")
