@@ -199,6 +199,8 @@ class IBVP:
         # actions that will run. because of single process access to
         # actions this causes an issue.
         # Some thought is required to fix this problem.
+        if __debug__:
+            self.log.debug("Running actions")
         tslice = u.collect_data()
         if tslice is not None:
             if __debug__:
