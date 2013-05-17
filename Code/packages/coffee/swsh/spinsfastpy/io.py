@@ -95,13 +95,19 @@ class SralmDataGroup(simulation_data.DataGroup):
 
 def _write_salm(datagroup, index, salm):
 
-    datagroup[str(index)] = np.array([
-        np.asarray(d) for d in salm
-        ], dtype = 'complex')
+    datagroup[str(index)] = np.asarray(
+        salm
+        )
+    #datagroup[str(index)] = np.array([
+        #np.asarray(d) for d in salm
+        #], dtype = 'complex')
 
-    datagroup[str(index)].attrs["spins"]= np.array([
-        d.spins for d in salm
-        ], dtype = 'int')
+    datagroup[str(index)].attrs["spins"]= np.array(
+        salm.spins
+        )
+    #datagroup[str(index)].attrs["spins"]= np.array([
+        #d.spins for d in salm
+        #], dtype = 'int')
 
     lmax = salm[0].lmax
     for i in range(1, salm.shape[0]):
