@@ -7,6 +7,7 @@ import logging
 
 import os.path
 
+NUMERICAL_TOLERANCE = 1e-15
 
 class Prototype(object):
     """The prototype of all actions. 
@@ -19,15 +20,20 @@ class Prototype(object):
        are properly initialised.
     """
 
-    def __init__(self, frequency = 1, start = -float('infinity'),\
-            stop = float('infinity')\
+    def __init__(self, frequency = 1, start = -float('infinity'),
+            stop = float('infinity'), thits=[]
             ):
         self.frequency = frequency
         self.stop = stop
         self.start = start
+        self.thits = np.asarray(thits)
     
     def will_run(self,it,u):
-        return (it % self.frequency) == 0 and self.start<=u.time<=self.stop
+        return (
+            (it % self.frequency) == 0 
+            and self.start<=u.time<=self.stop
+            and (np.absolute(u.time - self.thits) < NUMERICAL_TOLERANCE).any()
+            )
     
     def __call__(self, it, u):
         if self.will_run(it,u):
@@ -38,9 +44,8 @@ class Prototype(object):
 
 class BlowupCutoff(Prototype):
 
-    def __init__(self, cutoff = 10, frequency = 1, start = -float('infinity'),\
-        stop = float('infinity') ):
-        super(BlowupCutoff,self).__init__(frequency,start,stop)
+    def __init__(self, cutoff = 10, **kwds ):
+        super(BlowupCutoff,self).__init__(**kwds)
         self.cutoff = cutoff
 
     def above_cutoff(self,u):
