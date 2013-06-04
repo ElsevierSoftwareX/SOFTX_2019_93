@@ -7,7 +7,6 @@ import logging
 
 import os.path
 
-NUMERICAL_TOLERANCE = 1e-15
 
 class Prototype(object):
     """The prototype of all actions. 
@@ -21,20 +20,25 @@ class Prototype(object):
     """
 
     def __init__(self, frequency = 1, start = -float('infinity'),
-            stop = float('infinity'), thits=[]
+            stop = float('infinity'), thits=None, thits_toll=1e-14,
             ):
         self.frequency = frequency
         self.stop = stop
         self.start = start
-        self.thits = np.asarray(thits)
+        if thits is not None:
+            self.thits = np.asarray(thits)
+        else:
+            self.thits = None
+        self.thits_toll = thits_toll
     
     def will_run(self,it,u):
-        return (
-            (it % self.frequency) == 0 
+        test = (it % self.frequency) == 0 \
             and self.start<=u.time<=self.stop
-            and (np.absolute(u.time - self.thits) < NUMERICAL_TOLERANCE).any()
-            )
-    
+        if self.thits is not None:
+            test = test and \
+                (np.absolute(u.time - self.thits) < self.thits_toll).any()
+        return test
+
     def __call__(self, it, u):
         if self.will_run(it,u):
             self._doit(it, u)
