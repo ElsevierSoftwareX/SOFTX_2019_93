@@ -296,15 +296,19 @@ class SimOutput(Prototype):
         function - the function with signature (int, tslice.TimeSlice)
         
         """
-        def __init__(self, name, function, derivedAttrs = None):
+	def __init__(self, name, function, frequency = 1, \
+                         start = 0, derivedAttrs = None):
             self.func = function
             self.groupname = name
+            self.freq = frequency
+            self.start = start
             super(SimOutput.DerivedData,self).__init__(derivedAttrs)
         
         def __call__(self,it,u):
-            dg = self.data_group
-            dg[it] = self.func(it, u, self.parent.system)
-            super(SimOutput.DerivedData,self).__call__(it,u)
+            if (it % self.freq == 0 and self.start < u.time):
+                dg = self.data_group
+                dg[it] = self.func(it, u, self.parent.system)
+                super(SimOutput.DerivedData,self).__call__(it,u)
 
     class System(SimOutputType):
         """Attempts to writer out enough information about the system to allow
