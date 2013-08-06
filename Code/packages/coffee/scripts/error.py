@@ -199,9 +199,14 @@ def numer(args):
                     minuend_dg = getattr(minuend, dgType)
                     
                     #Calculating difference in values of common domains
-                    diff = np.ones_like(minuend_dg[minuend_index])
-                    for from_tup, to_tup in map_generator(axes_mappings):
-                        diff[(slice(None),)+from_tup] = \
+                    #diff = np.ones_like(minuend_dg[minuend_index])
+                    diff = np.ones((
+                        minuend_dg[minuend_index].shape[0],
+                        len(axes_mappings[0])
+                        ))
+                    #import pdb; pdb.set_trace()
+                    for index, from_tup, to_tup in map_generator(axes_mappings):
+                        diff[:,index] = \
                             minuend_dg[minuend_index][(slice(None),)+from_tup]- \
                             subtrahend_dg[subtrahend_index][(slice(None),)+to_tup]
                         
@@ -223,20 +228,25 @@ def numer(args):
             for j,p in enumerate(args.Lp):
                 rows = _printErrorConv(tSimNames, range(num_of_comps), 
                     tableE[j], stepsizes, time, p)
-                with  open('%s-e-num_L%f_%f.csv'%(args.ofile_base,p,time),'wb') as file:
+                with  open(
+                    '%s-e-num_L%f_%f.csv'%(args.ofile_base,p,time),'wb'
+                    ) as file:
                     for row in rows:
                         file.write(row)
 
 def map_generator(array, i=0):
     data = array[i]
+    index = 0;
     for datum in data:
         from_res = (datum[0][0],)
         to_res = (datum[1][0],)
         if i == len(array)-1: 
-            yield from_res, to_res
+            yield index, from_res, to_res
+            index += 1
         else:
             for res in map_generator(array, i+1):
-                yield from_res + res[0], to_res + res[1]
+                yield index, from_res + res[0], to_res + res[1]
+                index +=1
 
 ################################################################################
 # Routines for numerical error estimation and output
