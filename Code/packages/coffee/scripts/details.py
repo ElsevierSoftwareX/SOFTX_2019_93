@@ -8,6 +8,8 @@ from coffee.io import simulation_data as sd
 
 def printTimes(simulationHDF):
     sims = simulationHDF.getSims()
+    if args.s:
+        sims = [sims[0]]
     for sim in sims:
         print "==========================="
         print sim
@@ -93,6 +95,10 @@ This script is also designed to be loaded as a module. If done three functions, 
     
     parser.add_argument('-t','-time',action="store_true", default = False,help =\
     """Prints the start time, stop time and time step of each run.""")
+
+    parser.add_argument('-s','-small',action="store_true", default = False,help =\
+    """If set the script will only print the details for the smallest run as
+    given by the cmp parameter.""")
     
     parser.add_argument('-g','-groups',action="store_true", default = False,help =\
     """Prints keys and group names.""")
