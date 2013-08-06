@@ -503,9 +503,13 @@ def binarysearch(a,low,high,value):
 # array_value_index_mapping takes two arrays and returns a list of pairs
 # of indices (index1,index2) so that correct[index1] = comparison[index2]
 # this is very useful when performing error calculations
-def array_value_index_mapping(correct,comparison,\
-    compare_function= lambda x, y:x==y,\
-    compare_on_axes = 1):
+def array_value_index_mapping(
+    correct,
+    comparison,
+    compare_function= lambda x, y:x==y,
+    compare_on_axes = 1
+    ):
+
     index_mapping = []
     cor_dims = len(correct.shape)
     com_dims = len(comparison.shape)
@@ -515,12 +519,25 @@ def array_value_index_mapping(correct,comparison,\
     else:
         cor_ind = [0 for i in range(cor_dims-1)]
         com_ind = [0 for i in range(com_dims-1)]
-    return _array_value_index_mapping_recursive(correct,cor_ind,\
-        comparison,com_ind,index_mapping,compare_on_axes,0)
+    return _array_value_index_mapping_recursive(
+        correct,
+        cor_ind,
+        comparison,
+        com_ind,
+        index_mapping,
+        compare_on_axes,
+        0
+        )
 
-def _array_value_index_mapping_recursive(correct,cor_ind,\
-    comparison,com_ind,\
-    index_mapping,compare_on_axes,depth):
+def _array_value_index_mapping_recursive(
+    correct,
+    cor_ind,
+    comparison,
+    com_ind,
+    index_mapping,
+    compare_on_axes,
+    depth
+    ):
     while cor_ind[depth] < correct.shape[depth] and\
          com_ind[depth] < comparison.shape[depth]:
          if compare_on_axes == 0:
@@ -529,19 +546,25 @@ def _array_value_index_mapping_recursive(correct,cor_ind,\
          else:
              com = comparison[tuple(com_ind)][depth]
              cor = correct[tuple(cor_ind)][depth]
-         if com < cor:
-            com_ind[depth] = com_ind[depth]+1
-         elif com > cor:
-            cor_ind[depth] = cor_ind[depth]+1
-         elif com == cor:
-            if depth == len(correct.shape)-1-compare_on_axes:
+         if com + NUMERICAL_TOLERANCE < cor:
+            com_ind[depth] = com_ind[depth] + 1
+         elif com > NUMERICAL_TOLERANCE + cor:
+            cor_ind[depth] = cor_ind[depth] + 1
+         elif abs(com - cor) < NUMERICAL_TOLERANCE:
+            if depth == len(correct.shape) - 1 - compare_on_axes:
                 index_mapping += [(tuple(cor_ind),tuple(com_ind))]
-                com_ind[depth] = com_ind[depth]+1
-                cor_ind[depth] = cor_ind[depth]+1
+                com_ind[depth] = com_ind[depth] + 1
+                cor_ind[depth] = cor_ind[depth] + 1
             else:
                 index_mapping = _array_value_index_mapping_recursive(\
-                    correct,cor_ind,\
-                    comparison,com_ind,index_mapping,compare_on_axes,depth+1)
+                    correct,
+                    cor_ind,
+                    comparison, 
+                    com_ind,
+                    index_mapping,
+                    compare_on_axes,
+                    depth + 1
+                    )
                 com_ind[depth] = com_ind[depth]+1
                 cor_ind[depth] = cor_ind[depth]+1
                 com_ind[depth+1] = 0
