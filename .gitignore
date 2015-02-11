@@ -58,3 +58,5 @@ libspinsfast.so
 /MathematicaModules/DeriveGCFE.m
 
 /MathematicaModules/GCFEBasics.m
+
+*.pdf
