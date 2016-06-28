@@ -140,8 +140,9 @@ class IBVP:
             self._run_actions(t, u)
 
             if __debug__:
-                self.log.debug("About to advance for iteration = %i"%
-                    self.iteration)
+                self.log.debug(
+                    "About to advance for iteration = %i"%self.iteration
+                )
             try:
                 # Advance Australia Fair.
                 #
@@ -223,5 +224,7 @@ class IBVP:
                                  (str(action), self.iteration)
                                  )
                         action(self.iteration, tslice)
-                if __debug__:
-                    self.log.debug("All actions done")
+            if __debug__:
+                self.log.debug("All actions done")
+                
+
