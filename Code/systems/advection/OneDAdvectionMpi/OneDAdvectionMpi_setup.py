@@ -56,26 +56,34 @@ if store_output:
 
 # Set up logger
 file_log_level = logging.DEBUG
+logging_format = repr(MPI.COMM_WORLD.rank) + ':%(filename)s:%(lineno)d - %(levelname)s:%(message)s'
 if store_output and not display_output:
-    logging.basicConfig(filename=args.logf,\
-        filemode='w',\
-        level=file_log_level,\
-        format = '%(filename)s:%(lineno)d - %(levelname)s:%(message)s')
+    logging.basicConfig(
+        filename=args.logf,
+        filemode='w',
+        level=file_log_level,
+        format=logging_format,
+    )
     log = logging.getLogger("main")
     console = logging.StreamHandler()
     console.setLevel(logging.INFO)
     log.addHandler(console)
 elif store_output and display_output:
-    logging.basicConfig(filename=args.logf,\
-        filemode='w', \
-        format = '%(filename)s:%(lineno)d - %(levelname)s:%(message)s',\
-        level=file_log_level)
+    logging.basicConfig(
+        filename=args.logf,
+        filemode='w', 
+        format=logging_format,
+        level=file_log_level
+    )
     log = logging.getLogger("main")
     console = logging.StreamHandler()
     console.setLevel(logging.INFO)
     log.addHandler(console)
 else:
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(
+        level=logging.INFO,
+        format=logging_format,
+    )
     log = logging.getLogger("main")
 
 log.info("Starting configuration.")
@@ -129,6 +137,7 @@ dims = MPI.Compute_dims(MPI.COMM_WORLD.size, [0])
 periods = [0]
 reorder = True
 mpi_comm = MPI.COMM_WORLD.Create_cart(dims, periods=periods, reorder=reorder)
+
 log.info("Initialisation complete")
 
 ################################################################################
