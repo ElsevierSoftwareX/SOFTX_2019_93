@@ -23,6 +23,7 @@ Output/
 *.hdf
 *.ps
 *.gp
+/icon.png
 
 # tex auxiliary files
 *.aux
@@ -36,6 +37,9 @@ Output/
 *.fdb_latexmk
 *.rel
 
+# vim files
+*.swp
+
 # for MacOSX
 .DS_Store
 *.backup
@@ -43,20 +47,20 @@ Output/
 # dynamic librarys
 libspinsfast.so
 
-# c object code
+# c and c++
 *.o
-
-#tilde backup files
-*~
-
 *.so.1
 *.so.*
-/icon.png
+
+# tilde backup files
+*~
+
+# paper submissions
 /Docs/Papers/EREProc/ereproc.pdf
 /Docs/Papers/PlaneWaves/Submission2PRD/corrections.txt
+*.pdf
 
+# mathematica modules
 /MathematicaModules/DeriveGCFE.m
-
 /MathematicaModules/GCFEBasics.m
 
-*.pdf
