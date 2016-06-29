@@ -39,10 +39,13 @@ class ABCGrid(object):
             self.name, self.shape, self.bounds, self.comparison, self.mpi
             )
 
-    def communicate(self, data):
+    def communicate(self, data, ghost_point_processor=None):
         if self.mpi is None:
             return []
-        return self.mpi.communicate(data)
+        b_values = self.mpi.communicate(data)
+        if ghost_point_processor:
+            ghost_point_processor(data, b_values)
+        return b_values
 
     def barrier(self):
         if self.mpi is None:
