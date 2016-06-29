@@ -89,7 +89,7 @@ else:
 log.info("Starting configuration.")
 
 # How many systems?
-num_of_grids = 1
+num_of_grids = 4
 
 # How many grid points?
 N = args.npoints
@@ -100,7 +100,7 @@ xstop = 2
 
 # Times to run between
 tstart = 0.0
-tstop = 10.0
+tstop = 3.0
 
 # speed of system
 speed = args.s

@@ -17,40 +17,6 @@ import logging
 
 
 ################################################################################
-# A default ghost point processor for sbp operators
-################################################################################
-def sbp_ghost_point_processor(
-        data=None,
-        b_values=None,
-        speed=1,
-        f0=None,
-        Dtf=None,
-        pt_r=None,
-        pt_l=None,
-        log=None
-    ):
-    if __debug__ and log:
-        log.debug("b_values = %s"%repr(b_values))
-    for d_slice, data in b_values:
-        if __debug__ and log:
-            log.debug("d_slice is %s"%(repr(d_slice)))
-            log.debug("recieved_data is %s"%(data))
-        if speed < 0:
-            sigma1 = 0.25 
-            sigma3 = sigma1 - 1
-        else:
-            sigma3 = 0.25 
-            sigma1 = sigma3 - 1
-        if d_slice[1] == slice(-1, None, None):
-            if __debug__ and log:
-                log.debug("Calculating right boundary")
-            Dtf[-pt_r.size:] += sigma1 * speed * pt_r * (f0[d_slice[1]] - data[0])
-        else:
-            if __debug__ and log:
-                log.debug("Calculating left boundary")
-            Dtf[:pt_l.size] += sigma3 * speed * pt_l * (f0[d_slice[1]] - data[0])
-
-################################################################################
 # Base class for SBP operators
 ################################################################################
 
