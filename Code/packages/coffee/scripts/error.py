@@ -226,8 +226,14 @@ def numer(args):
                         tableE[j][i] = Lp(diff, stepsizes, p)
                 #end loop over args.dg
             for j,p in enumerate(args.Lp):
-                rows = _printErrorConv(tSimNames, range(num_of_comps), 
-                    tableE[j], stepsizes, time, p)
+                rows = _printErrorConv(
+                    tSimNames, 
+                    range(num_of_comps), 
+                    tableE[j], 
+                    stepsizes, 
+                    time, 
+                    p
+                )
                 with  open(
                     '%s-e-num_L%f_%f.csv'%(args.ofile_base,p,time),'wb'
                     ) as file:
