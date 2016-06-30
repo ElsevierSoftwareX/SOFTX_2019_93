@@ -150,9 +150,10 @@ log.info("Initialisation complete")
 # Grid point data      
 raxis_gdp = [N*2**i for i in range(num_of_grids)]
 
-# Calcualte number of ghost points. I assume that number required on the right
-# and left are the same.
+# Determine the boundary data
 ghost_points = (raxis_1D_diffop.ghost_points(),)
+internal_points = (raxis_1D_diffop.internal_points(),)
+b_data = grid.MPIBoundary(ghost_points, internal_points, mpi_comm=mpi_comm, 1)
 
 # Build grids
 grids = [
@@ -161,7 +162,7 @@ grids = [
         [[xstart, xstop]], 
         comparison=raxis_gdp[i],
         mpi_comm=mpi_comm,
-        ghost_points=ghost_points
+        boundary_data=b_data
         ) 
     for i in range(num_of_grids)
     ]  
