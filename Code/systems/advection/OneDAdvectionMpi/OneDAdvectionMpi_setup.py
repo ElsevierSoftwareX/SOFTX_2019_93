@@ -57,7 +57,7 @@ if store_output:
 # Set up logger
 file_log_level = logging.DEBUG
 file_logging_format = '%(filename)s:%(lineno)d - %(levelname)s: %(message)s'
-console_logging_format = repr(MPI.COMM_WORLD.rank) + ":" + logging_format
+console_logging_format = repr(MPI.COMM_WORLD.rank) + ":" + file_logging_format
 if store_output and not display_output:
     logging.basicConfig(
         filename=args.logf,
@@ -103,7 +103,7 @@ xstop = 2
 
 # Times to run between
 tstart = 0.0
-tstop = 0.10
+tstop = 3.00
 
 # speed of system
 speed = args.s
@@ -153,7 +153,12 @@ raxis_gdp = [N*2**i for i in range(num_of_grids)]
 # Determine the boundary data
 ghost_points = (raxis_1D_diffop.ghost_points(),)
 internal_points = (raxis_1D_diffop.internal_points(),)
-b_data = grid.MPIBoundary(ghost_points, internal_points, mpi_comm=mpi_comm, 1)
+b_data = grid.MPIBoundary(
+    ghost_points, 
+    internal_points, 
+    mpi_comm=mpi_comm, 
+    number_of_dimensions=1
+)
 
 # Build grids
 grids = [

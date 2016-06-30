@@ -93,17 +93,17 @@ class ABCTimeSlice(object):
             )
         return s
 
-    def boundary_slices(self):
+    def external_slices(self):
         """Returns a list of tuples that describe boundaries of grids for
         external boundaries. 
 
         Returns - returns the result of a call to
-                  self.domain.boundary_slices(self.data.shape)
+                  self.domain.external_slices(self.data.shape)
 
         """
         if __debug__:
-            self.log.debug("calling self.domain.boundary_slices")
-        return self.domain.boundary_slices(self.data.shape)
+            self.log.debug("calling self.domain.external_slices")
+        return self.domain.external_slices()
     
     def communicate(self, ghost_point_processor=None):
         """Returns a list of tuples that describe the boundaries of

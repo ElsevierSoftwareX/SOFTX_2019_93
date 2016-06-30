@@ -136,7 +136,7 @@ class OneDAdvectionMpi(System):
         #Now do the external boundaries
         if __debug__:
             self.log.debug("Implementing external boundary")
-        b_data = Psi.boundary_slices()
+        b_data = Psi.external_slices()
         if __debug__:
             self.log.debug("b_data = %s"%repr(b_data))
         for dim, direction, d_slice in b_data:
