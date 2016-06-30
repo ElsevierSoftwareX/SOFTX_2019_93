@@ -30,11 +30,6 @@ class MPIInterface(object):
         data which are the communicated values that correspond to the 
         positions described by the slice."""
 
-    @abc.abstractmethod
-    def boundary_slices(self, shape):
-        """Returns slices which represent the portions of the domain which
-        are on a external boundary."""
-
     def barrier(self):
         if self.comm is None:
             return
@@ -45,149 +40,66 @@ class MPIInterface(object):
 ###############################################################################
 class EvenCart(MPIInterface):
 
-    def __init__(self, domain, ghost_points=1, *args, **kwds):
+    def __init__(self, 
+            domain, 
+            boundary_data,
+            *args, 
+            **kwds
+        ):
         super(EvenCart, self).__init__(*args, **kwds)
         self.log = logging.getLogger("EvenCart")
         self.domain = domain
-        self.gp = ghost_points
-        self.domain_mapping = self._make_domain_mappings(domain)
+        self.domain_mapping = self._make_domain_mappings(domain, boundary_data)
 
-    def boundary_slices(self, shape):
-        if __debug__:
-            self.log.debug("Calculating boundary slices in mpi")
-        ## Well I don't know what I was thinking about with regards the
-        ## extra_dims thing. It may have been a good idea... I don't know. It
-        ## doesn't work for systems with 2d domains. So I'm going to comment all
-        ## lines with edims (or something similar) out and add in a non-edims
-        ## version of the code.
-        ##
-        ## Please don't delete these commented lines! I might need them.
-        extra_dims = len(shape) - len(self.domain)
-        edims_shape = shape[:extra_dims]
-        edims_slice = tuple([
-            slice(None,None,None)
-            for i in range(extra_dims)
-            ])
-        coords = self.comm.Get_coords(self.comm.rank)
-        #if __debug__:
-            #self.log.debug("coords is %s"%coords)
-        dims = self.comm.dims
-        r_slices = []
-        periods = self.comm.periods
-        for i, dim in enumerate(dims):
-            if periods[i]:
-                continue
-            if coords[i] == 0 and coords[i] == dim - 1:
-                r_slice = [
-                    slice(None, None, None)
-                    for d in self.domain
-                    ]
-                r_slice[i] = slice(None, 1, None)
-                #r_slices += [(i, -1, tuple(r_slice))]
-                r_slices += [(i, -1, edims_slice + tuple(r_slice))]
-                #r_slice = [
-                    #slice(None, None, None)
-                    #for d in self.domain
-                    #]
-                r_slice[i] = slice(-1, None, None)
-                #r_slices += [(i, 1, tuple(r_slice))]
-                r_slices += [(i, 1, edims_slice + tuple(r_slice))]
-            elif coords[i] == 0:
-                r_slice = [
-                    slice(None, None, None)
-                    for d in self.domain
-                    ]
-                r_slice[i] = slice(None, 1, None)
-                #r_slices += [(i, -1, tuple(r_slice))]
-                r_slices += [(i, -1, edims_slice + tuple(r_slice))]
-            elif coords[i] == dim-1:
-                r_slice = [
-                    slice(None, None, None)
-                    for d in self.domain
-                    ]
-                r_slice[i] = slice(-1, None, None)
-                r_slices += [(i, 1, edims_slice + tuple(r_slice))]
-                #r_slices += [(i, 1, tuple(r_slice))]
-        return r_slices
-
-
-    def _make_domain_mappings(self, domain):
+    def _make_domain_mappings(self, domain, boundary_data):
         if self.comm is None:
             return tuple([slice(None, None, None) for dim in domain])
         r_map = []
         for rank in range(self.comm.size):
             coords = self.comm.Get_coords(rank)
             r_map += [tuple([
-                self._array_slice(domain[i], coord, self.comm.dims[i])
+                self._array_slice(
+                    domain[i], 
+                    coord, 
+                    self.comm.dims[i], 
+                    boundary_data.ghost_points(i, -1),
+                    boundary_data.ghost_points(i, 1)
+                )
                 for i, coord in enumerate(coords)
-                ])
-                ]
+            ])]
         #if __debug__:
             #self.log.debug("domain_mapping is %s"%r_map)
         return r_map                
     
-    def _neighbour_slices(self, shape):
+    def _neighbour_slices(self, b_data):
         if self.comm is None:
             return []
         dims = self.comm.Get_dim()
         if __debug__:
             self.log.debug("number of dimensions = %s"%dims)
-        neighbours = []
-        for d in range(dims):
-            source, dest = self.comm.Shift(d, 1)
-            if __debug__:
-                self.log.debug("source=%d, dest=%d"%(source, dest))
-            send_slice, recv_slice = self._get_dataslice(
-                source, dest,
-                shape, d, 1
-                )
-            neighbours += [(source, dest, send_slice, recv_slice)]
-            source, dest = self.comm.Shift(d, -1)
-            send_slice, recv_slice = self._get_dataslice(
-                source, dest,
-                shape, d, -1
-                )
-            neighbours += [(source, dest, send_slice, recv_slice)]
+        pos_neighbours = [
+            b_data.source_and_dest(d, 1) + b_data.internal_slice(d, 1)
+            for d in range(dims)
+        ]
+        neg_neighbours = [
+            b_data.source_and_dest(d, -1) + b_data.internal_slice(d, -1)
+            for d in range(dims)
+        ]
+        neighbours = neg_neighbours + pos_neighbours
         if __debug__:
             self.log.debug("neighbour_slices is %s"%neighbours)
         return neighbours
 
-    def _get_dataslice(self, source, dest, shape, dim, direction):
-        if dest < 0:
-            rsend_slice = None
-        else:
-            send_slice = [slice(None,None,None) for d in shape]
-        if source < 0:
-            rrecv_slice = None
-        else:
-            recv_slice = [slice(None,None,None) for d in shape]
+    def _array_slice(
+            self, 
+            array_length, 
+            rank, 
+            num_ranks, 
+            ghost_points_start,
+            ghost_points_end
+        ):
         if __debug__:
-            self.log.debug("len(shape) = %s"%repr(len(shape)))
-            self.log.debug("self.comm.Get_dim() = %s"%repr(self.comm.Get_dim()))
-            self.log.debug("dim = %s"%repr(dim))
-        #dim_index = len(shape) - self.comm.Get_dim() + dim
-        dim_index = dim + 1
-        if __debug__:
-            self.log.debug("dim_index = %s"%repr(dim_index))
-        if direction == 1:
-            if not dest < 0:
-                send_slice[dim_index] = slice(-self.gp, None, None)
-                rsend_slice = tuple(send_slice)
-            if not source < 0:
-                recv_slice[dim_index] = slice(None, self.gp, None)
-                rrecv_slice = tuple(recv_slice)
-        elif direction == -1:
-            if not dest < 0:
-                send_slice[dim_index] = slice(None, self.gp, None)
-                rsend_slice = tuple(send_slice)
-            if not source < 0:
-                recv_slice[dim_index] = slice(-self.gp, None, None)
-                rrecv_slice = tuple(recv_slice)
-        return rsend_slice, rrecv_slice
-
-    def _array_slice(self, array_length, rank, num_ranks):
-        if __debug__:
-            self.log.debug("Calculating start and end indices for  subdomain")
+            self.log.debug("Calculating start and end indices for subdomain")
             self.log.debug("Array_length is %i"%array_length)
         #divide domain into appropriate parts
         q,r = divmod(array_length, num_ranks)
@@ -205,10 +117,10 @@ class EvenCart(MPIInterface):
         #add in ghost_points if we can
         #this currently works for gp = 1 for an SAT boudnary method.
         #The code will need to be checked for consistency if this changes.
-        if s - self.gp > -1:
-            s = s - self.gp + 1
-        if e + self.gp < array_length:
-            e = e + self.gp
+        if s - ghost_points_start > -1:
+            s = s - ghost_points_start
+        if e + ghost_points_end < array_length:
+            e = e + ghost_points_end
         if __debug__:
             self.log.debug("Start index = %i, End index = %i"%(s,e))
         return slice(s, e, None)
@@ -219,10 +131,10 @@ class EvenCart(MPIInterface):
             return self.domain_mapping
         return tuple(self.domain_mapping[self.comm.rank])
             
-    def communicate(self, data):
+    def communicate(self, data, b_data):
         #if self.comm.size == 1:
             #return []
-        nslices = self._neighbour_slices(data.shape)
+        nslices = self._neighbour_slices(b_data)
         if __debug__:
             self.log.debug("about to perform communication")
             self.log.debug("nslices = %s"%(repr(nslices)))

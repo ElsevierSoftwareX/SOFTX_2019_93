@@ -12,6 +12,229 @@ import logging
 from coffee.mpi import mpiinterfaces
 
 ################################################################################
+# Base Boundary data class
+################################################################################
+class ABCBoundary(object):
+    """The abstract base class for boundary classes.
+
+    A boundary class manages data associated to ghost points and the slices
+    specifying which data points should be communicated"""
+
+    __metaclass__ = abc.ABCMeta
+
+    # I use -1 and 1 to reduce friction with the mpi direction variable
+    LEFT = -1
+    RIGHT = 1
+
+    DIRECTION_ERROR = raise ValueError("Direction must be +/- 1")
+
+    @staticmethod
+    def _direction_to_index(direction):
+        if direction == -1:
+            return 0
+        elif direction == 1:
+            return 1
+        raise DIRECTION_ERROR
+
+    def __init__(self, number_of_dimensions=1, *args, **kwargs):
+        super(ABCBoundary, self).__init__(*args, **kwargs)
+        self.number_of_dimensions = number_of_dimensions
+
+    @staticmethod
+    def _empty_slice():
+        return tuple([
+            slice(None, None, None) for i in range(self.number_of_dimensions)
+        ])
+
+    @abc.abstractmethod
+    def ghost_points(self, dimension, direction):
+        """Returns the number of ghost points for the specified dimension and
+        direction."""
+        return 0
+
+    @abc.abstractmethod
+    def internal_slice(self, dimension, direction):
+        """Returns a tuples of slices which, when applied
+        to a data array, gives the data to be communicated to 
+        neighbouring grids."""
+        return _empty_slice()
+
+    def internal_slices(self):
+        """Returns a list of tuples. Each tuple contains an integer,
+        representing the dimension, a direction and the result of 
+        calling internal_slice(dimension, direction).
+
+        This is a convience method to make iteration over external
+        boundaries easy for the user."""
+        neg_slices = [
+            (i, -1, self.internal_slice(i, -1)) 
+            for i in range(self.number_of_dimensions)
+        ]
+        pos_slices = [
+            (i, 1, self.internal_slice(i, 1)) 
+            for i in range(self.number_of_dimensions)
+        ]
+        return neg_slices + pos_slices
+
+    @abc.abstractmethod
+    def external_slice(self, dimension, direction):
+        """Returns a tuple which, when applied
+        to a data array, gives the data on the extenal boundaries of the grid."""
+        slices = _empty_slice()
+        if direction == -1:
+            slices[i] = slice(None, 1, None)
+        elif direction == 1:
+            slices[i] = slice(-1, None, None)
+        else
+            raise DIRECTION_ERROR
+
+    def external_slices(self, dimension, direction):
+        """Returns a list of tuples. Each tuple contains an integer,
+        representing the dimension, a direction and the result of 
+        calling external_slice(dimension, direction).
+
+        This is a convience method to make iteration over external
+        boundaries easy for the user."""
+        neg_slices = [
+            (i, -1, self.external_slice(i, -1)) 
+            for i in range(self.number_of_dimensions)
+        ]
+        pos_slices = [
+            (i, 1, self.external_slice(i, 1)) 
+            for i in range(self.number_of_dimensions)
+        ]
+        return neg_slices + pos_slices
+ 
+
+################################################################################
+# Base Boundary data class
+################################################################################
+class SingleCartesianGridBoundary(ABCBoundary):
+    """Implements ABCBoundary for a simulation on a single grid with no 
+    mpi dependence.
+
+    That is a grid with no internal boundaries and every grid "edge" an 
+    external boundary."""
+    pass
+
+class MPIBoundary(ABCBoundary):
+    """MPIBoundary implements the ABCBoundary class. The numbers of ghost points
+    and "internal points" can be specified directly using arrays of two tuples."""
+    def __init__(
+            self, 
+            ghost_points, 
+            internal_points, 
+            mpi_comm=None, 
+            *args, 
+            **kwargs
+        ):
+        """ 
+        The ghost points and internal points variables must both be an array 
+        or tuple with one entry for each dimension. Each entry is a 2-tuple giving 
+        the number of points in the negative and positive directions for 
+        that axis.
+        """
+        super(ABCBoundary, self).__init__(*args, **kwargs)
+        self.ghost_points = ghost_points
+        self.internal_points = internal_points
+        self.mpi_comm = mpi_comm
+
+    def ghost_points(self, dimension, direction):
+        return self.ghost_points[dimension][_direction_to_index(direction)]
+
+    def source_and_dest(self, dimension, direction):
+        return self.comm.Shift(self.mpi_comm.dims[dimension], direction)
+
+    def internal_slice(self, dimension, direction):
+        dim = self.mpi_comm.dims[dimension]
+        source, dest = self.comm.Shift(dim, direction)
+
+        if dest < 0:
+            rsend_slice = None
+        else:
+            send_slice = _empty_slice()
+        if source < 0:
+            rrecv_slice = None
+        else:
+            recv_slice = _empty_slice()
+
+        dim_index = dim + 1
+        points = self.internal_points[dimension][_direction_to_index(direction)]
+
+        if direction == 1:
+            if not dest < 0:
+                send_slice[dim_index] = slice(-points, None, None)
+                rsend_slice = tuple(send_slice)
+            if not source < 0:
+                recv_slice[dim_index] = slice(None, points, None)
+                rrecv_slice = tuple(recv_slice)
+        elif direction == -1:
+            if not dest < 0:
+                send_slice[dim_index] = slice(None, points, None)
+                rsend_slice = tuple(send_slice)
+            if not source < 0:
+                recv_slice[dim_index] = slice(-points, None, None)
+                rrecv_slice = tuple(recv_slice)
+        return rsend_slice, rrecv_slice
+
+    def external_slice(self, dimension, direction):
+        if self.mpi_comm.periods[dimention]:
+            super(SimpleMPIBoundary, self)._empty_slice()
+        coords = self.comm.Get_coords(self.comm.rank)
+        dim = self.mpi_comm.dims[dimension]
+        if coords[dimension] == 0 and direction == -1:
+            return super(ABCBoundary, self).external_slice(dimension, -1)
+        elif coords[dimension] == dim - 1 and direction == 1:
+            return super(ABCBoundary, self).external_slice(dimension, 1)
+        else
+            return _empty_slice()
+
+class SimpleMPIBoundary(MPIBoundary):
+    """SimpleMPIBoundary is for boundaries in mpi contexts with a fixed number of
+    ghost points in every direction and dimension and the "internal points" equal
+    to the ghost points."""
+
+    def __init__(self, ghost_points, *args, **kwargs):
+        number_of_dimensions = kwargs["number_of_dimensions"]
+        points_tuple = [
+            (ghost_points, ghost_points) for d in range(number_of_dimensions)
+        ]
+        super(MPIBoundary, self).__init__(
+            points_tuple,
+            points_tuple,
+            *args,
+            **kwargs
+        )
+    
+class GeneralBoundary(ABCBoundary):
+    """MPIBoundary implements ABCBoundary for grids in an mpi context with arbitrary
+    ghost points and arbitrary interal and external slices fixed at run time.
+    
+    The ghost points variable must be an array or tuple with one entry for each
+    dimension. Each entry is a 2-tuple giving the number of ghost points in the
+    negative and positive directions for that axis.
+
+    The data slices variable is an array with one entry for each dimension. Each
+    entry is a tuple of slices which when applied to the data stored in a tslice
+    gives the data to be communicated / received.
+    """
+
+    def __init__(self, ghost_points, internal_slices, external_slices):
+        self.ghost_points = ghost_points
+        self.interal_slices = internal_slices
+        self.external_slices = external_slices
+
+    def ghost_points(self, dimension, direction):
+        return self.ghost_points[dimension][self._direction_to_index(direction)]
+
+    def internal_slices(self, dimension, direction):
+        return self.internal_slices[dimension][self._direction_to_index(direction)]
+
+    def external_slices(self, dimension, direction):
+        return self.external_slices[dimension][self._direction_to_index(direction)]
+
+
+################################################################################
 # Base Grid class
 ################################################################################
 class ABCGrid(object):
@@ -52,43 +275,10 @@ class ABCGrid(object):
             return 
         return self.mpi.barrier()
 
-    def boundary_slices(self, shape):
-        #Note that essentailly the same code is used in mpiinterfaces.py
-        #At some point this reuse of code will need to be resolved.
-        #The problem boils down to which object should handle boundary
-        #slices when no mpi is used.
+    def external_slices(self):
         if __debug__:
             self.log.debug("In grid.boundary_slices")
-        if self.mpi is None:
-            if __debug__:
-                self.log.debug(
-                    "No mpi object. Calculating boundaries in grid object"
-                    )
-            extra_dims = len(shape) - len(self.shape)
-            edims_shape = shape[:extra_dims]
-            edims_slice = tuple([
-                slice(None,None,None)
-                for i in range(extra_dims)
-                ])
-            r_slices = []
-            for i in range(len(self.shape)):
-                r_slice = [
-                    slice(None, None, None)
-                    for d in shape
-                    ]
-                r_slice[i] = slice(None, 1, None)
-                r_slices += [(i, -1, edims_slice + tuple(r_slice))]
-                #r_slices += [(i, -1, tuple(r_slice))]
-                r_slice[i] = slice(-1, None, None)
-                r_slices += [(i, 1, edims_slice + tuple(r_slice))]
-                #r_slices += [(i, 1, tuple(r_slice))]
-            return r_slices
-        else:
-            if __debug__:
-                self.log.debug(
-                    "Boundary slices to be calcualted by mpi"
-                    )
-            return self.mpi.boundary_slices(shape)
+        return self.boundary_data.external_slices()
 
     def collect_data(self, data):
         if self.mpi is None:
@@ -127,7 +317,7 @@ class UniformCart(ABCGrid):
             mpi_comm=None, 
             comparison=None, 
             name=None, 
-            ghost_points=1,
+            boundary_data=None,
             *args, **kwds):
         _shape = tuple([s+1 for s in shape])
         if mpi_comm is None:
@@ -135,8 +325,8 @@ class UniformCart(ABCGrid):
         else:
             mpi = mpiinterfaces.EvenCart(
                 _shape, 
+                boundary_data,
                 mpi_comm=mpi_comm, 
-                ghost_points=ghost_points
                 )
         if name is None:
             name = "UniformCart%s%s%s"%(shape, bounds, comparison)
@@ -186,7 +376,7 @@ class GeneralGrid(ABCGrid):
             #mpi_comm=None, 
             comparison=None, 
             name=None, 
-            #ghost_points=1,
+            boundary_data=None
             *args, **kwds):
         _shape = []
         for i,p in enumerate(periods):
@@ -198,8 +388,8 @@ class GeneralGrid(ABCGrid):
         mpi=None
         #mpi = mpiinterfaces.EvenCart(
             #_shape, 
+            #boundary_data,
             #mpi_comm=mpi_comm, 
-            #ghost_points=ghost_points
             #)
         if name is None:
             name = "<GeneralGrid shape=%s, bounds=%s,periods=%s, comparison=%s>"%(
