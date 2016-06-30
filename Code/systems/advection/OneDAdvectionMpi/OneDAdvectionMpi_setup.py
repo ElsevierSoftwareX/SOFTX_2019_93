@@ -63,7 +63,7 @@ if store_output and not display_output:
         filename=args.logf,
         filemode='w',
         level=file_log_level,
-        format=logging_format,
+        format=file_logging_format,
     )
     log = logging.getLogger("main")
     console = logging.StreamHandler()
@@ -74,7 +74,7 @@ elif store_output and display_output:
     logging.basicConfig(
         filename=args.logf,
         filemode='w', 
-        format=logging_format,
+        format=file_logging_format,
         level=file_log_level
     )
     log = logging.getLogger("main")
@@ -92,7 +92,7 @@ else:
 log.info("Starting configuration.")
 
 # How many systems?
-num_of_grids = 1
+num_of_grids = 4
 
 # How many grid points?
 N = args.npoints
