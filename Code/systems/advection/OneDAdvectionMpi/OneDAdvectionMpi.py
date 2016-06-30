@@ -105,6 +105,7 @@ class OneDAdvectionMpi(System):
             (t,Psi,intStep))
          
         # Define useful variables
+        b_values = Psi.communicate()
         f0 = Psi.data[0]
         x   = Psi.domain.axes[0]
         dx  = Psi.domain.step_sizes[0]
@@ -191,7 +192,8 @@ class OneDAdvectionMpi(System):
         rv = np.maximum(0.0, 
             (36) * (1/length)**2 * (-r + length/3) * (r - 2*length/3)
             )**8
-        print rv
+        if __debug__:
+            self.log.debug(repr(rv))
         #if np.amax(rv is not 0:
             #rv = 0.5*rv/np.amax(rv)
         rtslice = tslices.TimeSlice(np.array([rv]),grid,t0)
