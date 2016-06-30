@@ -171,6 +171,9 @@ class FD_diffop(object):
     def ghost_points(self):
         return self.central.loffset, self.central.roffset
 
+    def internal_points(self):
+        return self.ghost_points
+
 ################################################################################
 # First Derivative operators
 ################################################################################

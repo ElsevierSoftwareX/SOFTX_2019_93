@@ -117,7 +117,12 @@ class SBP(object):
             see the penalty_boundary doc string for further details.")
 
     def ghost_points(self):
+        """Ghost points required for the penalty boundary method."""
         return 0, 1
+
+    def internal_points(self):
+        """Internal points required for the penalty boundary method."""
+        return 1, 1
         
     def __str__(self):
         return "Differential operator "%self.name
