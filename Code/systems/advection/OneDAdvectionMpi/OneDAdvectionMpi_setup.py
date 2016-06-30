@@ -56,7 +56,8 @@ if store_output:
 
 # Set up logger
 file_log_level = logging.DEBUG
-logging_format = repr(MPI.COMM_WORLD.rank) + ':%(filename)s:%(lineno)d - %(levelname)s:%(message)s'
+file_logging_format = '%(filename)s:%(lineno)d - %(levelname)s: %(message)s'
+console_logging_format = repr(MPI.COMM_WORLD.rank) + ":" + logging_format
 if store_output and not display_output:
     logging.basicConfig(
         filename=args.logf,
@@ -67,6 +68,7 @@ if store_output and not display_output:
     log = logging.getLogger("main")
     console = logging.StreamHandler()
     console.setLevel(logging.INFO)
+    console.setFormatter(logging.Formatter(console_logging_format))
     log.addHandler(console)
 elif store_output and display_output:
     logging.basicConfig(
@@ -78,18 +80,19 @@ elif store_output and display_output:
     log = logging.getLogger("main")
     console = logging.StreamHandler()
     console.setLevel(logging.INFO)
+    console.setFormatter(logging.Formatter(console_logging_format))
     log.addHandler(console)
 else:
     logging.basicConfig(
-        level=logging.INFO,
-        format=logging_format,
+        level=logging.DEBUG,
+        format=console_logging_format
     )
     log = logging.getLogger("main")
 
 log.info("Starting configuration.")
 
 # How many systems?
-num_of_grids = 4
+num_of_grids = 1
 
 # How many grid points?
 N = args.npoints
@@ -100,7 +103,7 @@ xstop = 2
 
 # Times to run between
 tstart = 0.0
-tstop = 3.0
+tstop = 0.10
 
 # speed of system
 speed = args.s
@@ -149,8 +152,7 @@ raxis_gdp = [N*2**i for i in range(num_of_grids)]
 
 # Calcualte number of ghost points. I assume that number required on the right
 # and left are the same.
-ghp = 2 #raxis_1D_diffop.ghost_points()
-ghost_points = ghp    
+ghost_points = (raxis_1D_diffop.ghost_points(),)
 
 # Build grids
 grids = [
@@ -159,7 +161,7 @@ grids = [
         [[xstart, xstop]], 
         comparison=raxis_gdp[i],
         mpi_comm=mpi_comm,
-        ghost_points=1
+        ghost_points=ghost_points
         ) 
     for i in range(num_of_grids)
     ]  
