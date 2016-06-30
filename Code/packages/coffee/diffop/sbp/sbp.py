@@ -115,6 +115,9 @@ class SBP(object):
         else:
             return Exception("vector_selection must be either 0 or 1. Please \
             see the penalty_boundary doc string for further details.")
+
+    def ghost_points(self):
+        return 0, 1
         
     def __str__(self):
         return "Differential operator "%self.name
