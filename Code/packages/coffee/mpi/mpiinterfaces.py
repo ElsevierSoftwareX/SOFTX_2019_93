@@ -75,8 +75,6 @@ class EvenCart(MPIInterface):
         if self.comm is None:
             return []
         dims = self.comm.Get_dim()
-        if __debug__:
-            self.log.debug("number of dimensions = %s"%dims)
         pos_neighbours = [
             b_data.source_and_dest(d, 1) 
             + b_data.internal_slice(shape, d, 1)
@@ -87,7 +85,7 @@ class EvenCart(MPIInterface):
             + b_data.internal_slice(shape, d, -1)
             for d in range(dims)
         ]
-        neighbours = neg_neighbours + pos_neighbours
+        neighbours = pos_neighbours + neg_neighbours
         if __debug__:
             self.log.debug("neighbour_slices is %s"%neighbours)
         return neighbours

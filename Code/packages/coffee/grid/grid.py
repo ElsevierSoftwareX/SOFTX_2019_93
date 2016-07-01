@@ -80,14 +80,17 @@ class ABCBoundary(object):
         to a data array, gives the data on the extenal boundaries of the grid.
         
         """
-
         slices = self._empty_slice(len(shape))
+
+        # +1 because for some reason I decided that vector data should be in the
+        # first dimension.
+        dim_index = dimension + 1
         if direction == -1:
-            slices[dimension] = slice(None, 1, None)
+            slices[dim_index] = slice(None, 1, None)
             return slices
 
         if direction == 1:
-            slices[dimension] = slice(-1, None, None)
+            slices[dim_index] = slice(-1, None, None)
             return slices
 
         raise DIRECTION_ERROR
@@ -99,13 +102,18 @@ class ABCBoundary(object):
 
         This is a convience method to make iteration over external
         boundaries easy for the user."""
+
+        # -1 to account for first dimension of shape being number of data 
+        # components
         neg_slices = [
             (i, -1, self.external_slice(shape, i, -1)) 
-            for i in range(len(shape))
+            for i in range(len(shape) - 1 ) 
+            if self.external_slice(shape, i , -1) != self._empty_slice(len(shape))
         ]
         pos_slices = [
             (i, 1, self.external_slice(shape, i, 1)) 
-            for i in range(len(shape))
+            for i in range(len(shape) - 1)
+            if self.external_slice(shape, i , -1) != self._empty_slice(len(shape))
         ]
         return pos_slices + neg_slices
  
@@ -186,7 +194,7 @@ class MPIBoundary(ABCBoundary):
 
     def external_slice(self, shape, dimension, direction):
         if self.mpi_comm.periods[dimension]:
-            self._empty_slice(len(shape))
+            return self._empty_slice(len(shape))
         coords = self.mpi_comm.Get_coords(self.mpi_comm.rank)
         dim = self.mpi_comm.dims[dimension]
         if coords[dimension] == 0 and direction == -1:
@@ -195,14 +203,13 @@ class MPIBoundary(ABCBoundary):
                 dimension, 
                 -1
             )
-        elif coords[dimension] == dim - 1 and direction == 1:
+        if coords[dimension] == dim - 1 and direction == 1:
             return super(MPIBoundary, self).external_slice(
                 shape,
                 dimension, 
                 1
             )
-        else:
-            return self._empty_slice(len(shape))
+        return self._empty_slice(len(shape))
 
 class SimpleMPIBoundary(MPIBoundary):
     """SimpleMPIBoundary is for boundaries in mpi contexts with a fixed number of
@@ -291,10 +298,10 @@ class ABCGrid(object):
             return 
         return self.mpi.barrier()
 
-    def external_slices(self):
+    def external_slices(self, data_shape):
         if __debug__:
             self.log.debug("In grid.external_slices")
-        return self.boundary_data.external_slices(self.shape)
+        return self.boundary_data.external_slices(data_shape)
 
     def collect_data(self, data):
         if self.mpi is None:

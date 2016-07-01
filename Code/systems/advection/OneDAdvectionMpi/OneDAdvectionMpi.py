@@ -105,7 +105,6 @@ class OneDAdvectionMpi(System):
             (t,Psi,intStep))
          
         # Define useful variables
-        b_values = Psi.communicate()
         f0 = Psi.data[0]
         x   = Psi.domain.axes[0]
         dx  = Psi.domain.step_sizes[0]

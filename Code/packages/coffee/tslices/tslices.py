@@ -103,7 +103,7 @@ class ABCTimeSlice(object):
         """
         if __debug__:
             self.log.debug("calling self.domain.external_slices")
-        return self.domain.external_slices()
+        return self.domain.external_slices(self.data.shape)
     
     def communicate(self, ghost_point_processor=None):
         """Returns a list of tuples that describe the boundaries of
