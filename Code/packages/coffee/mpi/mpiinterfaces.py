@@ -71,18 +71,20 @@ class EvenCart(MPIInterface):
             #self.log.debug("domain_mapping is %s"%r_map)
         return r_map                
     
-    def _neighbour_slices(self, b_data):
+    def _neighbour_slices(self, shape, b_data):
         if self.comm is None:
             return []
         dims = self.comm.Get_dim()
         if __debug__:
             self.log.debug("number of dimensions = %s"%dims)
         pos_neighbours = [
-            b_data.source_and_dest(d, 1) + b_data.internal_slice(d, 1)
+            b_data.source_and_dest(d, 1) 
+            + b_data.internal_slice(shape, d, 1)
             for d in range(dims)
         ]
         neg_neighbours = [
-            b_data.source_and_dest(d, -1) + b_data.internal_slice(d, -1)
+            b_data.source_and_dest(d, -1) 
+            + b_data.internal_slice(shape, d, -1)
             for d in range(dims)
         ]
         neighbours = neg_neighbours + pos_neighbours
@@ -134,7 +136,7 @@ class EvenCart(MPIInterface):
     def communicate(self, data, b_data):
         #if self.comm.size == 1:
             #return []
-        nslices = self._neighbour_slices(b_data)
+        nslices = self._neighbour_slices(data.shape, b_data)
         if __debug__:
             self.log.debug("about to perform communication")
             self.log.debug("nslices = %s"%(repr(nslices)))
