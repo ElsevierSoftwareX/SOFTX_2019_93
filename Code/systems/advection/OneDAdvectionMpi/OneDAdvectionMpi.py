@@ -101,8 +101,9 @@ class OneDAdvectionMpi(System):
     # Evolution Routine
     ############################################################################
     def evaluate(self, t, Psi, intStep = None):
-        self.log.debug("Entered evaluation: t = %f, Psi = %s, intStep = %s"%\
-            (t,Psi,intStep))
+        if __debug__:
+            self.log.debug("Entered evaluation: t = %f, Psi = %s, intStep = %s"%\
+                (t,Psi,intStep))
          
         # Define useful variables
         f0 = Psi.data[0]
