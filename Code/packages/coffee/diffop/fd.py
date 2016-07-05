@@ -10,6 +10,21 @@ from __future__ import division
 
 import numpy as np
 ################################################################################
+# Finite difference default ghost point processor
+################################################################################
+def ghost_point_processor(data, b_values, log=None):
+    if __debug__ and log:
+        log.debug("original data is " + repr(data))
+    for b_slice, b_data in b_values:
+        if __debug__ and log:
+            log.debug("b_slice is %s"%(repr(b_slice)))
+            log.debug("b_data is %s"%(repr(b_data)))
+        data[b_slice] = b_data
+    if __debug__ and log:
+        log.debug("new data is " + repr(data))
+
+
+################################################################################
 # Finite difference stencil base class.
 ################################################################################
 
@@ -172,7 +187,7 @@ class FD_diffop(object):
         return self.central.loffset, self.central.roffset
 
     def internal_points(self):
-        return self.ghost_points
+        return self.ghost_points()
 
 ################################################################################
 # First Derivative operators
