@@ -92,7 +92,7 @@ else:
 log.info("Starting configuration.")
 
 # How many systems?
-num_of_grids = 1
+num_of_grids = 4
 
 # How many grid points?
 N = args.npoints
@@ -187,11 +187,11 @@ if store_output and mpi_comm.Get_rank() == 0:
 ################################################################################
 # Set up action types for data storage in hdf file
 ################################################################################
-output_actions = [\
-    actions.SimOutput.Data(),\
-    actions.SimOutput.Times(),\
-    actions.SimOutput.System(),\
-    actions.SimOutput.Domains()\
+output_actions = [
+    actions.SimOutput.Data(),
+    actions.SimOutput.Times(),
+    actions.SimOutput.System(),
+    actions.SimOutput.Domains()
     ]
 
 ################################################################################
