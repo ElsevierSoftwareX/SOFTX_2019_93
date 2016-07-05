@@ -65,7 +65,8 @@ class OneDAdvectionMpi(System):
         return 0.0
         
     def boundaryLeft(self,t,Psi):
-        return 0.0
+        return 0.5 * math.sin(2*math.pi*(t+2))
+        #return 0.0
         
     ############################################################################
     # Evolution Routine
