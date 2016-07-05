@@ -55,7 +55,7 @@ if store_output:
     args.logf = os.path.splitext(args.f)[0]+"%d"%MPI.COMM_WORLD.rank+".log"
 
 # Set up logger
-file_log_level = logging.INFO
+file_log_level = logging.DEBUG
 file_logging_format = '%(filename)s:%(lineno)d - %(levelname)s: %(message)s'
 console_logging_format = repr(MPI.COMM_WORLD.rank) + ":" + file_logging_format
 if store_output and not display_output:
@@ -92,7 +92,7 @@ else:
 log.info("Starting configuration.")
 
 # How many systems?
-num_of_grids = 4
+num_of_grids = 1
 
 # How many grid points?
 N = args.npoints
@@ -113,21 +113,8 @@ CFLs = [0.5 for i in range(num_of_grids)]
 tau = 1
 
 # Select diffop
-#raxis_1D_diffop = sbp.D43_Strand()
 #raxis_1D_diffop = fd.FD12()
-#raxis_1D_diffop = fd.FD14()
-raxis_1D_diffop = sbp.D42()
-#raxis_1D_diffop = sbp.D43_Tiglioetal()
-#raxis_1D_diffop = sbp.D43_CNG()
-#raxis_1D_diffop = fft.FFT_diff_scipy(1,xstop-xstart)
-#raxis_1D_diffop = fft.FFTW(1,xstop-xstart)
-#raxis_1D_diffop = fft.FFTW_real(1,xstop-xstart)
-#raxis_1D_diffop = fft.FFTW_convolve(1,xstop-xstart)
-#raxis_1D_diffop = fft.FFT(1,xstop-xstart)
-#raxis_1D_diffop = fft.RFFT(1)
-#raxis_1D_diffop = fft.FFT_scipy(1,xstop-xstart)
-#raxis_1D_diffop = fft.RFFT_scipy(1)
-#raxis_1D_diffop = fft.FFT_lagrange1(N,xstop-xstart)
+raxis_1D_diffop = fd.FD14()
 
 # Configuration of IBVP
 maxIteration = 1000000
