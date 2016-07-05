@@ -105,7 +105,7 @@ class ABCTimeSlice(object):
             self.log.debug("calling self.domain.external_slices")
         return self.domain.external_slices(self.data.shape)
     
-    def communicate(self, ghost_point_processor=None):
+    def communicate(self, ghost_point_processor=None, data=None):
         """Returns a list of tuples that describe the boundaries of
         grids for internal boundaries.
 
@@ -117,7 +117,7 @@ class ABCTimeSlice(object):
 
         """
         return self.domain.communicate(
-            self.data, 
+            data if data is not None else self.data,
             ghost_point_processor=ghost_point_processor
         )
 
