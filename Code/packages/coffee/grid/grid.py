@@ -169,7 +169,10 @@ class MPIBoundary(ABCBoundary):
         else:
             recv_slice = self._empty_slice(len(shape))
 
-        i_points = self._internal_points[dimension][
+        i_point = self._internal_points[dimension][
+            self._direction_to_index(direction)
+        ]
+        g_point = self._ghost_points[dimension][
             self._direction_to_index(direction)
         ]
         total_g_points = sum(self._ghost_points[dimension])
@@ -189,23 +192,31 @@ class MPIBoundary(ABCBoundary):
 
         if direction == 1:
             if not dest < 0:
-                send_slice[dim_index] = slice(-i_points, None, None)
+                send_slice[dim_index] = slice(
+                    -total_g_points, 
+                    neg_or_none(-total_g_points + i_point), 
+                    None
+                )
                 rsend_slice = tuple(send_slice)
             if not source < 0:
                 recv_slice[dim_index] = slice(
-                    max(0, total_g_points - i_points), 
-                    total_g_points, 
+                    None,
+                    i_point,
                     None
                 )
                 rrecv_slice = tuple(recv_slice)
         elif direction == -1:
             if not dest < 0:
-                send_slice[dim_index] = slice(None, i_points, None)
+                send_slice[dim_index] = slice(
+                    max(0, total_g_points - i_point),
+                    total_g_points, 
+                    None
+                )
                 rsend_slice = tuple(send_slice)
             if not source < 0:
                 recv_slice[dim_index] = slice(
-                    -total_g_points, 
-                    neg_or_none(-total_g_points + i_points), 
+                    -i_point,
+                    None,
                     None
                 )
                 rrecv_slice = tuple(recv_slice)
@@ -310,7 +321,7 @@ class ABCGrid(object):
         b_values = self.mpi.communicate(data, self.boundary_data)
         if ghost_point_processor:
             ghost_point_processor(data, b_values)
-        return b_values
+        return data, b_values
 
     def barrier(self):
         if self.mpi is None:

@@ -92,7 +92,8 @@ class OneDAdvectionMpi(System):
             log=self.log
         )
         
-        Psi.communicate(gp_processor, data=np.array([Dtf]))
+        new_derivative, _ = Psi.communicate(gp_processor, data=np.array([Dtf]))
+        Dtf = new_derivative[0]
         
         if __debug__:
             self.log.debug("""Derivatives are: Dtf = %s"""%(repr(Dtf)))
