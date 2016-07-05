@@ -364,8 +364,7 @@ class SimulationHDF(object):
       return self.file.name
     
     def getSims(self):
-        simArray = [self.sim(name) for name in \
-            self.file[systemD].keys()]
+        simArray = [self.sim(name) for name in self.file[systemD].keys()]
         return sorted(simArray)
     
     def __getitem__(self,key):
