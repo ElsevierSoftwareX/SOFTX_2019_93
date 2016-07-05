@@ -169,26 +169,45 @@ class MPIBoundary(ABCBoundary):
         else:
             recv_slice = self._empty_slice(len(shape))
 
-        points = self._internal_points[dimension][
+        i_points = self._internal_points[dimension][
             self._direction_to_index(direction)
         ]
+        total_g_points = sum(self._ghost_points[dimension])
 
         # +1 because the first dimension of the data array is reserved for vector
         # valued data. This may not have been a good desicion
+        #
+        # The details of why the start and end points for the slices are as they
+        # are is complicated. Double check things before you change anything.
         dim_index = dimension + 1
+
+        # This functions are used to to avoid difficulties resulting from the
+        # difference between slice(-1, 0) and slice(-1, None), we don't need one
+        # for "pos_or_none" as slice(0, x) and slice(None, x) behave the same
+        def neg_or_none(number):
+            return number if number < 0 else None
+
         if direction == 1:
             if not dest < 0:
-                send_slice[dim_index] = slice(-points, None, None)
+                send_slice[dim_index] = slice(-i_points, None, None)
                 rsend_slice = tuple(send_slice)
             if not source < 0:
-                recv_slice[dim_index] = slice(None, points, None)
+                recv_slice[dim_index] = slice(
+                    max(0, total_g_points - i_points), 
+                    total_g_points, 
+                    None
+                )
                 rrecv_slice = tuple(recv_slice)
         elif direction == -1:
             if not dest < 0:
-                send_slice[dim_index] = slice(None, points, None)
+                send_slice[dim_index] = slice(None, i_points, None)
                 rsend_slice = tuple(send_slice)
             if not source < 0:
-                recv_slice[dim_index] = slice(-points, None, None)
+                recv_slice[dim_index] = slice(
+                    -total_g_points, 
+                    neg_or_none(-total_g_points + i_points), 
+                    None
+                )
                 rrecv_slice = tuple(recv_slice)
         return rsend_slice, rrecv_slice
 
