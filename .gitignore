@@ -51,6 +51,7 @@ libspinsfast.so
 *.o
 *.so.1
 *.so.*
+*.so
 
 # tilde backup files
 *~
