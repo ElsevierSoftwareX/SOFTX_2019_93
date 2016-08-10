@@ -9,6 +9,9 @@ Copyright (c) 2011 University of Otago. All rights reserved.
 from __future__ import division
 
 import numpy as np
+import logging
+
+
 ################################################################################
 # Finite difference default ghost point processor
 ################################################################################
@@ -41,9 +44,10 @@ class FD_stencil(object):
         
     def __call__(self, u, apply_at=None):
         if apply_at is not None:
-            lbound = apply_at-self.loffset
-            rbound = apply_at+self.roffset+1
-            if rbound == 0: rbound = None
+            lbound = apply_at - self.loffset
+            rbound = apply_at + self.roffset + 1
+            if rbound == 0: 
+                rbound = None
             return np.dot(self.stencil_coefs, u[lbound : rbound])
         else:
             """The convolve method does not quite do the right thing, it
@@ -168,10 +172,17 @@ class B22_stencil(FD_stencil):
 class FD_diffop(object):
     name = "FD_diffop"
 
-    def __call__(self,u,dx):
+    def __init__(self):
+        self.log = logging.getLogger('FD')
+
+    def __call__(self, u, dx):
         ru = self.central(u)
         for i,b in self.boundaries:
-            ru[i] = b(u,apply_at = i)
+            if __debug__:
+                self.log.debug(
+                    "Applying boundary: i = " + repr(i) + ", b = " + repr(b)
+                )
+            ru[i] = b(u, apply_at = i)
         return ru/(dx**self.order)
 
     def __str__(self):
