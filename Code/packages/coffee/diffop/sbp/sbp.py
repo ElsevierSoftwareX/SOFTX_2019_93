@@ -39,34 +39,34 @@ class SBP(object):
 
     def __call__(self, u, dx, boundary_ID=None):
         r,c = self.bdyRegion
-        #if __debug__:
-            #self.log.info("u.shape[0] = %s"%repr(u.shape[0]))
-            #self.log.info("c = %s"%repr(c))
+        if __debug__:
+            self.log.debug("u.shape[0] = %s"%repr(u.shape[0]))
+            self.log.debug("c = %s"%repr(c))
         if u.shape[0] + 1 <= 2 * c:
             self.log.error("Domain too small for application of operator")
             raise ValueError("Domain too small for application of operator")
-#        if __debug__:
-#            self.log.debug("Boundary region r = %s, c = %s"%(r,c))
-#            self.log.debug("Array to operate on is = %s"%repr(u))
+        if __debug__:
+            self.log.debug("Boundary region r = %s, c = %s"%(r,c))
+            self.log.debug("Array to operate on is = %s"%repr(u))
         du = np.zeros_like(u)
         du = np.convolve(u, self.A, mode='same')
-#        if __debug__:
-#            self.log.debug("After convolve: du = %s"%repr(du))
+        if __debug__:
+            self.log.debug("After convolve: du = %s"%repr(du))
         if boundary_ID is None:
             du[0:r] = np.dot(self.Ql, u[0:c])
             du[-r:] = np.dot(self.Qr, u[-c:])
-#            if __debug__:
-#                self.log.debug("Applying both boundary region computation")
+            if __debug__:
+                self.log.debug("Applying both boundary region computation")
         elif boundary_ID == grid.LEFT:
             du[0:r] = np.dot(self.Ql, u[0:c])
-#            if __debug__:
-#                self.log.debug("Applying left boundary region computation")
+            if __debug__:
+                self.log.debug("Applying left boundary region computation")
         elif boundary_ID == grid.RIGHT:
             du[-r:] = np.dot(self.Qr, u[-c:])
-#            if __debug__:
-#                self.log.debug("Applying right boundary region computation")    
-#        if __debug__:
-#            self.log.debug("After boundary conditions: du = %s"%repr(du))
+            if __debug__:
+                self.log.debug("Applying right boundary region computation")    
+        if __debug__:
+            self.log.debug("After boundary conditions: du = %s"%repr(du))
         return du/(dx**self.order)
 
     def penalty_boundary(self, dx, vector_selection):
@@ -109,7 +109,7 @@ class SBP(object):
         currently.
         """
         if vector_selection == 1 or vector_selection == "right":
-            return self.gNN* self.pbound[::-1] / dx
+            return self.gNN * self.pbound[::-1] / dx
         elif vector_selection == 0 or vector_selection == "left":
             return self.g00 * self.pbound / dx
         else:
@@ -159,9 +159,6 @@ class D21_CNG(SBP):
         Q[0,0] = -1
         Q[0,1] = 1.0
         Q[0,2] = 0.0
-        
-        #self.g00 = -1
-        #self.gnn = 1
         
         Q[1,0] = -1.0
         Q[1,1] = 0.0
@@ -543,7 +540,7 @@ class D65_min_err(SBP):
 
 
 
-    def __init__(self,log):
+    def __init__(self, log):
         self.Qr = -self.Ql[::-1,::-1]
         self.order = 1
         self.pbound = np.array([1/4.930709842221048])
