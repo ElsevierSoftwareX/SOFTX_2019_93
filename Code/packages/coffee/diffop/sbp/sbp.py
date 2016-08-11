@@ -19,6 +19,18 @@ import logging
 ################################################################################
 # Base class for SBP operators
 ################################################################################
+BOUNDARY_TYPE_SAT = 0
+BOUNDARY_TYPE_GHOST_POINTS = 1
+
+def validate_boundary_type(boundary_type):
+    if boundary_type == BOUNDARY_TYPE_SAT or \
+        boundary_type == BOUNDARY_TYPE_GHOST_POINTS:
+        return boundary_type
+    raise ValueError("Invalid BOUNDARY_TYPE for SBP encountered.")
+
+################################################################################
+# Base class for SBP operators
+################################################################################
 
 class SBP(object):
     """The values of g_{00} and g_{NN} given here
@@ -32,13 +44,17 @@ class SBP(object):
     gNN = 1.
     pbound = None
 
-    def __init__(self):
+
+    def __init__(self, boundary_type=BOUNDARY_TYPE_SAT):
+        """SBP operators can use different methods to handle internal boundaries
+        caused by running the code via mpi."""
         self.bdyRegion = self.Ql.shape
         self.w = self.A.shape[0]//2
         self.log = logging.getLogger('SBP')
+        self.boundary_type = validate_boundary_type(boundary_type)
 
     def __call__(self, u, dx, boundary_ID=None):
-        r,c = self.bdyRegion
+        r, c = self.bdyRegion
         if __debug__:
             self.log.debug("u.shape[0] = %s"%repr(u.shape[0]))
             self.log.debug("c = %s"%repr(c))
@@ -118,11 +134,21 @@ class SBP(object):
 
     def ghost_points(self):
         """Ghost points required for the penalty boundary method."""
-        return 0, 1
+        if self.boundary_type == BOUNDARY_TYPE_GHOST_POINTS:
+            r, _ = self.bdyRegion
+            return r, r
+        if self.boundary_type == BOUNDARY_TYPE_SAT:
+            return 0, 1
+        raise ValueError("Unknown boundary type encountered.")
 
     def internal_points(self):
         """Internal points required for the penalty boundary method."""
-        return 1, 1
+        if self.boundary_type == BOUNDARY_TYPE_GHOST_POINTS:
+            r, _ = self.bdyRegion
+            return r, r
+        if self.boundary_type == BOUNDARY_TYPE_SAT:
+            return 1, 1
+        raise ValueError("Unknown boundary type encountered.")
         
     def __str__(self):
         return "Differential operator "%self.name
@@ -148,7 +174,7 @@ class D21_CNG(SBP):
     The inner product is the identity.
     """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
 
         self.A = -np.array([-1.0/2, 0.0, 1.0/2])
         self.name = "D21_CNG"
@@ -177,7 +203,7 @@ class D21_CNG(SBP):
         self.Ql = np.dot(Pinv,Q)
         self.Qr = -self.Ql[::-1,::-1]
         
-        super(D21_CNG, self).__init__()
+        super(D21_CNG, self).__init__(*args, **kwargs)
 
 ################################################################################
 # Fourth order accurate differential operators
@@ -199,7 +225,7 @@ class D42(SBP):
        Note the additional factors included below.
     """
     
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         self.name = "D42"
         self.order = 1
         self.A = np.array([-1./12.,2./3.,0.,-2./3.,1./12.])
@@ -212,7 +238,7 @@ class D42(SBP):
         #P is the identity, H is as given above
         self.pbound = np.array([48./17])
         self.bdyRegion = self.Ql.shape
-        super(D42, self).__init__()
+        super(D42, self).__init__(*args, **kwargs)
 
 
 class D43_Tiglioetal(SBP):
@@ -237,7 +263,7 @@ class D43_Tiglioetal(SBP):
     of Strand we get,
     h_00 = 4.186595269326998 = x_1.
     """
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         self.name = "D43_Tiglioetal"
         self.order = 1
         self.A = np.array([-1./12., 2./3., 0., -2./3., 1./12.])
@@ -291,7 +317,7 @@ class D43_Tiglioetal(SBP):
         # P is the identity.
         self.pbound = np.array([4.186595370392226897362216859769846226369])
         #self.pbound = np.array([1/4.186595269326998])
-        super(D43_Tiglioetal, self).__init__()
+        super(D43_Tiglioetal, self).__init__(*args, **kwargs)
         
 
 
@@ -306,7 +332,7 @@ class D43_CNG(SBP):
     A = np.array([-1./12., 2./3., 0., -2./3., 1./12.])
     name = "D43_CNG"
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         
         self.order = 1
         a = self.r1
@@ -379,7 +405,7 @@ class D43_CNG(SBP):
         #       [6, 5, 4],
         #       [3, 2, 1]])
         
-        super(D43_CNG, self).__init__()
+        super(D43_CNG, self).__init__(*args, **kwargs)
         
 
 class D43_Strand(SBP):
@@ -393,7 +419,7 @@ class D43_Strand(SBP):
     A = np.array([-1./12.,2./3.,0.,-2./3.,1./12.])
     name = "D43_Strand"
     
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         self.order = 1
         Q = np.mat(np.zeros((5,7)))
         Q[0,0] = -11.0/6
@@ -436,7 +462,7 @@ class D43_Strand(SBP):
         self.Qr = -self.Ql[::-1,::-1]
         self.pbound = np.array([11./3])
         
-        super(D43_Strand, self).__init__()
+        super(D43_Strand, self).__init__(*args, **kwargs)
 
 
 
@@ -540,11 +566,11 @@ class D65_min_err(SBP):
 
 
 
-    def __init__(self, log):
+    def __init__(self, *args, **kwargs):
         self.Qr = -self.Ql[::-1,::-1]
         self.order = 1
         self.pbound = np.array([1/4.930709842221048])
-        super(D65_min_err, self).__init__(log)
+        super(D65_min_err, self).__init__(*args, **kwargs)
 
 ################################################################################
 # Second Derivative - Second Order SBP operators
@@ -560,7 +586,7 @@ class D43_2_CNG(SBP):
     A = np.array([-1./12.,16./12.,-30./12.,16./12.,-1./12.])
     name = "D43_2_CNG"
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         
         self.order = 2
         a = self.r1
@@ -614,4 +640,4 @@ class D43_2_CNG(SBP):
         self.Ql = Ql
         self.Qr = self.Ql[::-1,::-1]
         
-        super(D43_2_CNG, self).__init__()
+        super(D43_2_CNG, self).__init__(*args, **kwargs)
