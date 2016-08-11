@@ -105,6 +105,20 @@ class ABCBoundary(object):
 
         # -1 to account for first dimension of shape being number of data 
         # components
+        if __debug__:
+            self.log.debug("Shape = " + repr(shape))
+            self.log.debug("neg_slices = " + repr(
+                [
+                    (i, -1, self.external_slice(shape, i, -1)) 
+                    for i in range(len(shape) - 1 ) 
+                ]
+            ))
+            self.log.debug("pos_slices = " + repr(
+                [
+                    (i, 1, self.external_slice(shape, i, 1)) 
+                    for i in range(len(shape) - 1 ) 
+                ]
+            ))
         neg_slices = [
             (i, -1, self.external_slice(shape, i, -1)) 
             for i in range(len(shape) - 1 ) 
@@ -113,7 +127,7 @@ class ABCBoundary(object):
         pos_slices = [
             (i, 1, self.external_slice(shape, i, 1)) 
             for i in range(len(shape) - 1)
-            if self.external_slice(shape, i , -1) != self._empty_slice(len(shape))
+            if self.external_slice(shape, i , 1) != self._empty_slice(len(shape))
         ]
         return pos_slices + neg_slices
  
@@ -150,6 +164,7 @@ class MPIBoundary(ABCBoundary):
         self._ghost_points = ghost_points
         self._internal_points = internal_points
         self.mpi_comm = mpi_comm
+        self.log = logging.getLogger("MPIBoundary")
 
     def ghost_points(self, dimension, direction):
         return self._ghost_points[dimension][self._direction_to_index(direction)]
