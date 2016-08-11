@@ -18,6 +18,8 @@ from functools import partial
 # import our modules
 from coffee.tslices import tslices
 from coffee.system import System
+from coffee.diffop.fd import ghost_point_processor
+from coffee.diffop.sbp import sbp
 
 def sbp_ghost_point_processor(
         data=None,
@@ -87,12 +89,12 @@ class OneDAdvectionMpi(System):
         #return self.data(t0,r)
     
     def boundaryRight(self,t,Psi):
-        #return 0.5 * math.sin( 
-            #2*math.pi*(t+2) / ( 
-                #Psi.domain.axes[0][-1] - Psi.domain.axes[0][0] 
-                #) 
-            #)
-        return 0.0
+        return 0.5 * math.sin( 
+            2*math.pi*(t+2) / ( 
+                Psi.domain.axes[0][-1] - Psi.domain.axes[0][0] 
+                ) 
+            )
+        #return 0.0
         
     def boundaryLeft(self,t,Psi):
         return 0.0
@@ -120,15 +122,33 @@ class OneDAdvectionMpi(System):
         #First do internal boundaries
         pt_r = self.D.penalty_boundary(dx, "right")
         pt_l = self.D.penalty_boundary(dx, "left")
-        gp_processor = partial(
-            sbp_ghost_point_processor,
-            speed=self.speed,
-            f0=f0,
-            Dtf=Dtf,
-            pt_r=pt_r,
-            pt_l=pt_l,
-            log=self.log
-        )
+        if self.D.boundary_type == sbp.BOUNDARY_TYPE_GHOST_POINTS:
+            gp_processor = partial(
+                ghost_point_processor,
+                log=self.log
+            )
+            if __debug__:
+                self.log.debug("Implementing internal boundary using ghost points")
+            b_values = Psi.communicate(
+                gp_processor,
+                data=np.array([Dtf])
+                )
+        elif self.D.boundary_type == sbp.BOUNDARY_TYPE_SAT:
+            gp_processor = partial(
+                sbp_ghost_point_processor,
+                speed=self.speed,
+                f0=f0,
+                Dtf=Dtf,
+                pt_r=pt_r,
+                pt_l=pt_l,
+                log=self.log
+            )
+            if __debug__:
+                self.log.debug("Implementing internal boundary using sat")
+            b_values = Psi.communicate(gp_processor)
+        else:
+            raise Exception("Unknown boundary type encountered")
+
         if __debug__:
             self.log.debug("Implementing internal boundary")
         b_values = Psi.communicate(gp_processor)
@@ -152,7 +172,7 @@ class OneDAdvectionMpi(System):
                 if __debug__:
                     self.log.debug("Doing external boundary on left")
                 Dtf[:pt_l.size] -= tau * self.speed * (
-                    f0[0] - self.boundaryLeft(t,Psi)
+                    f0[0] - self.boundaryRight(t,Psi)
                     ) * pt_l
         
         if __debug__:

@@ -114,20 +114,9 @@ tau = 1
 
 # Select diffop
 #raxis_1D_diffop = sbp.D43_Strand()
-#raxis_1D_diffop = fd.FD12()
-#raxis_1D_diffop = fd.FD14()
-raxis_1D_diffop = sbp.D42()
+raxis_1D_diffop = sbp.D42(sbp.BOUNDARY_TYPE_GHOST_POINTS)
 #raxis_1D_diffop = sbp.D43_Tiglioetal()
 #raxis_1D_diffop = sbp.D43_CNG()
-#raxis_1D_diffop = fft.FFT_diff_scipy(1,xstop-xstart)
-#raxis_1D_diffop = fft.FFTW(1,xstop-xstart)
-#raxis_1D_diffop = fft.FFTW_real(1,xstop-xstart)
-#raxis_1D_diffop = fft.FFTW_convolve(1,xstop-xstart)
-#raxis_1D_diffop = fft.FFT(1,xstop-xstart)
-#raxis_1D_diffop = fft.RFFT(1)
-#raxis_1D_diffop = fft.FFT_scipy(1,xstop-xstart)
-#raxis_1D_diffop = fft.RFFT_scipy(1)
-#raxis_1D_diffop = fft.FFT_lagrange1(N,xstop-xstart)
 
 # Configuration of IBVP
 maxIteration = 1000000
