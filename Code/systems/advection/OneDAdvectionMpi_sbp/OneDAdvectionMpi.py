@@ -91,7 +91,7 @@ class OneDAdvectionMpi(System):
     def boundaryRight(self,t,Psi):
         return 0.5 * math.sin( 
             2*math.pi*(t+2) / ( 
-                Psi.domain.axes[0][-1] - Psi.domain.axes[0][0] 
+                Psi.domain.bounds[0][-1] - Psi.domain.bounds[0][0]
                 ) 
             )
         #return 0.0
@@ -118,6 +118,8 @@ class OneDAdvectionMpi(System):
         ########################################################################
         Dxf = np.real(self.D(f0,dx))
         Dtf = self.speed * Dxf
+        if __debug__:
+            self.log.debug("Derivatives without boundary implementation is Dtf = %s"%repr(Dtf))
         
         #First do internal boundaries
         pt_r = self.D.penalty_boundary(dx, "right")
@@ -129,7 +131,7 @@ class OneDAdvectionMpi(System):
             )
             if __debug__:
                 self.log.debug("Implementing internal boundary using ghost points")
-            b_values = Psi.communicate(
+            new_derivative, _ = Psi.communicate(
                 gp_processor,
                 data=np.array([Dtf])
                 )
@@ -145,13 +147,10 @@ class OneDAdvectionMpi(System):
             )
             if __debug__:
                 self.log.debug("Implementing internal boundary using sat")
-            b_values = Psi.communicate(gp_processor)
+            new_derivative, _ = Psi.communicate(gp_processor)
         else:
             raise Exception("Unknown boundary type encountered")
-
-        if __debug__:
-            self.log.debug("Implementing internal boundary")
-        b_values = Psi.communicate(gp_processor)
+        Dtf = new_derivative[0]
 
         #Now do the external boundaries
         if __debug__:
@@ -180,13 +179,6 @@ class OneDAdvectionMpi(System):
                 Dtf = %s"""%\
                 (repr(Dtf)))
 
-        ########################################################################
-        # Impose boundary conditions 
-        ########################################################################
-        #Dtf[-1]= 0.#self.boundaryRight(t,Psi)
-        #Dtf[0]= self.boundaryLeft(t,Psi)
-        #Dtf[-1] = Dtf[0]
-                
         # now all time derivatives are computed
         # package them into a time slice and return
         rtslice = tslices.TimeSlice(np.array([Dtf]), Psi.domain, time=t)

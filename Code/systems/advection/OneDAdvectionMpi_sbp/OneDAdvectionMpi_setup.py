@@ -55,7 +55,7 @@ if store_output:
     args.logf = os.path.splitext(args.f)[0]+"%d"%MPI.COMM_WORLD.rank+".log"
 
 # Set up logger
-file_log_level = logging.INFO
+file_log_level = logging.DEBUG
 file_logging_format = '%(filename)s:%(lineno)d - %(levelname)s: %(message)s'
 console_logging_format = repr(MPI.COMM_WORLD.rank) + ":" + file_logging_format
 if store_output and not display_output:
