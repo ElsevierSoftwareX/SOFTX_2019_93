@@ -107,18 +107,6 @@ class ABCBoundary(object):
         # components
         if __debug__:
             self.log.debug("Shape = " + repr(shape))
-            self.log.debug("neg_slices = " + repr(
-                [
-                    (i, -1, self.external_slice(shape, i, -1)) 
-                    for i in range(len(shape) - 1 ) 
-                ]
-            ))
-            self.log.debug("pos_slices = " + repr(
-                [
-                    (i, 1, self.external_slice(shape, i, 1)) 
-                    for i in range(len(shape) - 1 ) 
-                ]
-            ))
         neg_slices = [
             (i, -1, self.external_slice(shape, i, -1)) 
             for i in range(len(shape) - 1 ) 
@@ -129,6 +117,8 @@ class ABCBoundary(object):
             for i in range(len(shape) - 1)
             if self.external_slice(shape, i , 1) != self._empty_slice(len(shape))
         ]
+        if __debug__:
+            self.log.debug("external slices are = " + repr(pos_slices + neg_slices))
         return pos_slices + neg_slices
  
 
