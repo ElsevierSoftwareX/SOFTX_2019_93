@@ -322,7 +322,7 @@ class ABCGrid(object):
 
     def communicate(self, data, ghost_point_processor=None):
         if self.mpi is None:
-            return []
+            return data
         b_values = self.mpi.communicate(data, self.boundary_data)
         if ghost_point_processor:
             ghost_point_processor(data, b_values)
