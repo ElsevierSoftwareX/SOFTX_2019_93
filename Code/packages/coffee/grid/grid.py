@@ -86,18 +86,19 @@ class ABCBoundary(object):
         This is a convience method to make iteration over external
         boundaries easy for the user."""
 
-        # -1 to account for first dimension of shape being number of data 
-        # components
+        # This implicitly assumes that the number of dimensions handled by
+        # the grid object is the same as than managed by the mpi_comm
+        dims = self.mpi_comm.Get_dim()
         if __debug__:
             self.log.debug("Shape = " + repr(shape))
         neg_slices = [
             (i, -1, self.external_slice(shape, i, -1)) 
-            for i in range(len(shape) - 1 ) 
+            for i in range(dims) 
             if self.external_slice(shape, i , -1) != self._empty_slice(len(shape))
         ]
         pos_slices = [
             (i, 1, self.external_slice(shape, i, 1)) 
-            for i in range(len(shape) - 1)
+            for i in range(dims)
             if self.external_slice(shape, i , 1) != self._empty_slice(len(shape))
         ]
         if __debug__:
