@@ -56,23 +56,6 @@ class ABCBoundary(object):
         neighbouring grids."""
         return self._empty_slice(shape)
 
-    def internal_slices(self, shape):
-        """Returns a list of tuples. Each tuple contains an integer,
-        representing the dimension, a direction and the result of 
-        calling internal_slice(dimension, direction).
-
-        This is a convience method to make iteration over external
-        boundaries easy for the user."""
-        neg_slices = [
-            (i, -1, self.internal_slice(shape, i, -1)) 
-            for i in range(self.number_of_dimensions)
-        ]
-        pos_slices = [
-            (i, 1, self.internal_slice(shape, i, 1)) 
-            for i in range(self.number_of_dimensions)
-        ]
-        return pos_slices + neg_slices
-
     @abc.abstractmethod
     def external_slice(self, shape, dimension, direction):
         """
@@ -283,9 +266,6 @@ class GeneralBoundary(ABCBoundary):
 
     def ghost_points(self, dimension, direction):
         return self._ghost_points[dimension][self._direction_to_index(direction)]
-
-    def internal_slices(self, shape, dimension, direction):
-        return self._internal_slices[dimension][self._direction_to_index(direction)]
 
     def external_slices(self, shape, dimension, direction):
         return self._external_slices[dimension][self._direction_to_index(direction)]
