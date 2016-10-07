@@ -127,6 +127,7 @@ class DomainDataGroup(DataGroup):
 # These represent the types of data that a simulation knows about.
 dgTypes = {
     "raw":"Raw_Data",
+    "constraints":"Constraints",
     "exact":"Exact_Data",
     "errorNum":"Error_Numeric",
     "errorExa":"Error_Exact",
