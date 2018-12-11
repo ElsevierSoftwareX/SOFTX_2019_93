@@ -98,6 +98,8 @@ class IBVP:
         if __debug__:    
             self.log.debug("self.actions is %s"%repr(self.theActions))
             self.log.debug("Initial data is = %s"%repr(u))
+        # Run the actions.
+        self._run_actions(t, u)
         advance = self.theSolver.advance
         computation_valid = True
         while(computation_valid and t < tstop):
@@ -136,8 +138,6 @@ class IBVP:
             if __debug__: 
                 self.log.debug("Using timestep dt = %f"%dt)
            
-            # Run the actions.
-            self._run_actions(t, u)
 
             if __debug__:
                 self.log.debug(
