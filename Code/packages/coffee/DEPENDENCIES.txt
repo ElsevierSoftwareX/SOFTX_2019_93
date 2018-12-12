@@ -1,9 +1,7 @@
-h5py.py
-hdf libraries
-scipy
-numpy
-Gnuplotpy and MatplotLib if visualisation code will be run
-fftw3 c library
-pyFFTW
 fitsio c library
 chealpix c library
+
+mpich or open-mpi
+pyFFTW
+gnuplot + appropriate terminal if needed.
+hdf library
