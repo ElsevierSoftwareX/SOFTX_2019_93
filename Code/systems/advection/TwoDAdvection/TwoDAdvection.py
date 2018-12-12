@@ -128,8 +128,8 @@ class TwoDadvection(System):
         #First do internal boundaries
         if __debug__:
             self.log.debug("Implementing internal boundaries")
-        #import pdb; pdb.set_trace()
-        b_values = Psi.communicate()
+        _, b_values = Psi.communicate() # compare to OneDAdvection for an 
+                                        # alternative way to handle this.
         if __debug__:
             self.log.debug("b_values = %s"%repr(b_values))
         for d_slice, data in b_values:
@@ -189,7 +189,7 @@ class TwoDadvection(System):
         #Now do the external boundaries
         if __debug__:
             self.log.debug("Implementing external boundary")
-        b_data = Psi.boundary_slices()
+        b_data = Psi.external_slices()
         if __debug__:
             self.log.debug("b_data = %s"%repr(b_data))
         for dim, direction, d_slice in b_data:

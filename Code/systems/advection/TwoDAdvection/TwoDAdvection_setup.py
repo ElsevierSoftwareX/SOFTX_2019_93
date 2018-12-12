@@ -89,7 +89,7 @@ log.info("Starting configuration.")
 log.info("Initialising mpi.cart_comm")
 dims_list = [0,0]
 dims = MPI.Compute_dims(MPI.COMM_WORLD.size, dims_list)
-periods = [0,0]
+periods = [1,1]
 reorder = True
 mpi_comm = MPI.COMM_WORLD.Create_cart(dims, periods=periods, reorder=reorder)
 log.info("Initialisation of mpi.cart_comm complete")
@@ -114,7 +114,7 @@ ystop = 2
 
 # Times to run between
 tstart = 0.0
-tstop = 2
+tstop = 1.5
 
 # Configuration of System
 CFLs = [0.5 for i in range(num_of_grids)]
@@ -145,14 +145,30 @@ maxIteration = 1000000
 # Grid point data      
 axes = [(Nx*2**i,Ny*2**i) for i in range(num_of_grids)]
 
+# Determine the boundary data
+ghost_points = (xaxis_1D_diffop.ghost_points(), yaxis_1D_diffop.ghost_points())
+internal_points = (
+    xaxis_1D_diffop.internal_points(),
+    yaxis_1D_diffop.internal_points(), 
+)
+b_data = grid.MPIBoundary(
+    ghost_points, 
+    internal_points, 
+    mpi_comm=mpi_comm, 
+    number_of_dimensions=2
+)
+
 # Build grids
 grids = [
     grid.UniformCart(
         axes[i], 
-    [(xstart,xstop), (ystart, ystop)],
-    comparison = i,
-    mpi_comm = mpi_comm
-    ) for i in range(num_of_grids)]
+        [(xstart,xstop), (ystart, ystop)],
+        comparison = i,
+        mpi_comm = mpi_comm,
+        boundary_data=b_data
+    ) 
+    for i in range(num_of_grids)
+]
 
 ################################################################################
 # Print logging information
@@ -232,23 +248,29 @@ for i,system in enumerate(systems):
         #Construct Actions
         actionList = []
         if display_output and mpi_comm.rank == 0:
-            actionList += [gp_plotter.Plotter2D(\
-                *gnu_plot_settings,frequency = 1,\
-                system = system\
-                )]
+            actionList += [gp_plotter.Plotter2D(
+                *gnu_plot_settings,
+                frequency = 1,
+                system = system
+            )]
         if store_output and mpi_comm.Get_rank() == 0:
-            actionList += [actions.SimOutput(\
-                hdf_file,\
-                RKsolvers[i], \
-                system, \
-                grids[i], \
-                output_actions,\
-                overwrite = True,\
-                name = grids[i].name,\
-                cmp_ = grids[i].comparison\
+            actionList += [actions.SimOutput(
+                hdf_file,
+                RKsolvers[i], 
+                system, 
+                grids[i], 
+                output_actions,
+                overwrite = True,
+                name = grids[i].name,
+                cmp_ = grids[i].comparison
                 )]
-        problem = ibvp.IBVP(RKsolvers[i], system, grid = grids[i],\
-                maxIteration = maxIteration, action = actionList)
+        problem = ibvp.IBVP(
+            RKsolvers[i], 
+            system, 
+            grid = grids[i],
+            maxIteration = maxIteration, 
+            action = actionList
+        )
         problem.run(tstart, tstop)
         log.info("Run %i complete"%i)
 log.info("Simulation complete")
