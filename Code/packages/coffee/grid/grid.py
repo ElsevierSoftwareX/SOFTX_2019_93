@@ -336,13 +336,14 @@ class ABCGrid(object):
         grid_shape = tuple([axis.size for axis in axes])
         mesh = []
         for i, axis in enumerate(axes):
-            strides = np.zeros((len(self.shape), ))
+            strides = np.zeros((len(self.shape), ), dtype=int)
             strides[i] = axis.itemsize
             mesh += [np.lib.stride_tricks.as_strided(
                 axis,
                 grid_shape,
-                strides)
-                ]
+                strides,
+                writeable=False
+            )]
         return mesh
 
 ################################################################################
@@ -365,7 +366,7 @@ class UniformCart(ABCGrid):
                 _shape, 
                 kwds.get("boundary_data", None),
                 mpi_comm=mpi_comm, 
-                )
+            )
         if name is None:
             name = "UniformCart%s%s%s"%(shape, bounds, comparison)
         super(UniformCart, self).__init__(
