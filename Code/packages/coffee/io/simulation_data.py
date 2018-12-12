@@ -1,6 +1,5 @@
 import functools
 import h5py
-import cPickle
 import numpy as np
 import Gnuplot
 import time
@@ -8,14 +7,6 @@ import sys
 import logging 
 import math 
 import importlib
-
-sys.path.append("../../EvolutionSBP/")
-#import system
-#import ibvp
-#import diffop
-#import actions
-#import solvers
-#import simulation_data
 
 NUMERICAL_TOLERANCE = 1e-14
 #Important configuration is included after these two classes
@@ -486,20 +477,6 @@ class SimulationHDF(object):
         for key,value in self.derivedAttrs.items():
             dg[it].attrs[key] = value
 
-        
-def binarysearch(a,low,high,value):
-    if high<low:
-        return -1
-    mid = int(low +(high-low)/2.)
-    if mid ==0:
-        return 0
-    if value<=a[mid-1]:
-        return binarysearch(a,low,mid,value)
-    elif value>a[mid]:
-        return binarysearch(a,mid+1,high,value)
-    else:
-        return mid  
-        
 # array_value_index_mapping takes two arrays and returns a list of pairs
 # of indices (index1,index2) so that correct[index1] = comparison[index2]
 # this is very useful when performing error calculations
