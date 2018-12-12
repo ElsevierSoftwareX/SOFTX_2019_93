@@ -43,6 +43,7 @@ if store_output and args.f is None:
     
 # log file settings
 if store_output:
+    file_name = os.path.splitext(args.f)[0]+".hdf"
     args.logf = os.path.splitext(args.f)[0]+".log"
 
 # Set up logger
@@ -128,8 +129,7 @@ grids = [grid.UniformCart((raxis_gdp[i],), [(xstart, xstop)],\
 # Print logging information
 ################################################################################
 if log.isEnabledFor(logging.DEBUG):
-    log.debug("HDF file location = %s"%file_location)
-    log.debug("HDF file root name = %s"%file_name)
+    log.debug("HDF file = %s"%args.f)
     log.debug("Start time = %f"%tstart)
     log.debug("Stop time = %f"%tstop)
     log.debug("CFLs are = %s"%repr(CFLs))
