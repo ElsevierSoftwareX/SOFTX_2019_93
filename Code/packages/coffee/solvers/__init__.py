@@ -1,3 +1,3 @@
-from solvers import ABCSolver, Euler, RungeKutta4, rk45
+from solvers import ABCSolver, Euler, RungeKutta4
 
 del solvers
