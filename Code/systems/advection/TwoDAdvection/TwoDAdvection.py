@@ -151,15 +151,17 @@ class TwoDadvection(System):
             x_chara = self.xcoef
             y_chara = self.ycoef
             if x_chara > 0:
-                sigma3x = 0
+                sigma3x = 0.25
+                sigma1x = sigma3x - 1
             else:
-                sigma3x = 1
-            sigma1x = sigma3x - 1
+                sigma1x = 0.25
+                sigma3x = sigma1x - 1
             if y_chara > 0:
-                sigma1y = 0
+                sigma3y = 0.25
+                sigma1y = sigma3y - 1
             else:
-               sigma1y = 1
-            sigma3y = sigma1y - 1
+                sigma1y = 0.25
+                sigma3y = sigma1y - 1
             if d_slice[1] == slice(-1, None, None):
                 if __debug__:
                     self.log.debug("Calculating right x boundary")
@@ -176,13 +178,13 @@ class TwoDadvection(System):
                 if d_slice[2] == slice(-1, None, None):
                     if __debug__:
                         self.log.debug("Calculating right y boundary")
-                    Dyf[-pt_y_r_shape:] += sigma1y * y_chara * pt_y_r * (
+                    Dyf[:,-pt_y_r_shape:] += sigma1y * y_chara * pt_y_r * (
                             f0[d_slice[1:]] - data[0]
                         )
                 elif d_slice[2] == slice(None, 1, None):
                     if __debug__:
                         self.log.debug("Calculating left y boundary")
-                    Dyf[:pt_y_l_shape] += sigma3y * y_chara * pt_y_l * (
+                    Dyf[:,:pt_y_l_shape] += sigma3y * y_chara * pt_y_l * (
                             f0[d_slice[1:]] - data[0]
                             )
 
