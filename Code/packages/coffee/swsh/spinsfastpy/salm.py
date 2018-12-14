@@ -1,7 +1,7 @@
 """ 
 This module is part of spinsfastpy. Please see the package documentation. It
 contains an object which represents the spherical harmonic coefficients of a 
-function defined on S^2. Internally it provides python bindings for revision 90 
+function defined on S^2. Internally it provides python bindings for revision 104
 of the methods listed in alm.h from Huffenberger's & Wandelt's spinsfast code. 
 See "Fast and exact spin-s Spherical Harmonic Transformations" in Astrophysical 
 Journal Supplement Series (2010) 189:255-260. All references to sections, 
@@ -14,37 +14,24 @@ harmonic coefficients along with some meta data.
 The module also contains bindings to the methods given in the file alm.h 
 contained in Huffenberger's & Wandelt's spinsfast code.
 
-Copyright 2012
+Copyright 2018
 Ben Whale 
 version 3 - GNU General Public License
 <http://www.gnu.org/licenses/>
 """
 # future imports
-from __future__ import division
+from __future__ import division, absolute_import
 
 # Standard libraries
-import ctypes
 import numpy as np
 import math
-import os
-import inspect
-from abc import ABCMeta
 import logging
 
 # Package internal imports
 from coffee.swsh import w3j
 from coffee.swsh import clebschgordan as cg_mod
 from coffee.swsh import salm
-
-# load a shared object library version of spinsfast
-sf = ctypes.CDLL(
-         os.path.abspath(
-             os.path.join(
-                 os.path.dirname(inspect.getfile(inspect.currentframe())),
-                 "..", "lib", "libspinsfast.so.1"
-                 )
-             )
-         )
+from coffee.swsh.index_utilities import lm_ind, ind_lm, lmax_Nlm
 
 class sfpy_salm(np.ndarray):
     
@@ -78,13 +65,13 @@ class sfpy_salm(np.ndarray):
         # no error checking is currently done to test if s>=l. Be warned.
         spins = np.asarray(spins)
         if len(array.shape) == 1:
-            if spins.shape is () and array.shape[0] == _lmax_Nlm(lmax):
+            if spins.shape is () and array.shape[0] == lmax_Nlm(lmax):
                 obj = np.asarray(array).view(cls)
             else:
                 raise ValueError("Mal-formed array and shape for lmax")
         elif len(array.shape) == 2:
             if spins.shape[0] == array.shape[0] \
-                and array.shape[1] == _lmax_Nlm(lmax):
+                and array.shape[1] == lmax_Nlm(lmax):
                 obj = np.asarray(array).view(cls)
             else:
                 raise ValueError("Mal-formed array and shape for lmax")
@@ -146,13 +133,15 @@ class sfpy_salm(np.ndarray):
         self.bl_mult = bool
 
     def __getslice__(self, start, stop):
-        """Thiss solves a subtle bug, where __getitem__ is not called, and all
+        """This solves a subtle bug, where __getitem__ is not called, and all
         the dimensional checking not done, when a slice of only the first
         dimension is taken, e.g. a[1:3]. From the Python docs:
         Deprecated since version 2.0: Support slice objects as parameters
         to the __getitem__() method. (However, built-in types in CPython
         currently still implement __getslice__(). Therefore, you have to
         override it in derived classes when implementing slicing.)
+
+        See: https://stackoverflow.com/questions/14553485/numpy-getitem-delayed-evaluation-and-a-1-not-the-same-as-aslice-1-none
         """  
         return self.__getitem__(slice(start, stop))
 
@@ -265,11 +254,11 @@ class sfpy_salm(np.ndarray):
             raise ValueError("Unable to infer the dtype of the result of\
             addition")
         array = np.zeros(
-            (spins.shape[0], _lmax_Nlm(lmax)), 
+            (spins.shape[0], lmax_Nlm(lmax)), 
             dtype=dtype
             )
-        s_len = _lmax_Nlm(self.lmax)
-        o_len = _lmax_Nlm(other.lmax)
+        s_len = lmax_Nlm(self.lmax)
+        o_len = lmax_Nlm(other.lmax)
 
         #Do computation
         for i, spin in enumerate(spins):
@@ -366,7 +355,7 @@ class sfpy_salm(np.ndarray):
             raise ValueError("Unable to infer the dtype of the result of\
             multiplication")
         array = np.zeros( 
-            (spins.shape[0], _lmax_Nlm(lmax)), 
+            (spins.shape[0], lmax_Nlm(lmax)), 
             dtype=dtype 
             )
         # Do the calculation already!
@@ -375,11 +364,11 @@ class sfpy_salm(np.ndarray):
                 s = self_s + other_s
                 s_index = np.where(spins==s)[0][0]
                 for k, self_salm in enumerate(s_array[self_s_index]):
-                    self_j, self_m = _ind_lm(k)
+                    self_j, self_m = ind_lm(k)
                     if self_j < abs(self_s):
                         continue
                     for l, other_salm in enumerate(o_array[other_s_index]):
-                        other_j, other_m = _ind_lm(l)
+                        other_j, other_m = ind_lm(l)
                         if other_j < abs(other_s):
                             continue
                         m = self_m + other_m
@@ -402,7 +391,7 @@ class sfpy_salm(np.ndarray):
                                 self.cg(
                                     self_j, -self_s, other_j, -other_s, j, -s
                                 )
-                            jm_index = _lm_ind(j, m)
+                            jm_index = lm_ind(j, m)
 #                            print "(j,m) = (%d, %d)"%(j,m)
 #                            print "(s_index, jm_index) = (%d, %d)"%(s_index,jm_index)
 #                            print "value is %f"%(first_f * second_f \
@@ -427,7 +416,7 @@ salm.Salm.register(sfpy_salm)
 
 def _convert_lm_key(key, lmax):
     if isinstance(key, int):
-        l_ind = _lm_ind(key[0],-key[0])
+        l_ind = lm_ind(key[0],-key[0])
         return slice(l_ind, l_ind + 2*key[0] +1)
     elif isinstance(key, slice):
         if key == slice(None, None, None):
@@ -446,17 +435,17 @@ def _convert_lm_key(key, lmax):
             raise IndexError("The order index cannot be a slice")
         elif key[0] <= lmax and key[0] >= 0:
             if len(key) == 1:
-                l_ind = _lm_ind(key[0],-key[0])
+                l_ind = lm_ind(key[0],-key[0])
                 return slice(l_ind, l_ind + 2*key[0] +1)
             elif len(key) == 2:
                 if isinstance(key[1], slice):
                     if key[1] == slice(None, None, None):
-                        l_ind = _lm_ind(key[0],-key[0])
+                        l_ind = lm_ind(key[0],-key[0])
                         return slice(l_ind, l_ind + 2*key[0] +1)
                     else:
                         raise IndexError("The degree index cannot be a slice")
                 elif abs(key[1]) <= key[0]:
-                    return _lm_ind(key[0],key[1])
+                    return lm_ind(key[0],key[1])
                 else:
                     raise IndexError("degree out of bounds")
         else:
@@ -504,7 +493,7 @@ class sfpy_sralm(np.ndarray):
         If .... balch
         array.shape[0] = number of spins
         array.shape[1] = number of grid points in the interval
-        array.shape[2] = salm.__lmax_Nlm(lmax)
+        array.shape[2] = salm.lmax_Nlm(lmax)
         
         Arguments:
         array -- the alm array with the structure described in the doc string
@@ -516,13 +505,13 @@ class sfpy_sralm(np.ndarray):
         """
         spins = np.asarray(spins)
         if len(array.shape) == 2:
-            if spins.shape is () and array.shape[1] == _lmax_Nlm(lmax):
+            if spins.shape is () and array.shape[1] == lmax_Nlm(lmax):
                 obj = np.asarray(array).view(cls)
             else:
                 raise ValueError("Mal-formed array and shape for lmax")
         elif len(array.shape) == 3:
             if spins.shape[0] == array.shape[0] and \
-                array.shape[2] == _lmax_Nlm(lmax):
+                array.shape[2] == lmax_Nlm(lmax):
                 obj = np.asarray(array).view(cls)
             else:
                 raise ValueError("Mal-formed array and shape for lmax")
@@ -636,7 +625,7 @@ class sfpy_sralm(np.ndarray):
                     )
         elif len(key) == 2:
             if not isinstance(rv, np.ndarray) or len(rv.shape) < 2 or \
-                rv.shape[1] != _lmax_Nlm(self.lmax):
+                rv.shape[1] != lmax_Nlm(self.lmax):
                 return rv
             else:
                 if rv.shape[0] == 1:
@@ -888,76 +877,9 @@ class sfpy_sralm(np.ndarray):
 
 salm.Salm.register(sfpy_sralm)
 
-def _Nlm_lmax(Nlm):
-    """
-    Returns the maximum l value for which any (l,m) value can be stored in the
-    array.
-    
-    Some care is required with this as the method makes no guarantee that
-    all |m|<=l values can be stored in the array, only that one (in this case
-    m=-l), can be stored in the array.
-    
-    Arguments:
-    Nlm -- the length of the array
-    
-    Returns:
-    lmax -- the maximum l for which at least one m value can be stored in the
-            array
-    """
-    lmax, m = _ind_lm(Nlm-1)
-    return lmax
-
-def _lm_ind(l,m):
-    """
-    Returns an array index given l and m.
-    
-    Binds to the method lm_ind of alm.h.
-    
-    Arguments:
-    l -- an int giving the l value of the needed coefficient
-    m -- an int giving the m value of the needed coefficient
-    
-    Returns:
-    index -- an int giving the index of the array which contains the 
-             coefficient for l and m
-    """
-    return sf.lm_ind(int(l),m,0)
-
-def _ind_lm(i):
-    """
-    Returns l and m given an array index.
-    
-    Binds to the method ind_lm of alm.h.
-    
-    Arguments:
-    index -- an int giving the index of the array which contains the 
-             coefficient for l and m
-    
-    Returns:
-    (l, m) -- a tuple of ints giving the l and m values for the given index
-    """
-    a = ctypes.c_int()
-    b = ctypes.c_int()
-    sf.ind_lm(i, ctypes.byref(a), ctypes.byref(b), 0)
-    return a.value, b.value
-   
-def _lmax_Nlm(lmax):
-    """
-    Returns the maximum array length given the maximum l.
-    
-    Binds to the method N_lm of alm.h.
-    
-    Arguments:
-    lmax -- an int giving the maximum l value
-    
-    Returns:
-    Nlm -- an int giving the array length for alm
-    """
-    return sf.N_lm(lmax)
-    
 if __name__ == "__main__":
     lmax = 2
-    a = np.ones((2,_lmax_Nlm(lmax)))
+    a = np.ones((2,lmax_Nlm(lmax)))
     spins = 2
     p = sfpy_sralm(a, spins, lmax)
     p[-1]
@@ -970,7 +892,7 @@ if __name__ == "__main__":
 
     #lmax = 3
     #spins = -1
-    #Nlmax = _lmax_Nlm(lmax)
+    #Nlmax = lmax_Nlm(lmax)
     #a = np.arange(Nlmax)
     #a[:] =1 
     ##a = np.array([a])
@@ -982,7 +904,7 @@ if __name__ == "__main__":
 
     #lmax = 3
     #spins = -1
-    #Nlmax = _lmax_Nlm(lmax)
+    #Nlmax = lmax_Nlm(lmax)
     #b = np.arange(Nlmax)
     #b = np.array(b)
     #b_salm = sfpy_salm(b, spins, lmax, cg=cg_object)
