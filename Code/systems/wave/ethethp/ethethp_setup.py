@@ -13,7 +13,8 @@ import argparse
 
 #Import standard code base
 from coffee import ibvp, actions, solvers, grid
-from coffee.diffop import fd, fft, sbp
+from coffee.diffop.sbp import sbp
+from coffee.actions import gp_plotter
 
 #import system to use
 import ethethp
@@ -101,7 +102,6 @@ lmax = 3
 diffop = sbp.D43_Strand()
 
 # Configuration of IBVP
-solver = solvers.RungeKutta4()
 maxIteration = 10
 
 ################################################################################
@@ -112,10 +112,14 @@ theta_gdp = [Ntheta*2**i for i in range(num_of_grids)]
 phi_gdp = [Nphi*2**i for i in range(num_of_grids)]
 
 # Build grids
-grids = [grid.S2(
-    (theta_gdp[i], phi_gdp[i]),
-    comparison = theta_gdp[i] * phi_gdp[i]
-    ) for i in range(num_of_grids)]
+grids = [
+    grid.UniformCart(
+        (theta_gdp[i], phi_gdp[i]),
+        [(thetastart, thetastop), (phistart, phistop)],
+        comparison = theta_gdp[i] * phi_gdp[i],
+    ) 
+    for i in range(num_of_grids)
+]
 
 ################################################################################
 # Print logging information
@@ -140,6 +144,11 @@ for i in range(num_of_grids):
         )]
 if __debug__:
     log.debug("Initialisation of systems complete.")
+
+###############################################################################
+# Initialise Solver
+################################################################################
+RKsolvers = [solvers.RungeKutta4(system) for system in systems]
 
 ################################################################################
 # Set up hdf file to store output
@@ -185,25 +194,25 @@ for i,system in enumerate(systems):
     if args.i:
         actionList += [actions.Info()]
     if display_output:
-        actionList += [actions.GNUPlotter2D(
+        actionList += [gp_plotter.Plotter2D(
             *gnu_plot_settings,
             frequency = 1,
             system = system,
             delay = 0.
-            )]
+        )]
     if store_output:
         actionList += [actions.SimOutput(
             hdf_file,
-            solver, 
+            RKsolvers[i], 
             system,
             grids[i], 
             output_actions,
             overwrite = True,
             name = grids[i].name,
             cmp_ = grids[i].comparison
-            )]
+        )]
     log.info("Starting simulation %i with system %s"%(i,repr(system)))
-    problem = ibvp.IBVP(solver, system, grid = grids[i],\
+    problem = ibvp.IBVP(RKsolvers[i], system, grid = grids[i],\
             maxIteration = 1000000, action = actionList)
     problem.run(tstart, tstop)
     log.info("Simulation complete")

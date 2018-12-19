@@ -23,7 +23,7 @@ from coffee.diffop import ghp
 class EthEthp(System):
 
     def timestep(self, grid):
-        ssizes = grid.step_sizes
+        ssizes = grid.domain.step_sizes
         spatial_divisor = (1/ssizes[0])
         dt = self.CFL/spatial_divisor
         return dt
@@ -36,6 +36,7 @@ class EthEthp(System):
         self.eth = ghp.eth()
         self.ethp = ghp.ethp()
         self.lmax = lmax
+        self.numvar = 2
         self.iv_routine = iv_routine
         self.name = """<SpinDwave CLF = %f, iv_routine = %s, lmax = %d>"""%\
             (CFL, iv_routine, lmax)
@@ -50,7 +51,7 @@ class EthEthp(System):
         if __debug__:
             self.log.info("Initial value routine = %s"%self.iv_routine)
         values = getattr(self, self.iv_routine, None)(t, grid)
-        return tslices.timeslice([values], grid, t)
+        return tslices.TimeSlice([values], grid, t)
     
     ############################################################################
     # Boundary functions
@@ -74,15 +75,13 @@ class EthEthp(System):
             (t, tslice, intStep))
          
         # Define useful variables
-        f = tslice.fields[0]
+        f = tslice.data[0]
         
         ########################################################################
         # Calculate derivatives
         ########################################################################
-        dtf = self.ethp(
-            self.eth(f, [0], self.lmax),
-            [1],
-            self.lmax)
+        ethf = self.eth(f, [0], self.lmax)
+        dtf = self.ethp(ethf[0], [1], self.lmax)
         
         if __debug__:
             self.log.debug("""Derivatives are:
@@ -104,9 +103,9 @@ class EthEthp(System):
         ########################################################################
         # Packaging
         ########################################################################
-        rtslice = tslices.timeslice(
-            [dtf], 
-            tslice.grid, 
+        rtslice = tslices.TimeSlice(
+            dtf, 
+            tslice.domain, 
             time=t
             )
         if __debug__:
@@ -134,8 +133,8 @@ class EthEthp(System):
         Y010 = np.zeros_like(grid.meshes[0], dtype=np.typeDict['complex128'])
         theta, phi = grid.meshes
         Y010 = 0.5*(
-            math.sqrt(3/(math.pi)) * np.cos(theta) 
-            )
+            complex(1,0) * math.sqrt(3/(math.pi)) * np.cos(theta) 
+            ) 
         return Y010
             
     def Y011(self, t, grid):
