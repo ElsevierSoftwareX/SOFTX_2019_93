@@ -877,16 +877,16 @@ class sfpy_sralm(np.ndarray):
 
 salm.Salm.register(sfpy_sralm)
 
-if __name__ == "__main__":
-    lmax = 2
-    a = np.ones((2,lmax_Nlm(lmax)))
-    spins = 2
-    p = sfpy_sralm(a, spins, lmax)
-    p[-1]
-    print "\n\n"
-    p[-1:]
-    print "\n\n"
-    p[slice(-1,None,None)]
+#if __name__ == "__main__":
+    #lmax = 2
+    #a = np.ones((2,lmax_Nlm(lmax)))
+    #spins = 2
+    #p = sfpy_sralm(a, spins, lmax)
+    #p[-1]
+    #print "\n\n"
+    #p[-1:]
+    #print "\n\n"
+    #p[slice(-1,None,None)]
     #from coffee.swsh import clebschgordan as cg
     #cg_object = cg.CGStone()
 

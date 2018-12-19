@@ -249,7 +249,7 @@ class W3jBen(object):
             self._write_w3j_symbols(
                 w3j_arr, j1_min, j1_num, j1_max, j2, j3, m1, m2, m3
                 )
-            index = j1 - j1_min
+            index = int(j1 - j1_min)
             rv = w3j_arr[index]
         return rv
         
