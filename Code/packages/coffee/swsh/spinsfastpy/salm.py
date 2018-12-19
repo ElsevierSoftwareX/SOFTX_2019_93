@@ -31,7 +31,7 @@ import logging
 from coffee.swsh import w3j
 from coffee.swsh import clebschgordan as cg_mod
 from coffee.swsh import salm
-from coffee.swsh.index_utilities import lm_ind, ind_lm, lmax_Nlm
+from coffee.swsh.spinsfastpy.index_utilities import lm_ind, ind_lm, lmax_Nlm
 
 class sfpy_salm(np.ndarray):
     

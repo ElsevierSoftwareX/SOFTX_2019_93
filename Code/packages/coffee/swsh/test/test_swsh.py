@@ -1,6 +1,6 @@
-from swsh import w3j
-from swsh import clebschgordan as cg
-from swsh import spinsfastpy as sfpy
+from coffee.swsh import w3j
+from coffee.swsh import clebschgordan as cg
+from coffee.swsh import spinsfastpy as sfpy
 import numpy as np
 import math
 from numpy import typeDict

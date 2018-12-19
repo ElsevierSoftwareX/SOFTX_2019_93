@@ -59,7 +59,7 @@ def backward(salm, Ntheta, Nphi):
     data = np.asarray(salm)
 
     f = np.array([
-        spinsfast.map2salm(data[i], spins[i], lmax, Ntheta, Nphi)
+        spinsfast.salm2map(data[i], spins[i], lmax, Ntheta, Nphi)
         for i in range(Ntransform)
     ])
     return f

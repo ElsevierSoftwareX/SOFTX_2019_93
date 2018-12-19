@@ -35,8 +35,10 @@ version 4 - GNU General Public License
 import numpy as np
 import sys
 import os
-sys.path.insert(0, os.path.join(".", "huffenberger_wandelt", "lib"))
+dir_path = os.path.dirname(os.path.realpath(__file__))
+sys.path.insert(0, os.path.join(dir_path, "huffenberger_wandelt", "lib"))
 import spinsfast
+from coffee.swsh.spinsfastpy import salm
 
 def forward(f, spins, lmax):
     """
@@ -69,7 +71,7 @@ def forward(f, spins, lmax):
         spinsfast.map2salm(f[i], spins[i], lmax)
         for i in range(Nmaps)
     ])
-    return alm
+    return salm.sfpy_salm(alm, spins, lmax)
 
-#a = np.zeros((2,8,8), dtype="complex")
-#print forward(a, [1,3], 3)
+a = np.zeros((2,8,8), dtype="complex")
+print forward(a, [1,3], 3)

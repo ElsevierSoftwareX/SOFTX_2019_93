@@ -16,9 +16,10 @@ Some example code, both C and Python can be found in ./examples.
 
 from forward_transform import forward
 from backward_transform import backward
+import salm
 
 del forward_transform
 del backward_transform
 
 def set_clebsch_gordan_default(cg):
-    sfpy_salm.cg_default = cg
+    salm.sfpy_salm.cg_default = cg
