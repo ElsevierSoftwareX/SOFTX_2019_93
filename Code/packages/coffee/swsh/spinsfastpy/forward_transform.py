@@ -36,7 +36,13 @@ import numpy as np
 import sys
 import os
 dir_path = os.path.dirname(os.path.realpath(__file__))
-sys.path.insert(0, os.path.join(dir_path, "huffenberger_wandelt", "lib"))
+sys.path.insert(0, os.path.join(
+		dir_path, 
+		"huffenberger_wandelt", 
+		"spinsfast_rev104",
+		"lib"
+	)
+)
 import spinsfast
 from coffee.swsh.spinsfastpy import salm
 

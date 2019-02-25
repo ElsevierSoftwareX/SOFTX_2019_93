@@ -30,7 +30,14 @@ version 4 - GNU General Public License
 import numpy as np
 import sys
 import os
-sys.path.insert(0, os.path.join(".", "huffenberger_wandelt", "lib"))
+dir_path = os.path.dirname(os.path.realpath(__file__))
+sys.path.insert(0, os.path.join(
+		dir_path, 
+		"huffenberger_wandelt", 
+		"spinsfast_rev104",
+		"lib"
+	)
+)
 import spinsfast
 
 def backward(salm, Ntheta, Nphi):
