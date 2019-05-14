@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 # encoding: utf-8 
 """
-tslices.py
-
-Created by Jörg Frauendiener on 2010-11-17.
-Additional development by Ben Whale since then.
+A timeslice is the package which contains all data necessary to represent a
+solution of the system at a given point in time.
 
 This module contains the abstract base class (abc) for TimeSlice objects and a
 default implementation that makes certain assumptions. It is highly recomended
@@ -28,12 +26,11 @@ At some point this will need to be changed... I assume after the move to Python
 3 is made.
 
 TimeSlice objects should contain all information needed to interperet the
-values of the functions being numerically evolved.
+values of the functions being numerically evolved. In particular, aim to ensure
+that you can restart a simulation if given a timeslice, system and solver.
 
-Classes:
-ABCTimeSlice - the abc for TimeSlice objects
-TimeSlice - a default implementation of ABCTimeSlice that assume that all data
-            is stored in a numpy array.
+Created by Jörg Frauendiener on 2010-11-17.
+Additional development by Ben Whale since then.
 """
 
 import abc
@@ -46,7 +43,7 @@ import numpy as np
 class ABCTimeSlice(object):
     """The abstract base class for TimeSlice objects.
 
-    The interface below is assumed by all other classed that interact with
+    The interface below is assumed by all other classes that interact with
     TimeSlice objects (which is just about everything).
 
     """
@@ -60,13 +57,19 @@ class ABCTimeSlice(object):
         ensure things are stored in the right places, but also because it sets
         up a logging object, logging.getLogger(self.name).
 
-        Positional Arguments:
-        data - the values of the functions being solved for
-        domain - the grid over which the values are calcualted
-        time - the time for which the values in data are valid
+        Parameters
+        ----------
 
-        Keyword Arguments:
-        name - the name of your subclass. This defaults to ABCTimeSlice
+        data : 
+            The values of the functions being solved for.
+        domain : 
+            The grid over which the values are calcualted.
+        time : float
+            The time for which the values in data are valid.
+
+        name : string
+            The name of your subclass. This defaults to ABCTimeSlice and is
+            used during logging.
 
         """
         self.data = data
@@ -82,7 +85,9 @@ class ABCTimeSlice(object):
     def __repr__(self):
         """Returns a naive string representation of the slice.
 
-        Returns - read above!
+        Returns 
+        -------
+        string
 
         """
         s = "%s(data = %s, domain = %s, time = %s)"%(
@@ -90,15 +95,20 @@ class ABCTimeSlice(object):
             repr(self.data), 
             repr(self.domain), 
             repr(self.time)
-            )
+        )
         return s
 
     def external_slices(self):
         """Returns a list of tuples that describe boundaries of grids for
         external boundaries. 
 
-        Returns - returns the result of a call to
-                  self.domain.external_slices(self.data.shape)
+        This is purely for convenience so that users don't need to 
+        write tslice.domain.external_slices().
+
+        Returns 
+        -------
+        list, slices
+            The result of a call to self.domain.external_slices(self.data.shape)
 
         """
         if __debug__:
@@ -109,11 +119,24 @@ class ABCTimeSlice(object):
         """Returns a list of tuples that describe the boundaries of
         grids for internal boundaries.
 
-        This is currently used for when the full domain is divided into
+        This is currently used when the full domain is divided into
         subdomains for use with mpi.
+        This is purely for convenience so that users don't need to 
+        write tslice.domain.communicate().
 
-        Returns - returns the result of a call to
-                  self.domain.communicate(self.data)
+        Parameters
+        ----------
+        ghost_point_processor : function
+            A function with signature (data, list of slices). See the
+            documentation for ABCGrid.communicate() for more information.
+
+        data :
+            The information to be communicated. It defaults to self.data.
+
+        Returns
+        -------
+        list, slices
+            The result of a call to self.domain.communicate(self.data)
 
         """
         return self.domain.communicate(
@@ -122,28 +145,30 @@ class ABCTimeSlice(object):
         )
 
     def barrier(self):
+        """A wrapper to self.domain.barrier()."""
         return self.domain.barrier()
 
     def collect_data(self):
-        """Returns a timeslice containing the almalgum of all data and domains
-        across all subdomains.
+        """A wrapper to self.domain.collect_data.
 
+        Returns a timeslice containing the almalgum of all data and domains
+        across all subdomains. It allocates new memory for the returned
+        timeslice.
         This is currently used to pass non-distributed data to actions in the
         ibvp method.
 
-        Returns - a single timeslice which represents the complete data and
-                  domain for that data.
+        Returns
+        -------
+        tslice.TimeSlice
+            A single timeslice which represents the complete data and 
+            domain for that point of time.
 
         """
         data_all = self.domain.collect_data(self.data)
         domain_all = self.domain.full_grid
-        r_tslice = self.__class__(
-            data_all, domain_all, self.time
-            )
+        r_tslice = self.__class__(data_all, domain_all, self.time)
         if __debug__:
-            self.log.debug(
-                "r_tslice is %s"%(repr(r_tslice))
-                )
+            self.log.debug("r_tslice is %s"%(repr(r_tslice)))
         return r_tslice
 
     def __add__(self, other):
@@ -291,6 +316,7 @@ class TimeSlice(ABCTimeSlice):
 
     This implementation assumes that all data are numpy arrays of the same
     shape. If your data is not like this then you should subclass ABCTimeSlice.
+    This might be appropriate when working with spectral methods, for example.
 
     Due to the assumption that the data is represented as a numpy array, this
     class also implements a large number of methods which allow this object to
@@ -298,19 +324,21 @@ class TimeSlice(ABCTimeSlice):
 
     To be honest rather than implementing all the additional methods by hand
     it'd be easier just to make this default TimeSlice a subclass of np.ndarray
-    itself and allow TimeSlice.data to access the underlying array.
-
-    Methods:
-    __init__ - constructor
-
+    itself and allow TimeSlice.data to access the underlying array. But this
+    hasn't been done.
     """
 
     def __init__(self,data, *args, **kwds):
-        """Returns a TimeSlice object.
+        """Instantiates a TimeSlice object.
 
-        Arguments:
-        data - converts data to a numpy array before passing it on to
-               ABCTimeSlice.
+        Calls the ABCTimeSlice __init__ method after handling the data.
+        Thus you should refer to the documentation for ABCTimeSlice.__init__()
+        for details of other parameters.
+
+        Parameters
+        ----------
+        data : 
+            Converts data to a numpy array before passing it on to ABCTimeSlice.
 
         """
         data = np.array(data)
