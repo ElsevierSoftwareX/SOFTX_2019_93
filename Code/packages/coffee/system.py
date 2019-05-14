@@ -1,13 +1,9 @@
 #!/usr/bin/env python
 # encoding: utf-8 
 """
-Summary
--------
+The abstract base class (abc) for System objects. 
 
-Created by Jörg Frauendiener on 2010-12-26.
-Modified by Ben Whale since then.
-
-The abstract base class (abc) for System objects. This class serves to specify
+This class serves to specify
 the interface that System classes are assumed to have. These assumptions are
 made by virtually all classes that call the system. For example, ibvp.IBVP,
 subclasses of solver.Solver, almost all actions.hdf_actions.SimOutType
@@ -18,6 +14,9 @@ recomended. You may get errors about the methods missing as a consequence.
 
 system.System has abc.ABCMeta as a meta class. This serves as a warning to
 really think about what you are doing if you don't implement all methods below.
+
+Created by Jörg Frauendiener on 2010-12-26.
+Modified by Ben Whale since then.
 """
 
 import abc
