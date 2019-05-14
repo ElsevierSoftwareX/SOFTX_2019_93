@@ -1,16 +1,11 @@
 # File types to be ignored by git
 
 # Ignore directories
-Code/AdvectionS2/_compiledLinux/
 Code/packages/coffee/swsh/c_code/rrf-3.2/bin/
 Code/packages/coffee/swsh/c_code/rrf-3.2/doc/
 Code/packages/coffee/swsh/c_code/rrf-3.2/tests/
 Code/packages/coffee/swsh/spinsfastpy/examples/
 documentation/build/
-
-
-# Ignore original spinsfast code
-#Code/packages/coffee/swsh/spinsfastpy/spinsfast_rev90/
 
 # Ignore any folder that matches /output
 output/
@@ -27,24 +22,13 @@ Output/
 *.gp
 /icon.png
 
-# tex auxiliary files
-*.aux
-*.blg
-*.bbl
-*.log
-*.synctex.gz
-*.out
-*.tex~
-*.fls
-*.fdb_latexmk
-*.rel
-
 # vim files
 *.swp
 
 # for MacOSX
 .DS_Store
 *.backup
+Icon
 
 # dynamic librarys
 libspinsfast.so
@@ -57,13 +41,4 @@ libspinsfast.so
 
 # tilde backup files
 *~
-
-# paper submissions
-/Docs/Papers/EREProc/ereproc.pdf
-/Docs/Papers/PlaneWaves/Submission2PRD/corrections.txt
-*.pdf
-
-# mathematica modules
-/MathematicaModules/DeriveGCFE.m
-/MathematicaModules/GCFEBasics.m
 
