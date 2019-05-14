@@ -6,6 +6,8 @@ Code/packages/coffee/swsh/c_code/rrf-3.2/bin/
 Code/packages/coffee/swsh/c_code/rrf-3.2/doc/
 Code/packages/coffee/swsh/c_code/rrf-3.2/tests/
 Code/packages/coffee/swsh/spinsfastpy/examples/
+documentation/build/
+
 
 # Ignore original spinsfast code
 #Code/packages/coffee/swsh/spinsfastpy/spinsfast_rev90/
