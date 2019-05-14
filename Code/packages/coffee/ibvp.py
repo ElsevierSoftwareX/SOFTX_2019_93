@@ -18,9 +18,6 @@ import logging
 
 class IBVP:
     """Handles computation of the solution to initial boundary value problems.
-    
-    Extended Summary
-    ----------------
 
     This class manages the interative process of simulations and interleaves
     interative steps with calls to a list of actions. Information about events

@@ -28,8 +28,6 @@ class System(object):
     """The System class that specifies the interface for all other system
     classes. 
     
-    Extended Summary
-    ----------------
     You don't need to implement everything below, but you can expect
     errors if you don't. The main purpose of this class is to document
     the API that classes that describe a system of equations are expected
@@ -58,9 +56,6 @@ class System(object):
     def evaluate(self, t, tslice):
         """Returns the data needed by the solver.Solver subclass needed to
         calcualte the values of the functions at the next time step.
-
-        Extended Summary
-        ----------------
 
         For example, in a IBVP problem using an RK sover this method will
         return the values of the derivatives of the functions being evolved.
@@ -115,9 +110,6 @@ class System(object):
     def left(self, t):
         """Returns the boundary data on the 'left' boundary.
 
-        Extended Summary
-        ----------------
-
         Yes this also makes the assumption that left is well defined. See the
         documentation for free_data.FreeData. To be honest I'm not sure that
         this method needs to be defined here. After all: does any class other
@@ -145,9 +137,6 @@ class System(object):
 
     def right(self, t):
         """Returns the boundary data on the 'right' boundary.
-
-        Extended Summary
-        ----------------
 
         See the documentation for the function system.System.left
 
