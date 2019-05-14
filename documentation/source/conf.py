@@ -12,7 +12,7 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../../Code/packages/coffee'))
+sys.path.insert(0, os.path.abspath('../../Code/packages/'))
 
 
 # -- Project information -----------------------------------------------------

@@ -1,14 +1,17 @@
-.. COFFEE-Sphinx documentation master file, created by
-   sphinx-quickstart on Tue May 14 11:09:12 2019.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 Welcome to COFFEE-Sphinx's documentation!
 =========================================
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
+
+.. automodule:: coffee.ibvp
+
+.. autoclass:: coffee.ibvp.IBVP
+    :members:
+
+    .. automethod:: __init__
+    .. automethod:: _run_actions
 
 
 
