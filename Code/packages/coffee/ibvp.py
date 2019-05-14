@@ -1,17 +1,16 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-Summary
--------
-
-Created by Jörg Frauendiener on 2010-12-24, further edits by Ben Whale, George
-Doulis and Jörg Frauendiener since then.
-
 This is the class that handles the iterative step and actions of the
-simulation. The name ibvp comes from the original design of this class as the
+simulation. 
+
+The name ibvp comes from the original design of this class as the
 iterative step in an initial boundary value problem solver. However, this class
 is general enough to handle numerical techniques that have, at their highest
 level, some iterative method.
+
+Created by Jörg Frauendiener on 2010-12-24, further edits by Ben Whale, George
+Doulis and Jörg Frauendiener since then.
 """
 
 import logging
