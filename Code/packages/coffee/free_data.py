@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-freedata.py
+Summary
+-------
 
 Created by Jörg Frauendiener on 2012-03-09, further edits by Ben Whale since
 then.
@@ -11,7 +12,7 @@ classes that are used to calculate initial data or free data for a simulation
 scheme are assumed to implement the methods below. In particular the object
 actions.hdf_output.SimOutputType.Exact uses the exact method.
 
-It is not, in general needed to implement all of the following methods. What
+It is not, in general, needed to implement all of the following methods. What
 you do implement should be determined by what additional objects interact with
 your subclass of the system.System class.
 
@@ -30,9 +31,9 @@ import abc
 from abc import ABCMeta
 
 class FreeData(object):
-    """
-    This is a simple abstract base class for the implementation of exact 
+    """ This is a simple abstract base class for the implementation of exact 
     solutions.
+
     All the 'virtual' functions must be defined, modulo the comments given in
     the module docstring. 
     """
@@ -41,42 +42,53 @@ class FreeData(object):
     
     @abc.abstractmethod
     def left_boundary(self, tslice):
-        """Returns the boundary values given on the left boundary over a one
-        dimensional grid.
-        
+        """Returns the boundary values given on the left boundary over a one dimensional grid.
+
         The currect FreeData object assumes that the simulation is being
         done over a one dimensional grid. Hence the call to 'left_boundary'.
         this method will eventually be altered to bring it into line with the
-        grid method, `boundary_slices' which specifies the slices of the domain
+        grid method, \`boundary_slices' which specifies the slices of the domain
         corresponding to the boundary in a mannor which is independent of
         assumptions about the number of dimensions. 
 
-        Until then you'll just have to cope. Why don't you take a look at
-        http://www.youtube.com/watch?v=Whn8585iNxY to reduce your rage?
+        Until then you'll just have to cope. 
 
-        Arguments:
-        tslice - the timeslice of the data which left boundary values need to
-                 given.
+        Parameters
+        ----------
 
-        Returns - the values of the functions being numerically simulated on
-                  left boundary. The type of these values is up to you,
-                  inconjunction with your implementation of the tslices.TimeSlice 
-                  and system.System classes.
+        tslice : tslice.TimeSlice
+            The timeslice of the data which left boundary values need to given.
 
+        Returns
+        -------
+
+            The values of the functions being numerically simulated on
+            left boundary. The type of these values is up to you,
+            inconjunction with your implementation of the tslices.TimeSlice 
+            and system.System classes.
         """
-        raise NotImplementedError(
-            'You must define the function left_boundary().'
-            )
+        raise NotImplementedError('You must define the function left_boundary().')
 
     @abc.abstractmethod
     def right_boundary(self, tslice):
         """Returns the boundary values given on the right boundary over a one
         dimensional grid.
 
-        If you're still feeling angry about the one dimensional thing:
-        http://www.youtube.com/watch?v=xamGrall2wc
-
         Arguments and returned object are as for left_boundary. 
+
+        Parameters
+        ----------
+
+        tslice : tslice.TimeSlice
+            The timeslice of the data which left boundary values need to given.
+
+        Returns
+        -------
+
+            The values of the functions being numerically simulated on
+              left boundary. The type of these values is up to you,
+              inconjunction with your implementation of the tslices.TimeSlice 
+              and system.System classes.
 
         """
         raise NotImplementedError(
@@ -88,13 +100,20 @@ class FreeData(object):
         """Returns the initial data for a simulation based on the initial
         time and grid.
 
-        Arguements:
+        Parameters
+        ----------
 
-        t - the initial time at which the initial data is to be calculated
-        grid - the grid over which the initial data is to be calculated
+        t : float
+            The initial time at which the initial data is to be calculated.
 
-        Returns - the initial data of the simulation.
+        grid : 
+            The grid over which the initial data is to be calculated.
 
+        Returns
+        -------
+
+        tslice.TimeSlice 
+            the initial data of the simulation.
         """
         raise NotImplementedError(
             'You must define the function initial_data().'
@@ -110,13 +129,18 @@ class FreeData(object):
 
         Of cause you don't have to use this method that way...
 
-        Arguments:
+        Parameters
+        ----------
 
-        t - the time at which to calculate the exact values
-        grid - the domain over which to calculate the exact values
+        t : float
+            The time at which to calculate the exact values.
+        grid : 
+            The domain over which to calculate the exact values.
 
-        Returns - the exact values of the functions being solved for in the
-                  simulation.
+        Returns
+        -------
+
+            The exact values of the functions being solved for in the simulation.
 
         """
         raise NotImplementedError('You must define the function exact().')
@@ -138,13 +162,14 @@ class FreeData(object):
         being applied is necessary. This is the reason for the keyword
         argument.
 
-        Positional Arguments:
-        u - the tslice.TimeSlice object that stores data for which dirichlet
-            boundary conditions are needed.
+        Parameters
+        ----------
 
-        Keyword Arguments:
-        intStep - an int giving which intermediate step the RK routine is
-                  currently in.
+        u : tslice.TimeSlice 
+            Stores data for which dirichlet boundary conditions are needed.
+
+        intStep : int
+            Giving which intermediate step the RK routine is currently in.
 
         """
         raise NotImplementedError('You must define the function dirichlet().')

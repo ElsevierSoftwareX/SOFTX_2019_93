@@ -16,6 +16,9 @@ Welcome to COFFEE-Sphinx's documentation!
 .. automodule:: coffee.system
     :members:
 
+.. automodule:: coffee.free_data
+    :members:
+
 
 
 
