@@ -1,6 +1,7 @@
 solvers
 =======
 
-.. automodule:: coffee.solvers
+.. automodule:: coffee.solvers.solvers
     :members:
+
 

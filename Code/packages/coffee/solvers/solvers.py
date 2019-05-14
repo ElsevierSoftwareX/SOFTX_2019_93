@@ -1,33 +1,14 @@
 #!/usr/bin/env python
 # encoding: utf-8 
 """
-solvers.py
-
-Created by Jörg Frauendiener on 2010-12-26.
-Editted by Ben Whale since 2011.
-
 This module contains the abstract base class for solvers as well as several
 default implementations.
 
 This default implementations all assume that tslice.TimeSlice objects can be
 operated on by numerically (e.g. addition, multiplication, subtraction).
 
-Classes:
-ABCSolver - the abstract base class (abc) for solver object. This object
-            specifies the assumed interface for solver object. 
-            They principally interact with the ibvp class.
-
-Euler - an implementation of the first order Euler method
-
-RungeKutta4 - an implementation of the 4th order Runge Kutta method.
-
-RungeKutta4Dirichlet - an implementation of the 4th order Runge Kutta method
-                       that makes calls to system.dirichlet_boundary for 
-                       intermediate steps.
-
-rk45 - an adaptive RungeKutta 4th order routine. This class made require
-       debugging.
-
+Created by Jörg Frauendiener on 2010-12-26.
+Editted by Ben Whale since 2011.
 """
 
 import math
@@ -43,12 +24,6 @@ class ABCSolver(object):
 
     This class provides the interface that is assumed of all other solvers.
     These methods are called in the ibvp.IBVP class.
-
-    Methods:
-    name - returns a string representation of the object
-    advance - called by ibvp.IBVP to advance to the next time step
-
-
     """
     def __init__(self, system, *args, **kwds):
         """Returns an instance of ABCSolver.
@@ -56,9 +31,11 @@ class ABCSolver(object):
         This method should be called by any subclasses. It defines the system
         atribute and sets up a logging object.
 
-        Arguments:
-        system - the system being used.
+        Parameters
+        ----------
 
+        system : system
+            The system being used.
         """
         self.system = system
         super(ABCSolver, self).__init__(**kwds)
@@ -68,25 +45,41 @@ class ABCSolver(object):
     def name(self):
         """This should return a name associated to the subclass. 
         
-        The name will need to be defined in the subclasses constructor.
+        The name will need to be defined in the subclasses constructor. The
+        name is used to identify the instantiated class in the logger.
 
-        Returns - a string name for the class. This defaults to ABCSolver.
+        Returns
+        -------
+
+        string
+            A string name for the class. This defaults to ABCSolver.
 
         """
         return "ABCSolver"
-
  
     @abc.abstractmethod
     def advance(self, t, u, dt): 
         """Returns a tslice.TimeSlice containing data at time t + dt.
 
-        Arguments:
-        t - the current time. This should be equal to u.time. So... maybe we
-            should do something about this? Seems unnecessary.
-        u - the current tslice.TimeSlice
-        dt - the step in time required
+        Parameters
+        ----------
+            
+        t : float
+            The current time. 
 
-        Returns - a tslice.TimeSlice object containing the data at time t+dt.
+        u : tslice.TimeSlice
+            The current tslice.TimeSlice. Note that the time in the timeslice
+            is the time for the data in the timeslice, but not necessarily
+            equal to t.
+
+        dt : float
+            The step in time required.
+
+        Returns
+        -------
+
+        tslice.TimeSlice 
+            Contains the data at time t+dt.
 
         """
         raise NotImplementedError("This method needs to be implemented")
@@ -99,25 +92,13 @@ class ABCSolver(object):
 ################################################################################
 class Euler(ABCSolver):
     """An implementation of the first order Euler method.
-
-    Methods:
-    advance - See the documentation for ABCSolver
-
     """
     name = 'Euler'
   
     def advance(self, t, u, dt):
-        """Returns a tslice.TimeSlice object containing the evolved data, via
-        the first order Euler method, at time t+dt.
+        """An Euler method implementation of ABCSolver.
 
-        Returns - please read above... No.. Don't make me have to write it out
-                  again... Oh god why are you doing this to me? *sniff*...
-                  ok, what ever you say.
-
-                  http://www.youtube.com/watch?v=SuJtAoADesE
-
-                  Returns a tslice.TimeSlice object containing the evolved data, via
-                  the first order Euler method, at time t+dt.
+        See the ABCSolver.advance method for documentation.
 
         """
         du = self.system.evaluate(t, u)
@@ -130,19 +111,21 @@ class Euler(ABCSolver):
 # Fourth order methods
 ################################################################################
 class RungeKutta4(ABCSolver):
-    """docstring for RungeKutta4"""
+    """A RungeKutta4 implementation of ABCSolver.
+    
+    
+    """
 
     name = "RK4"
 
     def __init__(self, *args, **kwds):
         super(RungeKutta4, self).__init__(*args, **kwds)
 
-
     def advance(self, t0, u0, dt):
-        """
+        """See the ABCSolver.advance method for documentation.
+
         Very simple minded implementation of the standard 4th order Runge-Kutta
-        method to solve an ODE of the form
-        fdot = rhs(t,f)
+        method to solve an ODE of the form fdot = rhs(t,f)
         """
         if __debug__:
             self.log.debug("In advance")
@@ -193,7 +176,8 @@ class RungeKutta4Dirichlet(ABCSolver):
                 %self.system)
 
     def advance(self, t0, u0, dt):
-        """
+        """See the ABCSolver.advance method for documentation.
+
         Very simple minded implementation of the standard 4th order Runge-Kutta
         method to solve an ODE of the form
         fdot = rhs(t,f) that allows for the implementation of
