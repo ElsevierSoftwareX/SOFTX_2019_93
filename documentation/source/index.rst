@@ -13,6 +13,11 @@ Welcome to COFFEE-Sphinx's documentation!
     .. automethod:: __init__
     .. automethod:: _run_actions
 
+.. automodule:: coffee.system
+    :members:
+
+
+
 
 
 Indices and tables
