@@ -34,8 +34,13 @@ extensions = [
     #'sphinx.ext.autosummary'
 ]
 
-#autodoc_default_flags = ['members']
+#autodoc_default_flags = ['members', 'undoc-members']
 #autosummary_generate = True
+
+# http://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html#confval-autodoc_mock_imports
+# https://github.com/sphinx-doc/sphinx/issues/4182
+# http://blog.rtwilson.com/how-to-make-your-sphinx-documentation-compile-with-readthedocs-when-youre-using-numpy-and-scipy/
+autodoc_mock_imports = ["numpy"]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
