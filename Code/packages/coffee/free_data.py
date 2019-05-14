@@ -1,11 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-Summary
--------
-
-Created by Jörg Frauendiener on 2012-03-09, further edits by Ben Whale since
-then.
+The FreeData class describes the \`free data' of a system of equations.
 
 This is a subclass of Abstract Base Class. It specifies an interface. All
 classes that are used to calculate initial data or free data for a simulation
@@ -21,10 +17,8 @@ you are doing. If your free data is sufficiently simple the code that
 corresponds to free data could be included directly into system.System since
 all calls to FreeData are mediated through system.System.
 
-Classes:
-
-FreeData - an abc presenting an interface assumed to hold for any class that
-           calculates free data during a simulation.
+Created by Jörg Frauendiener on 2012-03-09, further edits by Ben Whale since
+then.
 """
 
 import abc
