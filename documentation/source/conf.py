@@ -40,7 +40,7 @@ extensions = [
 # http://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html#confval-autodoc_mock_imports
 # https://github.com/sphinx-doc/sphinx/issues/4182
 # http://blog.rtwilson.com/how-to-make-your-sphinx-documentation-compile-with-readthedocs-when-youre-using-numpy-and-scipy/
-autodoc_mock_imports = ["numpy"]
+autodoc_mock_imports = ["numpy", "mpi4py"]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

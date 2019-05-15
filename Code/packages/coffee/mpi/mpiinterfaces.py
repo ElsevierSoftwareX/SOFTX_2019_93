@@ -1,3 +1,11 @@
+"""
+Contains classes that abstract the MPI C API.
+
+Classes in this module model the MPI node network and manage the relationship
+of the complete domain to each 
+
+Created by Ben Whale.
+"""
 import abc
 from mpi4py import MPI
 import logging
@@ -11,16 +19,25 @@ class MPIInterface(object):
     __metaclass__ = abc.ABCMeta
     
     def __init__(self, mpi_comm, *args, **kwds):
-        """Arguments:
-        mpi_comm: an MPI_COMM object wrapped by mpi4py."""
+        """Initialisaer for MPIInterface objects.
+        
+        Parameters
+        ==========
+        mpi_comm: mpi4py.Comm
+            A wrapper to an MPI_COMM object via mpi4py.
+        """
         self.comm = mpi_comm
         super(MPIInterface, self).__init__(*args, **kwds)
 
     @abc.abstractmethod
-    def subdomain(self, shape):
-        """Returns a slice object that represents the subdomain of the full
-        grid that each grid object associated to each process should
-        managed."""
+    def subdomain(self):
+        """Returns a tuple of slice objects that represents the subdomain of the full
+        grid that this MPI node should perform computations over.
+
+        Returns
+        =======
+        tuple of slices
+        """
 
     @abc.abstractmethod
     def communicate(self, data):
@@ -46,12 +63,44 @@ class EvenCart(MPIInterface):
             *args, 
             **kwds
         ):
+        """Initialiser for EvenCart objects
+
+        An EvenCart object is an implementation of MPIInterface that
+        assumes that the global topology uses the MPI cartesian methods.
+
+        Parameters
+        ==========
+        domain: numpy.ndarray
+            A numpy array representing the values of points in the global
+            computational domain
+        boundary_data: grid.ABCBoundary
+        """
         super(EvenCart, self).__init__(*args, **kwds)
         self.log = logging.getLogger("EvenCart")
         self.domain = domain
         self.domain_mapping = self._make_domain_mappings(domain, boundary_data)
 
     def _make_domain_mappings(self, domain, boundary_data):
+        """A utility that constructs the tuples of slices that represent
+        the sub-grids for each MPI node based on that nodes rank.
+
+        The calculation assumes that each MPI node should handle roughly the
+        same load as all others and that the MPI topology is cartesian.
+
+        Parameters
+        ==========
+        domain: numpy.ndarray
+            A numpy array representing the values of points in the global
+            computational domain
+        boundary_data: grid.ABCBoundary
+
+        Returns
+        =======
+        list of tuples of slices:
+            Each tuple of slices in index i gives the sub grid for MPI node
+            with rank i.
+
+        """
         if self.comm is None:
             return tuple([slice(None, None, None) for dim in domain])
         r_map = []
@@ -67,11 +116,30 @@ class EvenCart(MPIInterface):
                 )
                 for i, coord in enumerate(coords)
             ])]
-        #if __debug__:
-            #self.log.debug("domain_mapping is %s"%r_map)
+        if __debug__:
+            self.log.debug("domain_mapping is %s"%r_map)
         return r_map                
     
     def _neighbour_slices(self, shape, b_data):
+        """A utility function that collects the source and destination
+        ranks for neighbouring MPI nodes along with the slices needed
+        to describe what data should be transferred.
+
+        Parameters
+        ==========
+        shape: tuple of ints
+            The shape of the data that will be communicated to neighbouring MPI 
+            nodes
+
+        b_data: grid.ABCBoundary
+
+        Returns
+        =======
+        list of tuples:
+            Each tuple has three members, first the source MPI node rank,
+            second the destination MPI node rank and third the list of tuples
+            of slices that describes the data to be communicated.
+        """
         if self.comm is None:
             return []
         dims = self.comm.Get_dim()
@@ -98,6 +166,33 @@ class EvenCart(MPIInterface):
             ghost_points_start,
             ghost_points_end
         ):
+        """The utility method that calculates the slices that describe the
+        sub-grid managed by the MPI node with rank ``rank``.
+
+        The method assumes that it is doing the calculation for a single
+        dimension. To build the full list of tuples of slices, all
+        dimensions will need to be iterated over.
+
+        Parameters
+        ==========
+        array_length: int
+            The number of grid points in this particular dimension of the 
+            total computational domain.
+        rank: int
+            The MPI rank that the slices are computed for.
+        num_ranks: int
+            The number of MPI nodes that cover this particular dimension.
+        ghost_points_start: int
+            The number of ghost points at the start of the dimension.
+        ghost_points_end: int
+            The number of ghost points at the end of the dimension.
+
+        Returns
+        =======
+        slice:
+            A slice which gives the subdomain for the particular dimension and
+            the needed MPI node rank.
+        """
         if __debug__:
             self.log.debug("Calculating start and end indices for subdomain")
             self.log.debug("Array_length is %i"%array_length)
@@ -127,11 +222,35 @@ class EvenCart(MPIInterface):
           
     @property
     def subdomain(self):
+        """Returns the slices which give the subdomain for the MPI node
+        that this method is called on.
+
+        Returns
+        =======
+        list of tuples of slices
+        """
         if self.comm is None:
             return self.domain_mapping
         return tuple(self.domain_mapping[self.comm.rank])
             
     def communicate(self, data, b_data):
+        """Communicates the given data to appropriate neighbouring nodes.
+
+        Parameters
+        ==========
+        data: numpy.ndarray
+            An array representing the values of the computed function over
+            the sub-grid managed by the MPI node this code is being computed on.
+        b_data: grid.ABCBoundary
+
+        Returns
+        =======
+        list of tuples (list of slices, numpy.ndarray)
+            The returned data is a list of tuples. The first element of the tuple
+            describes which grid points the communicated data relates to.
+            The second element is the data received from whichever MPI node
+            manages the sub-grid which looks after the relevant grid points.
+        """
         #if self.comm.size == 1:
             #return []
         nslices = self._neighbour_slices(data.shape, b_data)
@@ -166,9 +285,9 @@ class EvenCart(MPIInterface):
             if __debug__:
                 self.log.debug("About to sendrecv")
                 self.log.debug("data to be sent is %s"%repr(send_data))
-                #self.log.debug("source is %s"%source)
-                #self.log.debug("dest is %s"%dest)
-                #self.log.debug("recv_data is %s"%repr(recv_data))
+                self.log.debug("source is %s"%source)
+                self.log.debug("dest is %s"%dest)
+                self.log.debug("recv_data is %s"%repr(recv_data))
             self.comm.Sendrecv(
                 send_data,
                 dest=dest,
@@ -177,7 +296,7 @@ class EvenCart(MPIInterface):
                 )
             if __debug__:
                 self.log.debug("Received data = %s"%repr(recv_data))
-                #self.log.debug("data[0] is %s"%repr(data[0]))
+                self.log.debug("data[0] is %s"%repr(data[0]))
                 self.log.debug("Sendrecv completed")
             if source >= 0:
                 r_data += [(recv_slice, recv_data)]
@@ -187,6 +306,25 @@ class EvenCart(MPIInterface):
         return r_data
 
     def collect_data(self, data):
+        """A method that collects all computed function values over all
+        sub-grids managed by all MPI nodes and returns the amalgamated data
+        if the rank of this process is 0. 
+        
+        This gives a way to get a single copy of all computed data so far. It does,
+        however, assume that all subsequence processing occurs on a single MPI
+        node. This is a bottle neck.
+
+        Parameters
+        ==========
+        data: numpy.ndarray
+            The data to be communicated.
+
+        Returns
+        =======
+        None or numpy.ndarray
+            The collated data if MPI_Comm_Rank is 0, none otherwise.
+        """
+
         #Note that this method does not take account of ghost_points in
         #the domains. This does not cause a problem. It just means
         #that more data than necessary is passed.
