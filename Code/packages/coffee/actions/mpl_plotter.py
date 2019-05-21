@@ -2,9 +2,34 @@ import time
 from pylab import *
 import numpy as np
 
+from coffee.actions import Prototype
+
 class Plotter(Prototype):
-    """docstring for Plotter"""
-    def __init__(self, frequency = 1, xlim = (-1,1), ylim = (-1,1), findex = None, delay = 0.0):
+    """An action that plots data using mathplotlib."""
+
+    def __init__(
+            self, 
+            frequency = 1, 
+            xlim = (-1,1), 
+            ylim = (-1,1), 
+            findex = None, 
+            delay = 0.0
+        ):
+        """Initialiser for Plotter.
+
+        Parameters
+        ==========
+        frequency : int
+            The number of iterations per execution of this action
+        xlim : a two tuple of floats
+            The limits of the x axes.
+        ylim : a two tuple of floats
+            The limits of the y axes.
+        findex : int
+            The number of functions to plot
+        delay : float
+            The delay, in seconds, between repeated executions of this function.
+        """
         super(Plotter, self).__init__(frequency)
         if findex is not None:
             self.index = findex

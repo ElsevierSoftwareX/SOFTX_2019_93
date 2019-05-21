@@ -1,9 +1,6 @@
 """A module containing actions that interface with GnuPlot.
 
-Classes:
-Plotter1D - plots one dimensional data
-Plotter2D - plots two dimensional data
-
+Created by Ben Whale
 """
 import Gnuplot
 import time
@@ -25,7 +22,6 @@ class Plotter1D(Prototype):
     plotted is 'pre-processed' by an function that is passed by the user. In
     this way the user can, for example, specify if the modulus, or argument
     of complex data is to be plotted.
-
     """
 
     def __init__(self, system, *args, **kwds):
@@ -33,20 +29,29 @@ class Plotter1D(Prototype):
 
         Plotter1D subclasses actions.Prototype.
 
-        Positional Arguments:
-        all positional arguments are passed to the GnuPlot object. These
+        All positional arguments, excluding the
+        first (``system``), are passed to the GnuPlot object. These
         arguments should be strings respecting the documentation of GnuPlot.
         They are passed to the Gnuplot object g as g(pos_argument)
 
-        Keyword Arguments:
-        delay - the delay in seconds between plotting events
-        title - the title of the plot. The default is the time of the plot
-        data_function - a function that takes the interation number,
-          a timeslice and the system. It should return a tuple consisting
-          of the domain of the data and a two dimensional array. The first
-          dimension of the array is considered to be the components. The
-          second dimenion is considered to give the domain dependence.
+        Additional paramters valid for actions.Prototype are valid.
 
+        Parameters
+        ==========
+        system : system
+            The system object.
+        args : list of strings
+            Passed to gnuplot as arguments.
+        delay : float, Optional
+            The delay in seconds between plotting events.
+        title : string, Optional
+            The title of the plot. The default is the time of the plot.
+        data_function : function(it, u, system) -> (np.ndarray, np.ndarray), Optional
+              A function that takes the interation number,
+              a timeslice and the system. It should return a tuple consisting
+              of the domain of the data and a two dimensional array. The first
+              dimension of the array is considered to be the components. The
+              second dimenion is considered to give the domain dependence.
         """
 
         if 'start' in kwds:
@@ -125,31 +130,44 @@ class Plotter2D(Prototype):
 
     The simulation it self does not need to be two dimensional. The data to be
     plotted is 'pre-processed' by an function that is passed by the user. 
-    
     """
     
     def __init__(self, *args, **kwds):
-        """The constructor for Plotter1D objects.
+        """The constructor for Plotter2D objects.
 
-        Plotter1D subclasses actions.Prototype.
+        Plotter2D subclasses actions.Prototype. Any argument valid
+        in the initialiser of actions.Prototype is respected here.
 
-        Positional Arguments:
-        all positional arguments are passed to the GnuPlot object. These
+        All positional arguments
+        are passed to the GnuPlot object. These
         arguments should be strings respecting the documentation of GnuPlot.
         They are passed to the Gnuplot object g as g(pos_argument)
 
-        Keyword Arguments:
-        delay - the delay in seconds between plotting events
-        title - the title of the plot. The default is the time of the plot
-        components - a list of strings that are used to label the `components'
-                     being plotted.
-        data_function - a function that takes the interation number,
-          a timeslice and the system. It should return a tuple consisting
-          of the domain of the data and a three dimensional array. The first
-          dimension of the array is considered to be a number of `components'
-          each of which is to be plotted. The
-          second and third dimenions is considered to give the domain dependence.
+        The data_function 
+        should return a tuple consisting
+        of the domain of the data and a three dimensional array. The first
+        dimension of the array is considered to be a number of components
+        each of which is to be plotted. The
+        second and third dimenions is considered to give the domain dependence.
 
+        Parameters
+        ==========
+        system : system
+            The system object.
+        args : list of strings
+            Passed to gnuplot as arguments.
+        delay : float, Optional
+            The delay in seconds between plotting events.
+        components : list of strings, Optional
+            The strings are used to label the components being plotted.
+        title : string, Optional
+            The title of the plot. The default is the time of the plot.
+        data_function : function(it, u, system) -> (np.ndarray, np.ndarray), Optional
+              A function that takes the interation number,
+              a timeslice and the system. It should return a tuple consisting
+              of the domain of the data and a two dimensional array. The first
+              dimension of the array is considered to be the components. The
+              second dimenion is considered to give the domain dependence.
         """
         if 'delay' in kwds:
             self.delay = kwds.pop('delay')
@@ -224,5 +242,5 @@ class Plotter2D(Prototype):
         try:
             os.remove("deleteme.gp")
         except:
-            print "The file deleteme.gp was unable to be deleted. Please do so manually."
+            print("The file deleteme.gp was unable to be deleted. Please do so manually.")
         del self.device

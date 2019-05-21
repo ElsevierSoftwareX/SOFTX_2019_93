@@ -10,4 +10,5 @@ Welcome to the COFFEE module's documentation
    coffee/tslices
    coffee/grid
    coffee/mpi
+   coffee/actions
   

@@ -1,4 +1,4 @@
-"""This module writes the data of a timeslice to an hdf file. 
+"""This module writes the data of a timeslice to an hdf file.
 
 The main class SimOutput uses objects of class SimOutput.SimOutputType to
 actually write the data. By subclassing SimOutput.SimOutputType in the mannor
@@ -8,10 +8,7 @@ I think of this method as a plugin in system. The user writes a new output
 method for some kind of new data type in a sub class of SimOutputType and
 'plugs' this method into the 'action' list of SimOutput.
 
-Class:
-SimOutput - an action which manages the writing out of data as given in the
-            SimOutputType objects.
-
+Created by Ben Whale.
 """
 import logging
 import numpy as np
@@ -22,29 +19,17 @@ from ..io.simulation_data import dgTypes, systemD, DataGroup, sysDTypes
 # A utility class to write to SimulationHDF via the
 # actions.py framework.
 class SimOutput(Prototype):
-    """An action to handle output of timeslices to hdf.
+    """An action to handle output of data to hdf.
     
     Each piece of data to be output is passed, as an object, to this class in 
     the array actionTypes.
     
     These objects are subclasses of SimOutputType a class which is accessible
-    as an attribute of SimOutput.
-    
-    The existing subclasses of SimOutputType are:
-    Data -- write tslice.data to a datagroup
-    Exact -- calls system.exactValue(tslice.time,tslice.domain) and outputs the 
-            .data of the resulting tslice to a datagroup
-    Times -- writes tslice.time to a datagroup
-    TimeStep -- writes the time step associated to tslice to a datagroup. This 
-                is currently implemented by calling system.timestep(u)
-    Domains -- writes tslice.domain to a datagroup
-    Constraints -- calls system.constraint_violation(u) and writes the output to
-                   a datagroup
-    DerivedData -- calls a user defined function, passing the tslice, as input
-                   and stores the result to a datagroup
-    System -- stores information relating to the system, solver and grid. Also
-              stores the cmp parameter which is used to order the simulations.
-              
+    as an attribute of SimOutput. 
+
+    Note that there is a dependence on io.simulation data. In particular
+    on the dgTypes dictionary which provides information on the appropriate
+    names for created datagroups.
     For information about how to access this data please see the simulation_data
     module.
 
@@ -52,13 +37,18 @@ class SimOutput(Prototype):
     the SimOutputType class.
     """
 
-    def __init__(self, hdf_file, solver, theSystem, theInterval, 
+    def __init__(
+            self, 
+            hdf_file, 
+            solver, 
+            theSystem, 
+            theInterval, 
             actionTypes, 
             cmp_ = None, 
             overwrite = True, 
             name = None, 
             **kwds
-            ):
+        ):
         """The constructor for the SimOutput action.
         
         The goal for this object is to allow for complete replication of the
@@ -70,29 +60,31 @@ class SimOutput(Prototype):
         Needless to say that this is not currently the case, but I think its a
         good idea.
 
-        Arguments:
-        hdf_file - an instance of h5py.File. This is the file to which data
-                   will be written.
-        solver - an instance of solvers.Solver.
-        theSystem - an instance of systems.System.
-        theInterval - an instance of grid.ABCGrid
-        actiontypes - a list of SimOutputType objects. Each time the SimOutput
+        Parameters
+        ==========
+        hdf_file : h5py.File 
+            This is the file to which data will be written.
+        solver : solvers.Solver
+        theSystem : systems.System
+        theInterval : grid.ABCGrid
+        actiontypes : list of SimOutputType objects
+                      Each time the SimOutput
                       action is run this list is iterated through and each
                       SimOutputType object is called. This object writes out
                       data according to it's own routine and stores it in the
                       given hdf file.
-
-        Keyword Arguments:
-        cmp_ - something that allows for comparison of simulations. In one
+        cmp_ : 
+               Something that allows for comparison of simulations. In one
                dimensional simulations this is the number of grid points. This
                is used by the error script to work out which simulations should
                be compared. 
 
-               This will need to be replaced by something more robust.
-        overwrite - If you are outputting a simulation into an existing hdf
+        overwrite : bool
+                    If you are outputting a simulation into an existing hdf
                     file do you want to allow the simulation to overwrite the
-                    existing data? Defaults to True.
-        name - What is the name of this simulation?
+                    existing data? 
+        name : string
+            What is the name of this simulation?
         """
         self.log = logging.getLogger("SimOutput")
         if __debug__:
@@ -139,14 +131,15 @@ class SimOutput(Prototype):
 
         """
         def __init__(self, derivedAttrs = None):
-            """Constructor
+            """Initialiser for SimOutputType
 
-            Keyword Arguments:
-            derivedAttrs - A dictionary of keywords and functions. The
-                           functions must have signature function(iteration,
-                           tslice, system) and must return an object that h5py
-                           knows how to store in an hdf file. That object is
-                           stored in self.data_group[it].attrs[key].
+            Parameters
+            ==========
+            derivedAttrs : A dictionary of keywords and functions, Optional
+               The functions must have signature function(iteration,
+               tslice, system) and must return an object that h5py
+               knows how to store in an hdf file. That object is
+               stored in self.data_group[it].attrs[key].
             """
             if derivedAttrs is None:
                 self.derivedAttrs = {}
@@ -165,8 +158,10 @@ class SimOutput(Prototype):
             This is necessary because without the call the data_group may not
             be configured correctly.
 
-            Arguements - parent the SimOutput class that this SimOutputType
-                         belongs to.
+            Parameters
+            ==========
+            SimOuput:
+                parent the SimOutput class that this SimOutputType belongs to.
             """
             if parent.overwrite:
                 self.data_group = DataGroup(parent.hdf.require_group(\
@@ -192,7 +187,6 @@ class SimOutput(Prototype):
 
         This class assumes that tslice.TimeSlice.data has a type that h5py
         understands.
-
         """
         groupname = dgTypes["raw"]
 
@@ -291,19 +285,37 @@ class SimOutput(Prototype):
 
         Note that there is a size limitation on the .attrs variable and
         therefore this SimOutputType maybe more appropriate.
-
-        Arguments:
-        function - the function with signature (int, tslice.TimeSlice)
-        
         """
-	def __init__(self, name, function, frequency = 1, \
-                         start = 0, derivedAttrs = None):
+        def __init__(
+                self, 
+                name, 
+                function, 
+                frequency = 1,
+                start = 0, 
+                derivedAttrs = None
+            ):
+            """The initialiser for DerivedData.
+
+            Parameters
+            ==========
+            name : string
+                The name for the hdf.datagroup.
+            function : function(int, tslice.TimeSlice, system)
+                The function that returns the data to be stored in
+                the datagroup.
+            frequency : int
+                In dicates how many iterations pass for each call of this action.
+            start : float
+                The time from which to start performing the action.
+            derivedAttrs : 
+                See the docmentation for SimOutputType.
+            """
             self.func = function
             self.groupname = name
             self.freq = frequency
             self.start = start
             super(SimOutput.DerivedData,self).__init__(derivedAttrs)
-        
+
         def __call__(self,it,u):
             if (it % self.freq == 0 and self.start < u.time):
                 dg = self.data_group
@@ -311,12 +323,12 @@ class SimOutput(Prototype):
                 super(SimOutput.DerivedData,self).__call__(it,u)
 
     class System(SimOutputType):
-        """Attempts to writer out enough information about the system to allow
+        """Attempts to write out enough information about the system to allow
         for exact reconstruction of the simulation that produced the data being
         stored.
 
-        Of cause most things arn't that simple...
-
+        Of cause most things arn't that simple... and this SimOutput type
+        requires care during use.
         """
         groupname = systemD
         
@@ -348,5 +360,6 @@ class SimOutput(Prototype):
                 pnumvar.dtype, 
                 data=pnumvar
                 )
+
         def __call__(self,it,u):
             pass
