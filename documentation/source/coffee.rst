@@ -11,4 +11,5 @@ Welcome to the COFFEE module's documentation
    coffee/grid
    coffee/mpi
    coffee/actions
+   coffee/io
   
