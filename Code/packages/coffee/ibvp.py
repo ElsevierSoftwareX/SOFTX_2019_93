@@ -9,9 +9,9 @@ iterative step in an initial boundary value problem solver. However, this class
 is general enough to handle numerical techniques that have, at their highest
 level, some iterative method.
 """
+from __future__ import print_function
 
 import logging
-from __future__ import print_function
 
 class IBVP:
     """Handles computation of the solution to initial boundary value problems.

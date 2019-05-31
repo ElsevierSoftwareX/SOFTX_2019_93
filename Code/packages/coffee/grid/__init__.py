@@ -1,2 +1,2 @@
-from coffee.grid import *
+from coffee.grid.grid import *
 
