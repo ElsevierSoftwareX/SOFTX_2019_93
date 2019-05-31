@@ -1,6 +1,4 @@
 """A module that contains code to compute Clebsch Gordan coefficients.
-
-Created by Ben Whale.
 """
 from __future__ import division
 import ctypes

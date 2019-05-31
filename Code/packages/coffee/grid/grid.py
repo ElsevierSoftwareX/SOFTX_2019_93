@@ -5,8 +5,6 @@
 Grid objects represent the computational, spatial, domain.
 
 Each grid object understands it's own discretisation as well as how
-
-Created by Ben Whale.
 """
 
 from __future__ import division

@@ -3,8 +3,6 @@
 """
 This module implements a number of differential operators based on fourier
 transforms.
-
-Created by Ben Whale on 2011-09-05.
 """
 from __future__ import division
 

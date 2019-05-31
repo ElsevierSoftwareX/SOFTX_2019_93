@@ -15,8 +15,6 @@ The revision 104 python module does not provide access to delta method
 selection and the Gmm routines.
 Support for this could be added via ctypes or editting the 
 python/spinsfast_module.c code.
-
-Created by Ben Whale.
 """
 
 import numpy as np

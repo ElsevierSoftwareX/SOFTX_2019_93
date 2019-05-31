@@ -1,8 +1,6 @@
 """ 
 This module attempts to hide implementation details regarding spectral decomositions
 of spin wrighted spherical harmonic functions.
-
-Created by Ben Whale 
 """
 # Standard package imports
 from abc import ABCMeta, abstractmethod

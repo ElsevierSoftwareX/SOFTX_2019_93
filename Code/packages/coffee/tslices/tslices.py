@@ -28,9 +28,6 @@ At some point this will need to be changed... I assume after the move to Python
 TimeSlice objects should contain all information needed to interperet the
 values of the functions being numerically evolved. In particular, aim to ensure
 that you can restart a simulation if given a timeslice, system and solver.
-
-Created by Jörg Frauendiener on 2010-11-17.
-Additional development by Ben Whale since then.
 """
 
 import abc

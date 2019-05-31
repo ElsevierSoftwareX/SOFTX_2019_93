@@ -8,8 +8,6 @@ Stencil values are calculated using Fornberg's paper. Code for the
 calculations is available in
 `finite_difference_weights_generator.py` located in Code/Utils.
 See reading Fornberg's paper for the notation.
-
-Created by Jörg Frauendiener on 2011-01-10.
 """
 from __future__ import division
 

@@ -10,8 +10,6 @@ Series (2010) 189:255-260. All references to sections, appendices or equations
 in the documentation below refer to equations given in this paper.
 The spinsfast code website is
 http://astrophysics.physics.fsu.edu/~huffenbe/research/spinsfast/index.html
-
-Created by Ben Whale.
 """
 
 import sys

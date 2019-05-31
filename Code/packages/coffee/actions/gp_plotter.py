@@ -1,7 +1,6 @@
-"""A module containing actions that interface with GnuPlot.
+"""A module containing actions that interface with GnuPlot."""
 
-Created by Ben Whale
-"""
+from __future__ import print_function
 import Gnuplot
 import time
 import os

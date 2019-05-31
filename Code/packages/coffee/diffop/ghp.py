@@ -4,8 +4,6 @@ These are the differential operators, of the same name, given in the GHP spinor
 formalism. To use these operators coffee.swsh is used to convert function data
 into a spin weighted spherical harmonic expansion - if the data is not already
 represented in that form.
-
-Created by Ben Whale.
 """
 from __future__ import division
 import math

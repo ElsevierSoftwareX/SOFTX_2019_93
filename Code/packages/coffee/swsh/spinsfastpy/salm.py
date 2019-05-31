@@ -15,8 +15,6 @@ harmonic coefficients along with some meta data.
 
 The module also contains bindings to the methods given in the file alm.h 
 contained in Huffenberger's & Wandelt's spinsfast code.
-
-Created by Ben Whale.
 """
 # future imports
 from __future__ import division, absolute_import

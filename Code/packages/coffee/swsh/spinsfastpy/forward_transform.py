@@ -19,8 +19,6 @@ python/spinsfast_module.c code.
 
 The failure to wrap the multi functions requires this module to
 perform some array manipulations before calling spinsfast.
-
-Created by Ben Whale.
 """
 
 import numpy as np

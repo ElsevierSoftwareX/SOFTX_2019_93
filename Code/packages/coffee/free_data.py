@@ -16,9 +16,6 @@ This object is subclassed from abc inorder to make you think twice about what
 you are doing. If your free data is sufficiently simple the code that
 corresponds to free data could be included directly into system.System since
 all calls to FreeData are mediated through system.System.
-
-Created by Jörg Frauendiener on 2012-03-09, further edits by Ben Whale since
-then.
 """
 
 import abc

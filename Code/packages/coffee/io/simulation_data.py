@@ -8,8 +8,6 @@ The module hdf_output is closely related to this module. The dictionary
 dgTypes maps data group names to SimOutputType class names. It is best
 to read the hdf_output module documentation as well as this modules
 documentation if the dgTypes dictionary needs to be altered.
-
-Created by Ben Whale.
 """
 import functools
 import h5py

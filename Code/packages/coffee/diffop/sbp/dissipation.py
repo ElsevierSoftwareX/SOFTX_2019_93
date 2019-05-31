@@ -2,8 +2,6 @@
 # encoding: utf-8 
 """
 A module that contains dissipation operators for SBP operators.
-
-Created by Ben Whale, 2012-10-08. 
 """
 from __future__ import division
 #import sys

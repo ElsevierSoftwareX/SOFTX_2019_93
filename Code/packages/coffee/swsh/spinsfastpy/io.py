@@ -1,7 +1,5 @@
 """This module makes use of the simulation_data class in coffee.io to support
 output / input of salm objects in hdf files.
-
-Created by Ben Whale.
 """
 #Standard Library imports
 import numpy as np

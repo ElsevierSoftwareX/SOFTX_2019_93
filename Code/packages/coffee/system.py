@@ -14,9 +14,6 @@ recomended. You may get errors about the methods missing as a consequence.
 
 system.System has abc.ABCMeta as a meta class. This serves as a warning to
 really think about what you are doing if you don't implement all methods below.
-
-Created by Jörg Frauendiener on 2010-12-26.
-Modified by Ben Whale since then.
 """
 
 import abc

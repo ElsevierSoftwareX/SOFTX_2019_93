@@ -3,8 +3,6 @@ Contains classes that abstract the MPI C API.
 
 Classes in this module model the MPI node network and manage the relationship
 of the complete domain to each 
-
-Created by Ben Whale.
 """
 import abc
 from mpi4py import MPI

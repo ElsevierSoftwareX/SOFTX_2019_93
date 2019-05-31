@@ -8,12 +8,10 @@ The name ibvp comes from the original design of this class as the
 iterative step in an initial boundary value problem solver. However, this class
 is general enough to handle numerical techniques that have, at their highest
 level, some iterative method.
-
-Created by Jörg Frauendiener on 2010-12-24, further edits by Ben Whale, George
-Doulis and Jörg Frauendiener since then.
 """
 
 import logging
+from __future__ import print_function
 
 class IBVP:
     """Handles computation of the solution to initial boundary value problems.

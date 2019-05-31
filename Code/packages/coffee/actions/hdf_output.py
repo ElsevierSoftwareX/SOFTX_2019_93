@@ -7,8 +7,6 @@ specified below non - numpy array data can be stored conviently.
 I think of this method as a plugin in system. The user writes a new output
 method for some kind of new data type in a sub class of SimOutputType and
 'plugs' this method into the 'action' list of SimOutput.
-
-Created by Ben Whale.
 """
 import logging
 import numpy as np

@@ -2,14 +2,11 @@
 # encoding: utf-8 
 """
 A module to manage summation by parts finite difference operators.
-
-Created by Jörg Frauendiener on 2011-01-10. Further editting by George 
-Doulis and Ben Whale.
 """
-from __future__ import division
+
+from __future__ import division, print_function
 import sys
 import os
-#import unittest
 import math
 import numpy as np
 import logging

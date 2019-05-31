@@ -6,9 +6,6 @@ default implementations.
 
 This default implementations all assume that tslice.TimeSlice objects can be
 operated on by numerically (e.g. addition, multiplication, subtraction).
-
-Created by Jörg Frauendiener on 2010-12-26.
-Editted by Ben Whale since 2011.
 """
 
 import math
