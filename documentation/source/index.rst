@@ -20,10 +20,8 @@ as well as information about how to use COFFEE to solve a system of equations.
    :maxdepth: 2
   
    coffee
-
-
-
-
+   scripts
+   examples
 
 Indices and tables
 ==================

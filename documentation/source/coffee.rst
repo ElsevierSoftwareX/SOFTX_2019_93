@@ -1,5 +1,5 @@
-Welcome to the COFFEE module's documentation
-============================================
+Submodules 
+==========
 
 .. toctree::
   
@@ -12,4 +12,6 @@ Welcome to the COFFEE module's documentation
    coffee/mpi
    coffee/actions
    coffee/io
+   coffee/diffop
+   coffee/swsh
   

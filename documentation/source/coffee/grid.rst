@@ -1,6 +1,8 @@
 grid
 ====
 
+.. contents::
+
 boundary classes
 ----------------
 

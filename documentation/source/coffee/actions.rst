@@ -1,6 +1,8 @@
 actions
 =======
 
+.. contents::
+
 .. automodule:: coffee.actions
     :members:
     :special-members:
