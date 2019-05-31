@@ -20,16 +20,7 @@ python/spinsfast_module.c code.
 The failure to wrap the multi functions requires this module to
 perform some array manipulations before calling spinsfast.
 
-
-Methods:
-
-forward -- Returns the spin spherical harmonic coefficients, equation (6),
-    using either Imm or Jmm which can be specified via keyword arguments
-
-Copyright 2018
-Ben Whale 
-version 4 - GNU General Public License
-<http://www.gnu.org/licenses/>
+Created by Ben Whale.
 """
 
 import numpy as np
@@ -50,18 +41,24 @@ def forward(f, spins, lmax):
     """
     Returns the spin spherical harmonic coefficients for f.
     
-    Arguments:
-    f -- the values of a function on S^2 represented as a numpy.ndarry
-         of shape (Nmap, Ntheta, Nphi) according to the ecp discretisation, see
+    Parameters
+    ----------
+    f : numpy.ndarray of shape (Nmap, Ntheta, Nphi)
+         the values of a function on S^2 
+         according to the ecp discretisation, see
          Section 2.3 
-    spins -- a float or a numpy.ndarray of shape (Nmap,) of floats giving 
-             the required spins for the calculation. Note that allowed
-             floats are signed half integers. This is not checked.
-    lmax -- the maximum l needed.
+    spins : float, numpy.ndarray of shape (Nmap,) of floats
+        Specifies
+        the required spins for the calculation. Note that allowed
+        floats are signed half integers. This is not checked.
+    lmax : float
+        A float representation of an integer or half-integer. It specifies
+        the maximum bandwidth.
     
-    Returns:
-    salm -- an instance of the class alm.salm. This class gives acces to the 
-            spin coefficients of the function f from which Jmm was calculated.
+    Returns
+    -------
+    salm : swsh.salm.salm
+        Represents the spin weighted spherical harmonic expansion of f.
     """
     if len(f.shape) == 2:
         f = np.array([f])
@@ -79,5 +76,5 @@ def forward(f, spins, lmax):
     ])
     return salm.sfpy_salm(alm, spins, lmax)
 
-a = np.zeros((2,8,8), dtype="complex")
-print forward(a, [1,3], 3)
+#a = np.zeros((2,8,8), dtype="complex")
+#print forward(a, [1,3], 3)

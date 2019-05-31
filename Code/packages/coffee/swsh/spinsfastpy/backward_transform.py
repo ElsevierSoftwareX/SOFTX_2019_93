@@ -16,15 +16,7 @@ selection and the Gmm routines.
 Support for this could be added via ctypes or editting the 
 python/spinsfast_module.c code.
 
-Methods:
-
-backward -- Returns the values of the function, equation (12), on an ecp grid, 
-            section 2.3, using Gmm.
-
-Copyright 2018
-Ben Whale 
-version 4 - GNU General Public License
-<http://www.gnu.org/licenses/>
+Created by Ben Whale.
 """
 
 import numpy as np
@@ -43,17 +35,20 @@ import spinsfast
 def backward(salm, Ntheta, Nphi):
     """
     Returns a function on S^2 given it's spin coefficients in the form of an
-    alm.salm object.
+    salm object.
     
-    Arguments:
-    salm -- the alm.salm object that stores the spin coefficients
-    Ntheta -- an int giving the number of points discritising the theta 
-              variable of S^2
-    Nphi -- an int giving the number of points discritising the phi variable of
-            S^2
+    Parameters
+    ----------
+    salm : swsh.salm.salm
+        a subclass of numpy.ndarray that stores the spin coefficients
+    Ntheta : int
+        an int giving the number of points discritising the theta variable of S^2
+    Nphi : an int giving the number of points discritising the phi variable of S^2
     
-    Returns:
-    f -- a numpy.ndarray of shape (salm.spins.shape[[0], Ntheta, Nphi) 
+    Returns
+    -------
+    numpy.ndarray : 
+         a numpy.ndarray of shape (salm.spins.shape[[0], Ntheta, Nphi) 
          containing the values of the
          function on S^2, parameterised via the ecp discretisation, see
          section 2.3

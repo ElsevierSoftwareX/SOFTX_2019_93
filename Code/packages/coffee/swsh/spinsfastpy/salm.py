@@ -1,12 +1,14 @@
-""" 
-This module is part of spinsfastpy. Please see the package documentation. It
-contains an object which represents the spherical harmonic coefficients of a 
-function defined on S^2. Internally it provides python bindings for revision 104
+""" This module contains an object which represents 
+the spherical harmonic coefficients of a 
+function defined on S^2. 
+
+Internally it provides python bindings for revision 104
 of the methods listed in alm.h from Huffenberger's & Wandelt's spinsfast code. 
 See "Fast and exact spin-s Spherical Harmonic Transformations" in Astrophysical 
 Journal Supplement Series (2010) 189:255-260. All references to sections, 
 appendices or equations in the documentation below refer to equations given in 
-this paper.
+this paper. The original spinsfast code can be found at
+http://astrophysics.physics.fsu.edu/~huffenbe/research/spinsfast/index.html.
 
 The object is a subclass of numpy.ndarray which contains the spin spherical 
 harmonic coefficients along with some meta data.
@@ -14,10 +16,7 @@ harmonic coefficients along with some meta data.
 The module also contains bindings to the methods given in the file alm.h 
 contained in Huffenberger's & Wandelt's spinsfast code.
 
-Copyright 2018
-Ben Whale 
-version 3 - GNU General Public License
-<http://www.gnu.org/licenses/>
+Created by Ben Whale.
 """
 # future imports
 from __future__ import division, absolute_import
@@ -34,10 +33,8 @@ from coffee.swsh import salm
 from coffee.swsh.spinsfastpy.index_utilities import lm_ind, ind_lm, lmax_Nlm
 
 class sfpy_salm(np.ndarray):
-    
-    """
-    Represents the spin spherical harmonic coefficients of a function defined on
-    S^2.
+    """Represents the spin spherical harmonic coefficients of a 
+    function defined on S^2.
     
     The coefficient of sYlm is accessed as sfpy_salm[s,l,m]. Basic slicing 
     is implemented.
@@ -46,21 +43,42 @@ class sfpy_salm(np.ndarray):
     cg_default = cg_mod.CGStone()
     
     def __new__(cls, array, spins, lmax, cg=None, bandlimit_multiplication=False):
-        """
-        Returns an instance of alm.salm.
+        """Returns an instance of alm.salm.
+
+        It must be the case that:
+
+            len(spins) == len(array[:,0]). 
+            
+        This is not checked.
         
         While it is possible to construct instances of this class directly, see
         the file example_mulispin.c of spinsfast, the more usual construction
         will be as the object returned by spinsfastpy.forward.forward.
         
-        Arguments:
-        array -- the alm array with the structure described in the doc string
-                 for the class.
-        spins -- an array of the spin values. It must be the case that 
-                 len(spins) == len(array[:,0]). This is not checked.
+        Parameters
+        ----------
+        array : numpy.ndarray
+            The alm array with the structure described in 
+            the doc string for the class.
+
+        spins : numpy.ndarray
+            An array of the spin values. 
+
+        lmax : float
+            The maximum bandwidth.
+
+        cg : Optional
+            An object that computes Clebsch Gordan coefficients.
+
+        bandlimit_multiplication : bool, Optional
+            If true the bandwidth maximum during multiplication is the sum
+            of the limits for the two series. Otherwise the bandwidth limit
+            during multiplication is the maximum of the limits of the
+            two multiplicands.
                  
-        Returns:
-        salm -- an instance of class alm.salm
+        Returns
+        -------
+        salm : an instance of class alm.salm
         """
         # no error checking is currently done to test if s>=l. Be warned.
         spins = np.asarray(spins)
@@ -89,7 +107,8 @@ class sfpy_salm(np.ndarray):
         return obj
             
     def __array_finalize__(self, obj):
-        if obj is None: return
+        if obj is None: 
+            return
         self.spins = getattr(obj, 'spins', None)
         self.lmax = getattr(obj, 'lmax', None)
         self.bl_mult = getattr(obj, 'bl_mult', None)
@@ -104,7 +123,7 @@ class sfpy_salm(np.ndarray):
                     self.spins, 
                     l, 
                     repr(self[l].view(np.ndarray))
-                    )
+                )
         else:
             for spin in self.spins:
                 for l in range(self.lmax + 1):
@@ -112,7 +131,7 @@ class sfpy_salm(np.ndarray):
                         spin, 
                         l, 
                         repr(self[spin,l].view(np.ndarray))
-                        )
+                    )
         return s 
        
     def __repr__(self):
@@ -122,14 +141,16 @@ class sfpy_salm(np.ndarray):
             repr(self.bl_mult),
             repr(self.cg),
             repr(self.view(np.ndarray))
-            )
+        )
         return s
 
-    #@property
-    #def coefs(self):
-        #return self.view(np.ndarray)
-
     def multiplication_bandlimit(self, bool):
+        """Sets the multiplication bandwidth limit.
+
+        Parameters
+        ----------
+        bool : bool
+        """
         self.bl_mult = bool
 
     def __getslice__(self, start, stop):
@@ -146,6 +167,15 @@ class sfpy_salm(np.ndarray):
         return self.__getitem__(slice(start, stop))
 
     def __getitem__(self, key):
+        """Returns the salm coefficient given by the key.
+        
+        See convert_key for information about key.
+        
+        Parameters
+        ----------
+        key:
+            Specifies s, l, m.
+        """
         alt_key = self.convert_key(key)
         if len(alt_key) == 1:
             if self.spins.shape is ():
@@ -157,20 +187,46 @@ class sfpy_salm(np.ndarray):
                     self.lmax,
                     self.cg,
                     self.bl_mult
-                    )
+                )
         else:
             return self.view(np.ndarray)[alt_key]
         
     def __setitem__(self, key, value):
+        """Sets the value of the coefficient corresponding to the given values
+        of s, l, m in the key.
+
+        See convert_key for information about key.
+
+        Parameters
+        ----------
+        key:
+            Specifies s, l, m.
+        """
         alt_key = self.convert_key(key)
         self.view(np.ndarray)[alt_key] = value
-
-    #def __iter__(self):
-        #for spin in self.spins:
-            #yield self[spin]
         
     def convert_key(self, key):
-        # convert ket into a tuple of ints and slices
+        """Converts a 'key' representing (s, l, m) to a tuple of
+        indices whose array value is the coefficient for the slm component.
+
+        Valid forms of key are: int or slice, or a two / three tuple of
+        ints or slices. If len(key) == 1 it is assumed that key gives l.
+        If len(key) == 2 it is assumed that key gives l, m.
+        If len(key) == 3 it is assumed that key gives s, l, m.
+        Sensible defaults for s and m are assumed if not given.
+
+        Parameters
+        ----------
+        key:
+            Represents the s,l,m coefficient.
+
+        Returns
+        -------
+        two tuple of ints:
+            The first int gives and spinor index and the second gives the
+            index corresponding to l and m.
+        """
+        # convert key into a tuple of ints and slices
         key = np.index_exp[key]
 
         # perform the transformation from salm to indices
@@ -191,6 +247,20 @@ class sfpy_salm(np.ndarray):
             raise IndexError("Too many indices")
 
     def _addsub(self, other, add):
+        """A utility that supports addition or subtraction of salm.salm 
+        arrays.
+
+        Parameters
+        ----------
+        other : salm.salm
+        add : bool
+            True for addition, False for subtraction.
+
+        Returns
+        -------
+        salm.salm:
+            The result of the addition or subtraction.
+        """
         #check object types and delegate addition if not sfpy_salm
         if not isinstance(other, sfpy_salm):
             if __debug__:
@@ -292,14 +362,43 @@ class sfpy_salm(np.ndarray):
             array = array[0]    
         return sfpy_salm(array, spins, lmax, cg, bl_mult)
 
-
     def __add__(self,other):
+        """Addition.
+
+        Parameters
+        ----------
+        other : salm.salm
+
+        Returns
+        -------
+        salm.salm :
+        """
         return self._addsub(other, True)
 
     def __sub__(self,other):
+        """Subtraction.
+
+        Parameters
+        ----------
+        other : salm.salm
+
+        Returns
+        -------
+        salm.salm :
+        """
         return self._addsub(other, False)             
 
     def __rmul__(self, other):
+        """rmul.
+
+        Parameters
+        ----------
+        other : salm.salm
+
+        Returns
+        -------
+        salm.salm :
+        """
         return sfpy_salm(
             other * self.view(np.ndarray),
             self.spins, 
@@ -309,6 +408,16 @@ class sfpy_salm(np.ndarray):
             )
 
     def __mul__(self, other):
+        """Multiplication.
+
+        Parameters
+        ----------
+        other : salm.salm
+
+        Returns
+        -------
+        salm.salm :
+        """
         # Do we need to treat this multiplication as between salm objects?
         if not isinstance(other, sfpy_salm):
             a = sfpy_salm(
@@ -412,11 +521,33 @@ class sfpy_salm(np.ndarray):
             bandlimit_multiplication=bl_mult
             )
 
-salm.Salm.register(sfpy_salm)
+#salm.Salm.register(sfpy_salm)
 
 def _convert_lm_key(key, lmax):
+    """A utility function that maps the variable `key` to
+    a slice or index representing the array location of
+    the lm coefficient given by the key.
+
+    The method attempts to make a reasonable attempt of interpreting the key.
+    Valid values of key are: int, slice, tuple of ints or slices or both.
+
+    Parameters
+    ----------
+    key : a two tuple
+        Represents the l and m variables for a harmonic representation of
+        a function.
+
+    Returns
+    -------
+    tuple of ints or slices:
+
+    Raises
+    ------
+    IndexError:
+        This is raised when an invalid key is given.
+    """
     if isinstance(key, int):
-        l_ind = lm_ind(key[0],-key[0])
+        l_ind = lm_ind(key[0], -key[0])
         return slice(l_ind, l_ind + 2*key[0] +1)
     elif isinstance(key, slice):
         if key == slice(None, None, None):
@@ -435,12 +566,12 @@ def _convert_lm_key(key, lmax):
             raise IndexError("The order index cannot be a slice")
         elif key[0] <= lmax and key[0] >= 0:
             if len(key) == 1:
-                l_ind = lm_ind(key[0],-key[0])
+                l_ind = lm_ind(key[0], -key[0])
                 return slice(l_ind, l_ind + 2*key[0] +1)
             elif len(key) == 2:
                 if isinstance(key[1], slice):
                     if key[1] == slice(None, None, None):
-                        l_ind = lm_ind(key[0],-key[0])
+                        l_ind = lm_ind(key[0], -key[0])
                         return slice(l_ind, l_ind + 2*key[0] +1)
                     else:
                         raise IndexError("The degree index cannot be a slice")
@@ -452,6 +583,24 @@ def _convert_lm_key(key, lmax):
             raise IndexError("order out of bounds")
 
 def _convert_spin_key(key, spins):
+    """A utility method that converts the key variable representing 
+    s,l,m values to the array indices that contain the slm coefficient.
+
+    Valid values of `key` are int, slice.
+
+    Parameters
+    ----------
+    key : int or slice
+
+    Returns
+    -------
+    int or slice:
+
+    Raises
+    ------
+    IndexError:
+        Raised when the key is invalid.
+    """
     if isinstance(key, int):
         try:
             spin_key = np.where(spins == key)[0][0]
@@ -472,7 +621,6 @@ def _convert_spin_key(key, spins):
     return spin_key
 
 class sfpy_sralm(np.ndarray):
-
     """
     Represents the spin spherical harmonic coefficients of a function defined on
     [a,b] x S^2. It is assume that this array will be stored in an array
@@ -486,8 +634,7 @@ class sfpy_sralm(np.ndarray):
     cg_default = None
     
     def __new__(cls, array, spins, lmax, cg=None, bandlimit_multiplication=False):
-        """
-        Returns an instance of alm.sralm.
+        """Returns an instance of salm.sralm.
 
         The array must have the following structure: len(array.shape)=2 or 3,
         If .... balch
@@ -495,13 +642,15 @@ class sfpy_sralm(np.ndarray):
         array.shape[1] = number of grid points in the interval
         array.shape[2] = salm.lmax_Nlm(lmax)
         
-        Arguments:
-        array -- the alm array with the structure described in the doc string
-                 for the class.
-        spinis -- an array of ints giving the spin values.
+        Parameters
+        ----------
+        array : numpy.ndarray
+        spins : numpy.ndarray
+            an array of ints giving the spin values.
                  
-        Returns:
-        sfpy_sralm -- an instance of class sfpy_sralm
+        Returns
+        -------
+        sfpy_sralm :
         """
         spins = np.asarray(spins)
         if len(array.shape) == 2:
@@ -526,7 +675,8 @@ class sfpy_sralm(np.ndarray):
         return obj
             
     def __array_finalize__(self, obj):
-        if obj is None: return
+        if obj is None: 
+            return
         self.spins = getattr(obj, 'spins', None)
         self.lmax = getattr(obj, 'lmax', None)
         self.bl_mult = getattr(obj, 'bl_mult', None)
@@ -569,7 +719,7 @@ class sfpy_sralm(np.ndarray):
         return s
 
     def __getslice__(self, start, stop):
-        """Thiss solves a subtle bug, where __getitem__ is not called, and all
+        """This solves a subtle bug, where __getitem__ is not called, and all
         the dimensional checking not done, when a slice of only the first
         dimension is taken, e.g. a[1:3]. From the Python docs:
         Deprecated since version 2.0: Support slice objects as parameters
@@ -579,16 +729,30 @@ class sfpy_sralm(np.ndarray):
         """  
         return self.__getitem__(slice(start, stop))
 
-    #def __iter__(self):
-        #for spin in self.spins:
-            #yield self[spin]
-
     def __setitem__(self, key, value):
+        """Sets the value of the coefficient corresponding to the given values
+        of s, l, m in the key.
+
+        See convert_key for information about key.
+
+        Parameters
+        ----------
+        key:
+            Specifies s, l, m.
+        """
         alt_key = self.convert_key(key)
         self.view(np.ndarray)[alt_key] = value
 
     def __getitem__(self, key):
-        #import pdb; pdb.set_trace()
+        """Returns the salm coefficient given by the key.
+        
+        See convert_key for information about key.
+        
+        Parameters
+        ----------
+        key:
+            Specifies s, l, m.
+        """
         key = self.convert_key(key)
         if self.spins.shape is ():
             return self._getitem_no_spin(key)
@@ -726,6 +890,26 @@ class sfpy_sralm(np.ndarray):
         raise IndexError("Unable to process selection")
 
     def convert_key(self, key):
+        """Converts a 'key' representing (s, l, m) to a tuple of
+        indices whose array value is the coefficient for the slm component.
+
+        Valid forms of key are: int or slice, or a two / three tuple of
+        ints or slices. If len(key) == 1 it is assumed that key gives l.
+        If len(key) == 2 it is assumed that key gives l, m.
+        If len(key) == 3 it is assumed that key gives s, l, m.
+        Sensible defaults for s and m are assumed if not given.
+
+        Parameters
+        ----------
+        key:
+            Represents the s,l,m coefficient.
+
+        Returns
+        -------
+        three tuple of ints:
+            The first int gives and spinor index and the second gives the
+            index corresponding to l and m.
+        """
         key = np.index_exp[key]
         if len(key) == 1:
             if self.spins.shape is ():
@@ -743,11 +927,21 @@ class sfpy_sralm(np.ndarray):
                     _convert_spin_key(key[0], self.spins), 
                     key[1],
                     _convert_lm_key(key[2:], self.lmax)
-                    )
+                )
         else:
             return IndexError("too many indices")
 
     def __add__(self, other):
+        """Addition.
+
+        Parameters
+        ----------
+        other:
+
+        Returns
+        -------
+        salm.salm:
+        """
         if isinstance(other, sfpy_sralm):
             if self.spins.shape == ():
                 rv_temp = self[0] + other[0]
@@ -784,7 +978,16 @@ class sfpy_sralm(np.ndarray):
                 )
 
     def __radd__(self, other):
-        """Note that no checking for the correct spin is performed."""
+        """radd.
+
+        Parameters
+        ----------
+        other:
+
+        Returns
+        -------
+        salm.salm:
+        """
         return sfpy_sralm(
                 other + np.asarray(self), 
                 self.spins,
@@ -794,6 +997,16 @@ class sfpy_sralm(np.ndarray):
                 )
 
     def __sub__(self, other):
+        """Subtraction.
+
+        Parameters
+        ----------
+        other:
+
+        Returns
+        -------
+        salm.salm:
+        """
         if isinstance(other, sfpy_sralm):
             if self.spins.shape == ():
                 rv_temp = self[0] - other[0]
@@ -830,7 +1043,16 @@ class sfpy_sralm(np.ndarray):
                 )
 
     def __rsub__(self, other):
-        """Note that no checking for the correct spin is performed."""
+        """rsub.
+
+        Parameters
+        ----------
+        other:
+
+        Returns
+        -------
+        salm.salm:
+        """
         return sfpy_sralm(
                 other - np.asarray(self), 
                 self.spins,
@@ -840,6 +1062,16 @@ class sfpy_sralm(np.ndarray):
                 )
 
     def __mul__(self, other):
+        """Multiplication.
+
+        Parameters
+        ----------
+        other:
+
+        Returns
+        -------
+        salm.salm:
+        """
         if isinstance(other, sfpy_sralm):
             rv_temp = self[:,0] * other[:, 0]
             rv = np.empty(
@@ -866,6 +1098,16 @@ class sfpy_sralm(np.ndarray):
                 )
 
     def __rmul__(self, other):
+        """rmul.
+
+        Parameters
+        ----------
+        other:
+
+        Returns
+        -------
+        salm.salm:
+        """
         return sfpy_sralm(
             other * self.view(np.ndarray),
             self.spins,
@@ -874,8 +1116,7 @@ class sfpy_sralm(np.ndarray):
             bandlimit_multiplication=self.bl_mult
             )
 
-
-salm.Salm.register(sfpy_sralm)
+#salm.Salm.register(sfpy_sralm)
 
 #if __name__ == "__main__":
     #lmax = 2

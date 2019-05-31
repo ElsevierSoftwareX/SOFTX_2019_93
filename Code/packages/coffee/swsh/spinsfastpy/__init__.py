@@ -14,12 +14,13 @@ does not expose the required methods and arguments.
 Some example code, both C and Python can be found in ./examples.
 """
 
-from forward_transform import forward
-from backward_transform import backward
-import salm
+from coffee.swsh.spinsfastpy.forward_transform import forward
+from coffee.swsh.spinsfastpy.backward_transform import backward
 
 del forward_transform
 del backward_transform
 
 def set_clebsch_gordan_default(cg):
+    """This function sets the default method for computation of
+    Clebsch Gordan coefficients in the module coffee.diffop.swsh.spinsfastpy."""
     salm.sfpy_salm.cg_default = cg

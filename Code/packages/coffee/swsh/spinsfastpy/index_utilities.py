@@ -11,15 +11,7 @@ in the documentation below refer to equations given in this paper.
 The spinsfast code website is
 http://astrophysics.physics.fsu.edu/~huffenbe/research/spinsfast/index.html
 
-Methods:
-
-forward -- Returns the spin spherical harmonic coefficients, equation (6),
-    using either Imm or Jmm which can be specified via keyword arguments
-
-Copyright 2018
-Ben Whale 
-version 4 - GNU General Public License
-<http://www.gnu.org/licenses/>
+Created by Ben Whale.
 """
 
 import sys
@@ -31,14 +23,19 @@ def lm_ind(l, m, lmax=0):
     """
     Returns an array index given l and m.
     
-    Arguments:
-    l -- an int giving the l value of the needed coefficient
-    m -- an int giving the m value of the needed coefficient
-    lmax -- an int giving the maximum allowed l value
+    Parameters
+    ----------
+    l : int
+        Gives the l value of the needed coefficient.
+    m : int
+        Gives the m value of the needed coefficient.
+    lmax : int
+        an int giving the maximum allowed l value.
     
-    Returns:
-    index -- an int giving the index of the array which contains the 
-             coefficient for l and m
+    Returns
+    -------
+    index : int
+        Gives the index of the array which contains the coefficient for l and m
     """
     return spinsfast.lm_ind(l, m, lmax)
 
@@ -47,15 +44,17 @@ def ind_lm(i, lmax=0):
     """
     Returns l and m given an array index.
     
-    Binds to the method ind_lm of alm.h.
+    Parameters
+    ----------
+    i : int 
+        Gives the index of the array which contains the coefficient for l and m
+    lmax : int
+        Gives the maximum allowed l value.
     
-    Arguments:
-    index -- an int giving the index of the array which contains the 
-             coefficient for l and m
-    lmax -- an int giving the maximum allowed l value
-    
-    Returns:
-    [l, m] -- a list of ints giving the l and m values for the given index
+    Returns
+    -------
+    [l, m] -- a list of ints 
+        Gives the l and m values for the given index.
     """
     return spinsfast.ind_lm(i, lmax)
 
@@ -68,12 +67,15 @@ def Nlm_lmax(Nlm):
     all |m|<=l values can be stored in the array, only that one (in this case
     m=-l), can be stored in the array.
     
-    Arguments:
-    Nlm -- the length of the array
+    Parameters
+    ----------
+    Nlm : int
+        The length of the array.
     
-    Returns:
-    lmax -- the maximum l for which at least one m value can be stored in the
-            array
+    Returns
+    -------
+    lmax : int
+        the maximum l for which at least one m value can be stored in the array.
     """
     lmax, _ = ind_lm(Nlm-1)
     return lmax
@@ -82,10 +84,14 @@ def lmax_Nlm(lmax):
     """
     Returns the maximum array length given the maximum l.
     
-    Arguments:
-    lmax -- an int giving the maximum l value
+    Parameters
+    ----------
+    lmax : int
+        Gives the maximum l value.
     
-    Returns:
-    Nlm -- an int giving the array length for alm
+    Returns
+    -------
+    Nlm : int
+        Gives the array length for alm.
     """
     return spinsfast.N_lm(lmax)

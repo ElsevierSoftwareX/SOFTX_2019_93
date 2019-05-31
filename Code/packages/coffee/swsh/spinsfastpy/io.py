@@ -1,3 +1,8 @@
+"""This module makes use of the simulation_data class in coffee.io to support
+output / input of salm objects in hdf files.
+
+Created by Ben Whale.
+"""
 #Standard Library imports
 import numpy as np
 
@@ -9,69 +14,40 @@ from coffee.swsh.spinsfastpy import salm
 simulation_data.dgTypes["sralm"] = "sralm"
 
 class Sralm_Out(SimOutput.SimOutputType):
+    """An actions.hdf_output.SimOutput.SimOutputType object for the writing of sralm objects to
+    hdf files.
+    """
 
     groupname = simulation_data.dgTypes["sralm"]
 
     def __call__(self, it, u):
-        #import pdb;pdb.set_trace()
         dg = self.data_group
         _write_salm(dg, it, u.data)
-
-        #dg[it] = np.array([
-            #np.asarray(d) for d in u.data
-            #], dtype = 'complex')
-
-        #dg[it].attrs["spins"]= np.array([
-            #d.spins for d in u.data
-            #], dtype = 'int')
-
-        #lmax = u.data[0].lmax
-        #for i in range(1, u.data.shape[0]):
-            #if lmax is not u.data[0].lmax:
-                #raise ValueError("Unable to store salm objects with different\
-                #lmax in the same datagroup.")
-        #dg[it].attrs["lmax"] = lmax
-
-
-        #cg = u.data[0].cg
-        #for i in range(1, u.data.shape[0]):
-            #if cg is not u.data[0].cg:
-                #raise ValueError("Unable to store salm objects with different\
-                #cg in the same datagroup.")
-        #dg[it].attrs["cg_module"] = cg.__module__ 
-        #dg[it].attrs["cg_class"] = cg.__class__.__name__
-
-
-        #bl_mult = u.data[0].bl_mult
-        #for i in range(1, u.data.shape[0]):
-            #if bl_mult is not u.data[0].bl_mult:
-                #raise ValueError("Unable to store salm objects with different\
-                #multiplication bandlimits in the same datagroup.")
-        #dg[it].attrs["bl_mult"] = bl_mult
         super(Sralm_Out, self).__call__(it, u)
 
 class SralmDataGroup(simulation_data.DataGroup):
+    """A data group object for sralm objects."""
 
     def __init__(self, *args, **kwds):
+        """Initialisation of SralmDataGroup.
+
+        See simulation_data.DataGroup.__init__() for parameters.
+        """
         super(SralmDataGroup, self).__init__(*args, **kwds)
 
     def __setitem__(self, i, sralm):
-        #import pdb; pdb.set_trace()
+        """Supports writing of data.
+
+        See simulation_data.DataGroup.__setitem__() for parameters.
+        """
         if len(sralm.shape) == 1:
-
-            #value = np.array([
-                #np.asarry(d) for d in u.data
-                #], dytpe='complex')
-            
-            #dataset = self.group.require_dataset(
-                #str(i), 
-                #value.shape,  
-                #value.dtype
-                #)
-
             _write_salm(self.group, i, sralm)
 
     def __getitem__(self, i):
+        """Supports reading of data.
+
+        See simulation_data.DataGroup.__getitem__() for parameters.
+        """
         if self.rV:
             cg_mod = __import__(
                 self.group[str(i)].attrs["cg_module"],
@@ -94,33 +70,33 @@ class SralmDataGroup(simulation_data.DataGroup):
         return r"<SralmDataGroup %s (%d)>"% (self.name, len(self))       
 
 def _write_salm(datagroup, index, salm):
+    """A utility method that performs the writing of salm objects to hdf 
+    datagroups.
 
-    datagroup[str(index)] = np.asarray(
-        salm
-        )
-    #datagroup[str(index)] = np.array([
-        #np.asarray(d) for d in salm
-        #], dtype = 'complex')
-
-    datagroup[str(index)].attrs["spins"]= np.array(
-        salm.spins
-        )
-    #datagroup[str(index)].attrs["spins"]= np.array([
-        #d.spins for d in salm
-        #], dtype = 'int')
+    Parameters
+    ----------
+    datagroup : hdf.datagroup
+        The hdf data group to which the salm object will be written.
+    index : int
+        The index of the dataset in the data gropu that will contain the data.
+    salm: swsh.salm.salm
+        The spin weighted spherical harmonic components.
+    """
+    datagroup[str(index)] = np.asarray(salm)
+    datagroup[str(index)].attrs["spins"]= np.array(salm.spins)
 
     lmax = salm[0].lmax
     for i in range(1, salm.shape[0]):
         if lmax is not salm[0].lmax:
             raise ValueError("Unable to store salm objects with different\
-            lmax in the same datagroup.")
+                lmax in the same datagroup.")
     datagroup[str(index)].attrs["lmax"] = lmax
 
     cg = salm[0].cg
     for i in range(1, salm.shape[0]):
         if cg is not salm[0].cg:
             raise ValueError("Unable to store salm objects with different\
-            cg in the same datagroup.")
+                cg in the same datagroup.")
     datagroup[str(index)].attrs["cg_module"] = cg.__module__ 
     datagroup[str(index)].attrs["cg_class"] = cg.__class__.__name__
 
@@ -128,9 +104,10 @@ def _write_salm(datagroup, index, salm):
     for i in range(1, salm.shape[0]):
         if bl_mult is not salm[0].bl_mult:
             raise ValueError("Unable to store salm objects with different\
-            multiplication bandlimits in the same datagroup.")
+                multiplication bandlimits in the same datagroup.")
     datagroup[str(index)].attrs["bl_mult"] = bl_mult
 
+# Dynamic injection of the salm datagroup into the coffee.io module.
 simulation_data.dgTypes_DataGroups["sralm"] = (
   "coffee.swsh.spinsfastpy.io", "SralmDataGroup"
-  )
+)
