@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # encoding: utf-8 
 """
+A module that contains dissipation operators for SBP operators.
+
 Created by Ben Whale, 2012-10-08. 
 """
 from __future__ import division
@@ -16,6 +18,7 @@ import logging
 # Base classes for SBP artificial dissipation operators
 ################################################################################
 class Diss(object):
+    """The parent class for SBP dissipation operators."""
     name = "Dissipation"
 
     def __init__(self, *args, **kwds):
@@ -30,19 +33,19 @@ class Diss(object):
         if u.shape[0] + 1 <= 2 * c:
             self.log.error("Domain too small for application of operator")
             raise ValueError("Domain too small for application of operator")
-#        if __debug__:
-#            self.log.debug("Boundary region r = %s, c = %s"%(r,c))
-#            self.log.debug("Array to operate on is = %s"%repr(u))
+        if __debug__:
+            self.log.debug("Boundary region r = %s, c = %s"%(r,c))
+            self.log.debug("Array to operate on is = %s"%repr(u))
 
     def __str__(self):
         return "SBP Dissipation operator"%self.name
         
 class DissDiag(Diss):
+    """A class that represents dissipation operators that are diagonal."""
     name = "Dissipation Diagonal Norm"
 
     def __init__(self):
         self.bdyRegion = self.Ql.shape
-        #self.w = self.A.shape[0]//2
         self.log = logging.getLogger('DissDiag')
 
     def __call__(self, u, dx, boundary_ID=None):
@@ -50,56 +53,69 @@ class DissDiag(Diss):
         r, c = self.bdyRegion
         diss_u = np.zeros_like(u)
         diss_u = np.convolve(u, self.A, mode='same')
-#        if __debug__:
-#            self.log.debug("After convolve: diss_u = %s"%repr(diss_u))
+        if __debug__:
+            self.log.debug("After convolve: diss_u = %s"%repr(diss_u))
         if boundary_ID is None:
             diss_u[0:r] = np.dot(self.Ql, u[0:c])
             diss_u[-r:] = np.dot(self.Qr, u[-c:])
-#            if __debug__:
-#                self.log.debug("Applying both boundary region computation")
+            if __debug__:
+                self.log.debug("Applying both boundary region computation")
         elif boundary_ID == grid.LEFT:
             diss_u[0:r] = np.dot(self.Ql, u[0:c])
-#            if __debug__:
-#                self.log.debug("Applying left boundary region computation")
+            if __debug__:
+                self.log.debug("Applying left boundary region computation")
         elif boundary_ID == grid.RIGHT:
             diss_u[-r:] = np.dot(self.Qr, u[-c:])
-#            if __debug__:
-#                self.log.debug("Applying right boundary region computation")    
-#        if __debug__:
-#            self.log.debug("After boundary conditions: diss_u = %s"%repr(diss_u))
+            if __debug__:
+                self.log.debug("Applying right boundary region computation")    
+        if __debug__:
+            self.log.debug("After boundary conditions: diss_u = %s"%repr(diss_u))
         factor = math.pow(0.5, 2 * self.p)
         return factor * diss_u
 
 class DissRestFull(Diss):
+    """A class that represents dissipation operators for restricted full norms."""
     name = "Dissipation Restricted Full Norm"
 
     def __init__(self, p):
+        """The Initialiser for this class.
+
+        Parameters
+        ----------
+        p : int
+            The power of the operator.
+        """
         self.bdyRegion = self.Ql.shape
-        #self.w = self.A.shape[0]//2
         self.p = p
         self.log = logging.getLogger('DissRestFull')
 
     def __call__(self, u, dx, boundary_ID=None):
-        """We follow the notation of Diener Dorband Schnetter and Tiglio. We
+        """Applies the operator.
+        
+        We follow the notation of Diener Dorband Schnetter and Tiglio. We
         make the assumption that the differencing operator D_p is always of the
         form of some central finite difference stencil in the interior and some
         boundary matrix on the boundary.
         
         An important assumption is that D decomposes into the sum of two
         matrices A, Q. Where A represents the application of a centred
-        finite difference operator on the interior and B the application of the
+        finite difference operator on the interior and Q the application of the
         centred difference on the boundary. 
 
         If the stencil for A is [-1,3, -3, 1] then it is assumed that
-        D has the form
-        [[-1, 3, -3, 1, 0,...], [-1, 3, -3, 1, 0,...], [-1, 3, -3, 1, 0,...],
-         [0, -1, 3, -3, 1, 0,...], [0, 0, -1, 3, -3, 1, 0, ...], ... ]
+        D has the form:
+
+            [[-1, 3, -3, 1, 0,...], [-1, 3, -3, 1, 0,...], [-1, 3, -3, 1, 0,...],
+             [0, -1, 3, -3, 1, 0,...], [0, 0, -1, 3, -3, 1, 0, ...], ... ]
+
         and that the number of times the stencil is repeated on the boundary
         is the stencil length (4 in this case) minus 1 (to give 3 repeats).
-        Hence Q is assumed to have the form
-        [[-1, 3, -3, 1, 0,...], [-1, 3, -3, 1, 0,...], [0,0,0,0,0,...],
-         [0,0,0,0,0,0,...], ... ]
-        and A is assumed to be D-B. This ensures that if
+        Hence Q is assumed to have the form:
+
+            [[-1, 3, -3, 1, 0,...], [-1, 3, -3, 1, 0,...], [0,0,0,0,0,...],
+             [0,0,0,0,0,0,...], ... ]
+
+        and A is assumed to be D-Q. This ensures that if
         r,c = self.bdyRegion then r = self.A.shape[0]//2. This is an important
         assumption that is applied in the formula below to calculate 
         Transpose[A].B.A.u where B is the non-constant diagonal matrix required 
@@ -108,13 +124,26 @@ class DissRestFull(Diss):
         The explicit form of A and Q here ensures that Transpose[A].Q = 0
         and Transpose[Q].A = 0. This implies that
         Transpose[D].B.D.u = Transpose[Q].B.Q.u + Transpose[A].B.A.u
-        This equation reduces the need for futher calculations involving
+        This equation reduces the need for further calculations involving
         Transpose[A].Q and Transpose[Q].A
 
         In principle it is possible to remove these restrictions, i.e. allow
-        r \neq self.A.shape[0]//2 and to allow Transpose[A].Q \neq 0
-        and Transpose[Q].A \neq 0, but the code below WILL need to be 
+        r neq self.A.shape[0]//2 and to allow Transpose[A].Q neq 0
+        and Transpose[Q].A neq 0, but the code below WILL need to be 
         rewritten.
+
+        Parameters
+        ----------
+        u: tslice.TimeSlice
+            The data
+        ds : float
+            The spatial step size
+        boundary_ID: int
+            See the SBP operator module.
+
+        Returns
+        -------
+        numpy.ndarray:
         """
         #This performs a consistance check
         super(DissRestFull, self)._consistancy_check(u, self.Ql.shape)
@@ -189,8 +218,8 @@ class DissRestFull(Diss):
         #two array's diss_u_b[0:r] and diss_u_b[-r:] do not share any points
         #of diss_u_b
         diss_u_b = np.zeros_like(u)
-#        if __debug__:
-#            self.log.debug("After convolve: diss_u = %s"%repr(diss_u))
+        if __debug__:
+            self.log.debug("After convolve: diss_u = %s"%repr(diss_u))
         if boundary_ID is None:
             diss_u_b[0:r] = np.dot(self.Ql, u[0:c])
             diss_u_b[-r:] = np.dot(self.Qr, u[-c:])
@@ -208,24 +237,24 @@ class DissRestFull(Diss):
             diss_u_b[-c:] = np.dot(diss_u_b[-r:], self.Qr)
             if __debug__:
                 self.log.debug("Transpose[Q].B.Q.u = %s"%repr(diss_u_b))
-#            if __debug__:
-#                self.log.debug("Applying both boundary region computation")
+            if __debug__:
+                self.log.debug("Applying both boundary region computation")
         elif boundary_ID == grid.LEFT:
             diss_u[0:r] = np.dot(self.Ql, u[0:c])
             for i in range(size):
                 diss_u_b[i] = self.B(i, dx, size) * diss_u_b[i]
             diss_u_b[0:c] = np.dot(diss_u_b[0:r], self.Ql)
-#            if __debug__:
-#                self.log.debug("Applying left boundary region computation")
+            if __debug__:
+                self.log.debug("Applying left boundary region computation")
         elif boundary_ID == grid.RIGHT:
             diss_u[-r:] = np.dot(self.Qr, u[-c:])
             for i in range(size):
                 diss_u_b[i] = self.B(i, dx, size) * diss_u_b[i]
             diss_u_b[-c:] = np.dot(diss_u_b[-r:], self.Qr)
-#            if __debug__:
-#                self.log.debug("Applying right boundary region computation")    
-#        if __debug__:
-#            self.log.debug("After boundary conditions: diss_u = %s"%repr(diss_u))
+            if __debug__:
+                self.log.debug("Applying right boundary region computation")    
+        if __debug__:
+            self.log.debug("After boundary conditions: diss_u = %s"%repr(diss_u))
 
         #Add the two parts together and multiply by the appropriate
         #numerical factor.
@@ -251,10 +280,11 @@ class DissRestFull(Diss):
 # Dissipation for diagonal norm SBP operators.
 ################################################################################
 class Diss21_DDST(DissDiag):
-    """
-    Taken from Diener, Dorband, Schnetter and Tiglio. Due to consistance
-    conditions on SBP dissipertion operators and the derivative operators this
-    disspertion operator can only be used with the D21 operator from the same
+    """A dissipation operator.
+
+    Taken from Diener, Dorband, Schnetter and Tiglio. Due to consistence
+    conditions on SBP dissipation operators and the derivative operators this
+    dissipation operator can only be used with the D21 operator from the same
     paper. Note that D21 is unique so the operator sbp.D21_CNG is the 
     correct operator. 
     """
@@ -276,10 +306,11 @@ class Diss21_DDST(DissDiag):
         self.bdyRegion = (2,3)
 
 class Diss42_DDST(DissDiag):
-    """
-    Taken from Diener, Dorband, Schnetter and Tiglio. Due to consistance
-    conditions on SBP dissipertion operators and the derivative operators this
-    disspertion operator can only be used with the sbp.D42 operator which
+    """A dissipation operator.
+
+    Taken from Diener, Dorband, Schnetter and Tiglio. Due to consistency
+    conditions on SBP dissipation operators and the derivative operators this
+    disspation operator can only be used with the sbp.D42 operator which
     is from the same
     paper. 
     """
@@ -328,12 +359,21 @@ class Diss42_DDST(DissDiag):
 # Dissipation for restricted full norm SBP operators.
 ################################################################################
 class Diss43_DDST(DissRestFull):
-    """Compatibility considerations require that this disspertion operator only 
+    """A dissipation operator.
+
+    Compatibility considerations require that this disspation operator only 
     used with sbp.D43_Tiglioetal.
     """
 
     def __init__(self, bdy_percent):
+        """Iniitialisation for Diss43_DDST.
 
+        Parameters
+        ----------
+        bdy_percent : float
+            A tuning parameter for the cut_off parameter used in the matrix
+            B for numerical stability.
+        """
         self.bdy_percent = bdy_percent
         self.p = 2
         
@@ -371,6 +411,17 @@ class Diss43_DDST(DissRestFull):
         super(Diss43_DDST, self).__init__(self.p)
 
     def B(self, i, dx, size):
+        """Returns an element of the matrix `B` which ensures numerical stability.
+
+        Parameters
+        ----------
+        i: int
+            The row and column, of the diagonal matrix, to return
+        dx: float
+            The step size
+        size: int
+            Length of the data
+        """
         cut_off = math.floor(size * self.bdy_percent)
         if i < cut_off:
             return dx + (i / cut_off) * (1 - dx)    
@@ -383,8 +434,8 @@ class Diss43_DDST(DissRestFull):
 # Testing
 ################################################################################
 
-if __name__ == "__main__":
-    D = Diss43_DDST(0.2)
-    u = np.arange(20, dtype=float)
-    u = 10 - (u - 5)**2
-    D(u, 0.1)
+#if __name__ == "__main__":
+    #D = Diss43_DDST(0.2)
+    #u = np.arange(20, dtype=float)
+    #u = 10 - (u - 5)**2
+    #D(u, 0.1)

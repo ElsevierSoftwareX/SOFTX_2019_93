@@ -1,3 +1,12 @@
+"""Numerical implementations of eth and eth'.
+
+These are the differential operators, of the same name, given in the GHP spinor
+formalism. To use these operators coffee.swsh is used to convert function data
+into a spin weighted spherical harmonic expansion - if the data is not already
+represented in that form.
+
+Created by Ben Whale.
+"""
 from __future__ import division
 import math
 import os
@@ -11,11 +20,32 @@ from coffee.swsh import spinsfastpy as sfpy
 #remove this remainin duplicates
 
 class _ghp_operator(object):
+    """A utilty class that implements both the eth and eth' operator."""
 
     def __init__(self, prime):
+        """The initialiser for the class.
+
+        Parameters
+        ==========
+        prime : bool
+            If true then the operator is eth prime, otherwise the operator
+            is eth.
+        """
         self.prime = prime
 
     def __call__(self, u, spins = None, lmax = None):
+        """Calculate the derivative.
+
+        Parameters
+        ==========
+        u : tslice.TimeSlice
+        spins : list of ints, Optional
+            Required if u is not expressed as a spectral decomposiiton of
+            spin weighted spherical harmonic functions.
+        lmax : list of ints, Optional
+            Required if u is not expressed as a spectral decomposiiton of
+            spin weighted spherical harmonic functions.
+        """
         if isinstance(u, sfpy.salm.sfpy_sralm):
             return self._eval_sralm(u)
         else:
@@ -28,7 +58,7 @@ class _ghp_operator(object):
             Ntheta, Nphi = u.shape
         salm, spins, lmax = _transform_to_harmonic_space(
             u, spins, lmax
-            )
+        )
         if self.prime:
             r_salm = sfpy.salm.sfpy_salm(
                 np.empty_like(salm, dtype=np.typeDict['complex']), 
@@ -44,7 +74,6 @@ class _ghp_operator(object):
                 )
             _do_derivative(salm, spins, lmax, _eth_eigen, r_salm)
         return _transform_from_harmonic_space(r_salm, Ntheta, Nphi)
-
 
     def _eval_sralm(self, u):
         if u.spins.shape is ():
@@ -119,12 +148,12 @@ def _transform_from_harmonic_space(r_salm, Ntheta, Nphi):
     return r_salm
 
 class eth(_ghp_operator):
+    """
+    Implements the differential operator given by
+    \eth{}_sY_{lm} = -\sqrt{l(l+1)-s(s+1)}{}_{s+1}Y_{lm}
+    """
     
     def __init__(self):
-        """
-        Implements the differential operator given by
-        \eth{}_sY_{lm} = -\sqrt{l(l+1)-s(s+1)}{}_{s+1}Y_{lm}
-        """
         super(eth, self).__init__(False)
   
     def __repr__(self):
@@ -132,12 +161,12 @@ class eth(_ghp_operator):
 
 
 class ethp(_ghp_operator):
+    """
+    Implements the differential operator given by
+    \eth'{}_sY_{lm} = \sqrt{l(l+1)-s(s-1)}{}_{s-1}Y_{lm}
+    """
     
     def __init__(self):
-        """
-        Implements the differential operator given by
-        \eth'{}_sY_{lm} = \sqrt{l(l+1)-s(s-1)}{}_{s-1}Y_{lm}
-        """
         super(ethp, self).__init__(True)
   
     def __repr__(self):

@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 # encoding: utf-8 
 """
-sbp.py
+A module to manage summation by parts finite difference operators.
 
 Created by Jörg Frauendiener on 2011-01-10. Further editting by George 
 Doulis and Ben Whale.
-Copyright (c) 2011 University of Otago. All rights reserved.
 """
 from __future__ import division
 import sys
@@ -20,9 +19,28 @@ import logging
 # Base class for SBP operators
 ################################################################################
 BOUNDARY_TYPE_SAT = 0
+"""Specifies that the simulataneous approximation term method will be used
+for boundaries."""
 BOUNDARY_TYPE_GHOST_POINTS = 1
+"""Specifies that ghost points will be used for boundaries."""
 
 def validate_boundary_type(boundary_type):
+    """The method validates the choice of boundary type.
+
+    Parameters
+    ==========
+    boundary_type : int
+    
+    Returns
+    =======
+    int:
+        The given boundary_type, if valid
+
+    Raises
+    ======
+    ValueError:
+        If an incorrect boundary type is specified.
+    """
     if boundary_type == BOUNDARY_TYPE_SAT or \
         boundary_type == BOUNDARY_TYPE_GHOST_POINTS:
         return boundary_type
@@ -33,7 +51,9 @@ def validate_boundary_type(boundary_type):
 ################################################################################
 
 class SBP(object):
-    """The values of g_{00} and g_{NN} given here
+    """The class that models summation by parts finite difference operators.
+    
+    The values of g_{00} and g_{NN} given here
     are based on the values given in theorem 2.1 of Strand's paper,
     "Summation by parts for finite difference approximations for d/dx."
     
@@ -47,13 +67,31 @@ class SBP(object):
 
     def __init__(self, boundary_type=BOUNDARY_TYPE_SAT):
         """SBP operators can use different methods to handle internal boundaries
-        caused by running the code via mpi."""
+        caused by running the code via mpi.
+
+        Parameters
+        ==========
+        boundary_type: int
+        """
         self.bdyRegion = self.Ql.shape
         self.w = self.A.shape[0]//2
         self.log = logging.getLogger('SBP')
         self.boundary_type = validate_boundary_type(boundary_type)
 
     def __call__(self, u, dx, boundary_ID=None):
+        """Calculates the derivative.
+
+        Parameters
+        ==========
+        u : tslice.TimeSlice
+            The function data.
+        dx : float
+            The step size.
+        boundary_ID: int, Optional
+            One of None, grid.LEFT or grid.RIGHT. Specifies if only the
+            right or left (or both) derivatives should be applied at the
+            boundary.
+        """
         r, c = self.bdyRegion
         if __debug__:
             self.log.debug("u.shape[0] = %s"%repr(u.shape[0]))
@@ -86,7 +124,9 @@ class SBP(object):
         return du/(dx**self.order)
 
     def penalty_boundary(self, dx, vector_selection):
-        """The vector self.pbound is, in the notation of CGA,
+        """Returns the penalty for use with penalty boundaries.
+
+        The vector self.pbound is, in the notation of CGA,
         given by P^(-1)H^(-1)e_i, i=0,1 where
         e_0 = (1,0,...,0)^T and
         e_1 = (0,...,0,1)^T.
@@ -123,6 +163,12 @@ class SBP(object):
         
         Note that this method will only work for first order SBP operators,
         currently.
+
+        Parameters
+        ==========
+        dx : float
+            The spatial step size
+        vector_selection : int
         """
         if vector_selection == 1 or vector_selection == "right":
             return self.gNN * self.pbound[::-1] / dx
@@ -133,7 +179,13 @@ class SBP(object):
             see the penalty_boundary doc string for further details.")
 
     def ghost_points(self):
-        """Ghost points required for the penalty boundary method."""
+        """Ghost points required for the penalty boundary method.
+
+        Returns
+        =======
+        two tuple of ints:
+            The number of ghost points for each boundary.
+        """
         if self.boundary_type == BOUNDARY_TYPE_GHOST_POINTS:
             r, _ = self.bdyRegion
             return r, r
@@ -142,7 +194,13 @@ class SBP(object):
         raise ValueError("Unknown boundary type encountered.")
 
     def internal_points(self):
-        """Internal points required for the penalty boundary method."""
+        """Internal points required for the penalty boundary method.
+
+        Returns
+        =======
+        two tuple of ints:
+            The number of ghost points for each boundary.
+        """
         if self.boundary_type == BOUNDARY_TYPE_GHOST_POINTS:
             r, _ = self.bdyRegion
             return r, r
@@ -154,8 +212,11 @@ class SBP(object):
         return "Differential operator "%self.name
         
     def save(self):
+        """Outputs a textual representation of the operator in the users
+        home directory.
+        """
         filename = os.path.expanduser("~/" + self.name)
-        print filename
+        print(filename)
         np.savetxt(filename + "_left.txt", self.Ql)
         np.savetxt(filename + "_right.txt", self.Qr)
         np.savetxt(filename + "_mid.txt", self.A)
@@ -166,10 +227,11 @@ class SBP(object):
 ################################################################################
 
 class D21_CNG(SBP):
-    """
+    """An SBP operator that is second order accurate internall and first
+    order accurate on the boundary.
+
     Taken from "A stable and conservative interface treatment of arbitrary
-    spatial accuracy". Check this operator carefully, it has not been
-    thoroughly tested.
+    spatial accuracy", Carpenter, Nordstrom, and Gottlieb.
     
     The inner product is the identity.
     """
@@ -210,19 +272,21 @@ class D21_CNG(SBP):
 ################################################################################
 
 class D42(SBP):
-    """docstring for D42
-       This operator is the D42 operator given in
-       the paper, "Optimized high-order derivative and dissipation operators
-       satisfying summation by parts, and applications in three-dimensional 
-       multi-block evolutions" by Diener, Dorband, Schnetter and Tiglio.
-       
-       More detail on this operator can be found on page 59, of Strand's paper,
-       "Summation by parts for finite difference approximations for d/dx" 
-       under the heading "Second-order accuracy at the boundary". This 
-       paper also gives the norm used. 
-       
-       The norm in this case is given as np.diag([17./48,59./48,43./48,49./48]).
-       Note the additional factors included below.
+    """This is an SBP operator which is fourth order accurate on the interior
+    and second order accurate at the boundary.
+
+    This operator is the D42 operator given in
+    the paper, "Optimized high-order derivative and dissipation operators
+    satisfying summation by parts, and applications in three-dimensional 
+    multi-block evolutions" by Diener, Dorband, Schnetter and Tiglio.
+    
+    More detail on this operator can be found on page 59, of Strand's paper,
+    "Summation by parts for finite difference approximations for d/dx" 
+    under the heading "Second-order accuracy at the boundary". This 
+    paper also gives the norm used. 
+    
+    The norm in this case is given as np.diag([17./48,59./48,43./48,49./48]).
+    Note the additional factors included in the code for initialisation.
     """
     
     def __init__(self, *args, **kwargs):
@@ -243,6 +307,7 @@ class D42(SBP):
 
 class D43_Tiglioetal(SBP):
     """D43 is a finite difference operator which has the SBP property.
+
     It is 4th order accurate in the interior and 3rd order accurate at the
     boundaries. It is from the paper, "Optimized high-order derivative and 
     dissipation operators
@@ -305,24 +370,16 @@ class D43_Tiglioetal(SBP):
         self.Ql[4,5] = 0.65882706381707471953820
         self.Ql[4,6] = -0.082568940408449266558615
 
-        #self.Ql = np.array( \
-        #[\
-         #[ -2.09329763466349871588733,  4.0398572053206615302160,  -3.0597858079809922953240,   1.37319053865399486354933, -0.25996430133016538255400,   0,                           0],\
-         #[ -0.31641585285940445272297, -0.53930788973980422327388,  0.98517732028644343383297, -0.05264665989297578146709, -0.113807251750624235013258,  0.039879767889849911803103, -0.0028794339334846531588787 ],\
-         #[  0.13026916185021164524452, -0.87966858995059249256890,  0.38609640961100070000134,  0.31358369072435588745988,  0.085318941913678384633511, -0.039046615792734640274641,  0.0034470016440805155042908 ],\
-         #[ -0.01724512193824647912172,  0.16272288227127504381134, -0.81349810248648813029217,  0.13833269266479833215645,  0.59743854328548053399616,  -0.066026434346299887619324, -0.0017244594505194129307249 ],\
-         #[ -0.00883569468552192965061,  0.03056074759203203857284,  0.05021168274530854232278, -0.66307364652444929534068,  0.014878787464005191116088,  0.65882706381707471953820,  -0.082568940408449266558615  ]\
-        #])
         self.Qr = -self.Ql[::-1,::-1]
         # P is the identity.
         self.pbound = np.array([4.186595370392226897362216859769846226369])
-        #self.pbound = np.array([1/4.186595269326998])
         super(D43_Tiglioetal, self).__init__(*args, **kwargs)
-        
-
 
 class D43_CNG(SBP):
     """
+    An SBP operator that is fourth order accurate in the interior and
+    third order accurate on the boundary.
+
     Taken from "A stable and conservative interface treatment of arbitrary
     spatial accuracy", the matrix H is the identity. 
     Note that the P[1,3] entry of the norm matrix given in the paper is wrong!  
@@ -409,12 +466,14 @@ class D43_CNG(SBP):
         
 
 class D43_Strand(SBP):
-    """
+    """An SBP operator that is fourth order accurate in the interior and
+    third order accurate on the boundary.
+
     See page 66 of Strand's paper, "Summation by parts finite difference
     approximations for first derivatives". The norm in this case
     is restricted full and we have h00 = 3./11.
     
-    Note the terms introduced below.    
+    Note the terms introduced in the initialisation code.
     """
     A = np.array([-1./12.,2./3.,0.,-2./3.,1./12.])
     name = "D43_Strand"
@@ -464,12 +523,9 @@ class D43_Strand(SBP):
         
         super(D43_Strand, self).__init__(*args, **kwargs)
 
-
-
 ################################################################################
 # Higher order accurate differential operators
 ################################################################################
-
 
 class D65_min_err(SBP):
     """D65_min_err is a first order derivative according to Diener et al, 
@@ -578,6 +634,9 @@ class D65_min_err(SBP):
 
 class D43_2_CNG(SBP):
     """
+    A second derivative SBP operator with fourth order interal accuracy and
+    third order accuracy on the boundary.
+
     Taken from "A stable and conservative interface treatment of arbitrary
     spatial accuracy", the matrix H is the identity.
     """
