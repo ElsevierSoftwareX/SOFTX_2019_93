@@ -122,8 +122,10 @@ ghp = 2 #raxis_1D_diffop.ghost_points()
 ghost_points = ghp    
 
 # Build grids
-grids = [grid.UniformCart((raxis_gdp[i],), [(xstart, xstop)],\
-    comparison = raxis_gdp[i]) for i in range(num_of_grids)]
+grids = [
+    grid.UniformCart((raxis_gdp[i],), [(xstart, xstop)], comparison = raxis_gdp[i]) 
+    for i in range(num_of_grids)
+]
 
 ################################################################################
 # Print logging information
