@@ -18,10 +18,12 @@ as well as information about how to use COFFEE to solve a system of equations.
 
 .. toctree::
    :maxdepth: 2
-  
+
+   installation
+   examples
+   using_coffee
    coffee
    scripts
-   examples
 
 Indices and tables
 ==================
