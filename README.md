@@ -24,7 +24,7 @@ cover installation on Ubuntu 18.04.
 contamination can be used.
 ``virtualenv -p <python2 executable> --system-site-packages``
 ``source venv/bin/activate``
-1. Install ``gnuplot-py`` if you wish to use ``gnuplot`` for visualisation. The 
+1. Install ``gnuplot-py`` if you wish to use ``gnuplot`` for visualisation (http://www.gnuplot.info/). The 
 other alternative is ``matplotlib``. Examples scripts all use ``gnuplot`` and do
 not detect its absence. Errors will be generated if they display output to the
 screen.
@@ -35,7 +35,7 @@ screen.
 ``cd ../..``
 1. Install the following python modules. They are likely to rely on additional
 ``C`` libraries. Please see module specific documentation to resolve any issues.
-The modules are: ``mpi4py``, ``h5py``, ``scipy``, ``PyFFTw3``.
+The modules are: ``mpi4py``, ``h5py``, ``scipy``, ``PyFFTW3``.
 1. Compile the spin weighted spherical harmonic routines.
 ``cd coffee/swsh/spinsfastpy/huffenberger_wandelt/``
 ``tar xvfz spinsfast_rev104.tar.gz``
