@@ -1,10 +1,10 @@
 """This module writes the data of a timeslice to an hdf file.
 
 The main class SimOutput uses objects of class SimOutput.SimOutputType to
-actually write the data. By subclassing SimOutput.SimOutputType in the mannor
+actually write the data. By subclassing SimOutput.SimOutputType in the manner
 specified below non - numpy array data can be stored conviently.
 
-I think of this method as a plugin in system. The user writes a new output
+I think of this method as a plugin for the system. The user writes a new output
 method for some kind of new data type in a sub class of SimOutputType and
 'plugs' this method into the 'action' list of SimOutput.
 """
@@ -225,7 +225,7 @@ class SimOutput(Prototype):
     class TimeStep(SimOutputType):
         """Just like time buts tells you what the calculated dt was.
 
-        This can be calculated from the data is Times, only if you are
+        This can be calculated from the data in Times, only if you are
         recording the data in the next timestep...
 
         """
@@ -240,7 +240,7 @@ class SimOutput(Prototype):
         """Records domains of the simulation.
 
         This SimOutputType does not record the grid object, but rather the axes
-        and comarison variables of the grid. Hence no mpi information is
+        and comparison variables of the grid. Hence no mpi information is
         collected here.
 
         Currently this is because ibvp.IBVP before it runs actions collates all
@@ -248,7 +248,7 @@ class SimOutput(Prototype):
         is only one process accessing it.
 
         This will need to be changed at some point. h5py has routines to allow
-        more than one process to write to ta file. But coffee does not
+        more than one process to write to a file. But coffee does not
         currently capitalise on these routines.
 
         """
@@ -302,11 +302,11 @@ class SimOutput(Prototype):
                 The function that returns the data to be stored in
                 the datagroup.
             frequency : int
-                In dicates how many iterations pass for each call of this action.
+                It dicates how many iterations pass for each call of this action.
             start : float
                 The time from which to start performing the action.
             derivedAttrs : 
-                See the docmentation for SimOutputType.
+                See the documentation for SimOutputType.
             """
             self.func = function
             self.groupname = name
@@ -325,7 +325,7 @@ class SimOutput(Prototype):
         for exact reconstruction of the simulation that produced the data being
         stored.
 
-        Of cause most things arn't that simple... and this SimOutput type
+        Of course most things arn't that simple... and this SimOutput type
         requires care during use.
         """
         groupname = systemD

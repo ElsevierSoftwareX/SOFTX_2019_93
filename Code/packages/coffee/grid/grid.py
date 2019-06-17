@@ -210,7 +210,7 @@ class ABCBoundary(object):
         representing the dimension, a direction and the result of 
         calling external_slice(shape, dimension, direction).
 
-        This is a convience method to make iteration over external
+        This is a convenience method to make iteration over external
         boundaries easy for the user.
         
         Parameters
@@ -533,12 +533,12 @@ class ABCGrid(object):
             For each dimension the tuple gives the maximum and minimum extent of the
             global computational domain
         name: string, Optional
-            A name for this grid. Used in when logging.
+            A name for this grid. Used when logging.
         comparison: Optional
             A argument used when performing comparison of different simulations
             on different grids. Stored in the hdf file during computation. It
             allows for easy identification of how different computation grids
-            should be comparted. 
+            should be compared. 
         mpi: mpi.MPIInterface, Optional
             An instance of an mpi4py wrapped MPI_COMM object.
         boundary_data: ABCBoundary, Optional
@@ -656,7 +656,7 @@ class ABCGrid(object):
 ################################################################################
 class UniformCart(ABCGrid):
     """An implementation of ABCGrid that assumes that the grid has uniform
-    steps and is cartesian."""
+    steps and is Cartesian."""
     
     def __init__(self, 
             shape, 
@@ -682,7 +682,7 @@ class UniformCart(ABCGrid):
             A argument used when performing comparison of different simulations
             on different grids. Stored in the hdf file during computation. It
             allows for easy identification of how different computation grids
-            should be comparted. 
+            should be compared. 
         name: string
             The name of this object. Used in output to hdf files and logging.
         """
@@ -788,7 +788,7 @@ class GeneralGrid(ABCGrid):
             A argument used when performing comparison of different simulations
             on different grids. Stored in the hdf file during computation. It
             allows for easy identification of how different computation grids
-            should be comparted. 
+            should be compared. 
         name: string
             The name of this object. Used in output to hdf files and logging.
         """

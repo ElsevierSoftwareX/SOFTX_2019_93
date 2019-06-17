@@ -1,6 +1,6 @@
 """ 
-This module attempts to hide implementation details regarding spectral decomositions
-of spin wrighted spherical harmonic functions.
+This module attempts to hide implementation details regarding spectral decompositions
+of spin weighted spherical harmonic functions.
 """
 # Standard package imports
 from abc import ABCMeta, abstractmethod
@@ -49,7 +49,7 @@ class Salm(object):
         pass
         
     def check_lm(l,m):
-        """Determines in the l and m values are valid.
+        """Determines if the l and m values are valid.
         
         Parameters
         ----------

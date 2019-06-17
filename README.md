@@ -24,10 +24,10 @@ cover installation on Ubuntu 18.04.
 contamination can be used.
 ``virtualenv -p <python2 executable> --system-site-packages``
 ``source venv/bin/activate``
-4. Install ``gnuplot-py`` if you wish to use ``gnuplot`` for visualisation (http://www.gnuplot.info/). The 
-other alternative is ``matplotlib``. Examples scripts all use ``gnuplot`` and do
-not detect its absence. Errors will be generated if they display output to the
-screen.
+4. Install ``gnuplot-py`` if you wish to use ``gnuplot`` for visualisation 
+(http://www.gnuplot.info/). The other alternative is ``matplotlib``. 
+Examples scripts all use ``gnuplot`` and do not detect its absence. 
+Errors will be generated if they display output to the screen.
 ``cd gnuplot-py``
 ``tar xvfz gnuplot-py-1.8.tar.gz``
 ``cd gnugnuplot-py-1.8``

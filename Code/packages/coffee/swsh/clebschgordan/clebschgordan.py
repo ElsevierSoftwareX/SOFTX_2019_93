@@ -22,7 +22,7 @@ def valid(j1, j2, j3, m1, m2, m3):
     the ji's to be integer or half-integers and the mi's must be such that
     mi is one of -ji, -ji+1, ..., 0, ..., ji-1, ji.
     
-    We perform the calculation upto a numerical tolerance. This
+    We perform the calculation up to a numerical tolerance. This
     tolerance can be specified by setting the module variable
     NUMERICAL_ERROR_TOLERANCE. The default value is 1e-15.
 
@@ -236,7 +236,7 @@ class CGBoris(object):
     can be exploited to calculate Clebsch Gordan coefficients.
     
     Boris' code can be found in the folder c_code/boris. It must be compiled
-    as a shard library 'libboris.so.1.0.1' in the folder lib/.
+    as a shared library 'libboris.so.1.0.1' in the folder lib/.
     """
     
     def __init__(self, w3j):

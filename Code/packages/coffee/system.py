@@ -10,7 +10,7 @@ subclasses of solver.Solver, almost all actions.hdf_actions.SimOutType
 subclasses.
 
 While you don't need to actually implement all the methods below, it really is
-recomended. You may get errors about the methods missing as a consequence.
+recommended. You may get errors about the methods missing as a consequence.
 
 system.System has abc.ABCMeta as a meta class. This serves as a warning to
 really think about what you are doing if you don't implement all methods below.
@@ -27,7 +27,7 @@ class System(object):
     You don't need to implement everything below, but you can expect
     errors if you don't. The main purpose of this class is to document
     the API that classes that describe a system of equations are expected
-    to provide
+    to provide.
     """
     __metaclass__ = ABCMeta
 
@@ -51,7 +51,7 @@ class System(object):
     
     def evaluate(self, t, tslice):
         """Returns the data needed by the solver.Solver subclass needed to
-        calcualte the values of the functions at the next time step.
+        calculate the values of the functions at the next time step.
 
         For example, in a IBVP problem using an RK sover this method will
         return the values of the derivatives of the functions being evolved.

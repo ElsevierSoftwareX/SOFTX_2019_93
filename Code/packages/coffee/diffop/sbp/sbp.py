@@ -224,7 +224,7 @@ class SBP(object):
 ################################################################################
 
 class D21_CNG(SBP):
-    """An SBP operator that is second order accurate internall and first
+    """An SBP operator that is second order accurate internal and first
     order accurate on the boundary.
 
     Taken from "A stable and conservative interface treatment of arbitrary

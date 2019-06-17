@@ -1,7 +1,8 @@
 Wave examples
 =============
 
-There are two examples of wave equation systems under the `systems/wave` directory.
+There are two examples of wave equation systems under the `systems/wave` 
+directory.
 Each subdirectory contains an example.
 Each such directory contains two files:
 

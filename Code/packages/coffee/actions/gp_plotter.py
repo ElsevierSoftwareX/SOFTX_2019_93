@@ -17,8 +17,8 @@ class Plotter1D(Prototype):
     suitable for animations since the GnuPlot object is persistent between
     calls to this class. 
 
-    The simulation it self does not need to be one dimensional. The data to be
-    plotted is 'pre-processed' by an function that is passed by the user. In
+    The simulation itself does not need to be one dimensional. The data to be
+    plotted is 'pre-processed' by a function that is passed by the user. In
     this way the user can, for example, specify if the modulus, or argument
     of complex data is to be plotted.
     """
@@ -33,7 +33,7 @@ class Plotter1D(Prototype):
         arguments should be strings respecting the documentation of GnuPlot.
         They are passed to the Gnuplot object g as g(pos_argument)
 
-        Additional paramters valid for actions.Prototype are valid.
+        Additional parameters valid for actions.Prototype are valid.
 
         Parameters
         ==========
@@ -50,7 +50,7 @@ class Plotter1D(Prototype):
               a timeslice and the system. It should return a tuple consisting
               of the domain of the data and a two dimensional array. The first
               dimension of the array is considered to be the components. The
-              second dimenion is considered to give the domain dependence.
+              second dimension is considered to give the domain dependence.
         """
 
         if 'start' in kwds:
@@ -127,7 +127,7 @@ class Plotter2D(Prototype):
     suitable for animations since the GnuPlot object is persistent between
     calls to this class. 
 
-    The simulation it self does not need to be two dimensional. The data to be
+    The simulation itself does not need to be two dimensional. The data to be
     plotted is 'pre-processed' by an function that is passed by the user. 
     """
     
@@ -147,7 +147,7 @@ class Plotter2D(Prototype):
         of the domain of the data and a three dimensional array. The first
         dimension of the array is considered to be a number of components
         each of which is to be plotted. The
-        second and third dimenions is considered to give the domain dependence.
+        second and third dimensions is considered to give the domain dependence.
 
         Parameters
         ==========
@@ -166,7 +166,7 @@ class Plotter2D(Prototype):
               a timeslice and the system. It should return a tuple consisting
               of the domain of the data and a two dimensional array. The first
               dimension of the array is considered to be the components. The
-              second dimenion is considered to give the domain dependence.
+              second dimension is considered to give the domain dependence.
         """
         if 'delay' in kwds:
             self.delay = kwds.pop('delay')

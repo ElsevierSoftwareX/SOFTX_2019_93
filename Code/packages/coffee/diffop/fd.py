@@ -7,7 +7,7 @@ differential operators.
 Stencil values are calculated using Fornberg's paper. Code for the
 calculations is available in
 `finite_difference_weights_generator.py` located in Code/Utils.
-See reading Fornberg's paper for the notation.
+See Fornberg's paper for the notation.
 """
 from __future__ import division
 
@@ -120,7 +120,7 @@ def flip(stencil):
 ################################################################################
 # First derivative stencils
 ################################################################################
-"""Further stencil's can be calculated using 
+"""Further stencil can be calculated using 
 `finite_difference_weights_generator.py' located in Code/Utils.
 I suggest reading Fornberg's paper for the notation."""
 
@@ -225,7 +225,7 @@ class B22_stencil(FD_stencil):
 
 class FD_diffop(object):
     """The FD_diffop class represents the action of a collection of
-    FD_stencil's on a vector of values."""
+    FD_stencils on a vector of values."""
     name = "FD_diffop"
 
     def __init__(self):
@@ -260,7 +260,7 @@ class FD_diffop(object):
         return "Differential operator "%self.name
         
     def save(self):
-        """This is a convience method that saves a textual representation,
+        """This is a convenience method that saves a textual representation,
         using np.savetxt, of the data used in the finite difference operator
         to a file in the users home directory."""
         filename = os.path.expanduser("~/" + self.name)
@@ -301,7 +301,7 @@ class FD12(FD_diffop):
     """Implements a second order FD routine for first order derivatives. 
 
     On the boundaries uses forward/backward differences. Sufficiently
-    away from the boundaries uses a central schemes. Assumes that the
+    away from the boundaries uses a central scheme. Assumes that the
     FD grid is evenly spaced."""
     
     name = "FD12"
@@ -317,8 +317,8 @@ class FD14(FD_diffop):
 
     On the boundaries uses forward/backward differences. On
     interor points where the central difference scheme cannot be applied,
-    skewed forward/backward difference stencil's are used. Sufficiently
-    away from the boundaries uses a central schemes. Assumes that the
+    skewed forward/backward difference stencils are used. Sufficiently
+    away from the boundaries uses a central scheme. Assumes that the
     FD grid is evenly spaced."""
     
     name = "FD14"
@@ -338,7 +338,7 @@ class FD22(FD_diffop):
     """Implements a second order FD routine for second order derivatives. 
 
     On the boundaries uses forward/backward differences. Sufficiently
-    away from the boundaries uses a central schemes. Assumes that the
+    away from the boundaries uses a central scheme. Assumes that the
     FD grid is evenly spaced."""
     
     name = "FD22"

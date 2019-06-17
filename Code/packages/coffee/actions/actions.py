@@ -6,7 +6,7 @@ import logging
 class Prototype(object):
     """The prototype of all actions. 
     
-    This class provides basic functionality that all actions required.
+    This class provides basic functionality that all actions require.
     
     To subclass this class:
     1) define the method _doit in the subclass
@@ -90,7 +90,7 @@ class BlowupCutoff(Prototype):
 
         The parameters listed below are only the parameters specific to this
         action. All parameters as given for the initialiser for the
-        actions.Prototype action are also valid.
+        actions. Prototype actions are also valid.
 
         Parameters
         ==========
@@ -113,7 +113,7 @@ class BlowupCutoff(Prototype):
         Returns
         =======
         boolean :
-            True if there is a component great than the cutoff.
+            True if there is a component greater than the cutoff.
         """
         for component in u.fields:
             if np.any(np.abs(component) >= self.cutoff):

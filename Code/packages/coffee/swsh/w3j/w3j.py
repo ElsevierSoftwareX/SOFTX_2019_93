@@ -24,7 +24,7 @@ def valid(j1, j2, j3, m1, m2, m3):
     the ji's to be integer or half-integers and the mi's must be such that
     mi is one of -ji, -ji+1, ..., 0, ..., ji-1, ji.
     
-    We perform the calculation upto a numerical tolerance. This
+    We perform the calculation up to a numerical tolerance. This
     tolerance can be specified by setting the module variable
     NUMERICAL_ERROR_TOLERANCE. The default value is 1e-15.
 
@@ -209,7 +209,7 @@ class W3jStone(object):
 
             as a string. The format of the string is 
             <+/-><integer>/<integer>*math.sqrt(<integer>/<integer>). The double
-            precison value represented by this string can be retrived by using the
+            precison value represented by this string can be retrieved by using the
             eval() builtin.
         """
         if not valid(j1, j2, j3, m1, m2, m3): 
@@ -254,7 +254,7 @@ class W3jBen(object):
     There is currently no caching facility implemented. 
 
     Boris' code can be found in the folder c_code/boris. It must be compiled
-    as a shard library 'libboris.so.1.0.1' in the folder lib/.
+    as a shared library 'libboris.so.1.0.1' in the folder lib/.
     """
 
     def __init__(self, hdf_file):
@@ -480,9 +480,9 @@ class W3jBoris(object):
     Calculated values can be written to the file data.h5 by using the method
     save().
     
-    If at some later data is is necessary to increase the bandwidth limit, this
-    object requires recalculation all w3j values and storing this information
-    separately in the data.h5 file.
+    If at some later data point in time it is necessary to increase the 
+    bandwidth limit, this object requires recalculation of all w3j values and 
+    storing this information separately in the data.h5 file.
     
     As a consequence some thought is required before hand to ensure that the 
     file does not become bloated with multiple copies of the same data.

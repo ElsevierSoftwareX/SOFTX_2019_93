@@ -5,7 +5,7 @@ A timeslice is the package which contains all data necessary to represent a
 solution of the system at a given point in time.
 
 This module contains the abstract base class (abc) for TimeSlice objects and a
-default implementation that makes certain assumptions. It is highly recomended
+default implementation that makes certain assumptions. It is highly recommended
 that you subclass either of these classes.
 
 As usual the abc is intended to make you think twice about doing things
@@ -51,7 +51,7 @@ class ABCTimeSlice(object):
 
         It is recommended to call this method once your subclass has done
         appropriate vetting of data, domain and time. Not only because this
-        ensure things are stored in the right places, but also because it sets
+        ensures things are stored in the right places, but also because it sets
         up a logging object, logging.getLogger(self.name).
 
         Parameters

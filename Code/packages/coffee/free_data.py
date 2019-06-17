@@ -118,7 +118,7 @@ class FreeData(object):
         during the simulation as a result of a call to the
         actions.hdf_actions.SimOutputType.Exact object.
 
-        Of cause you don't have to use this method that way...
+        Of course you don't have to use this method that way...
 
         Parameters
         ----------

@@ -26,7 +26,7 @@ NUMERICAL_TOLERANCE = 1e-14
 # str(int) indices going from 0,1,... upwards.
 class DataGroup(object):
     """The DataGroup class wraps a h5py group so that the setter, getter
-    and iter methods do sensible array like things.
+    and iter methods do sensible array-like things.
 
     Datagroups are assumed to represent an entire simulation. Datasets
     are assumed to represent each timeslice. Each dataset in a data group
@@ -783,7 +783,7 @@ class SimulationHDF(object):
         """A utility method that supports the translation of a simulation time
         to the iteration index.
 
-        The tollerance for the required float comparison is given in
+        The tolerance for the required float comparison is given in
         the module variable NUMERICAL_TOLERANCE.
 
         Parameters
@@ -866,7 +866,7 @@ class SimulationHDF(object):
         dgType : string
             A key from the module level dgTypes dictionary.
         sim : string
-            The name of the simulation to write too.
+            The name of the simulation to write to.
         it : int
             The iteration number of the data to be written.
         data : 

@@ -1,8 +1,8 @@
 Advection examples
 ==================
 
-The four examples under the directory `systems/advection` provide examples of using
-COFFEE to solve an advection equation. 
+The four examples under the directory `systems/advection` provide examples of 
+using COFFEE to solve an advection equation. 
 Each subdirectory contains an example.
 Each such directory contains two files:
 
@@ -20,15 +20,19 @@ OneDAdvection
 -------------
 A basic advection equation.
 
+OneDAdvection_ImplicitEuler
+-------------
+A basic advection equation solved using the implicit Euler method.
+
 OneDAdvectionMpi_fd
 -------------------
-An implementation of the one dimensional advection equation suitable for use with
-MPI using a finite difference operator.
+An implementation of the one dimensional advection equation suitable for use 
+with MPI using a finite difference operator.
 
 OneDAdvectionMpi_sbp
 --------------------
-An implementation of the one dimensional advection equation suitable for use with
-MPI using a summation by parts operator.
+An implementation of the one dimensional advection equation suitable for use 
+with MPI using a summation by parts operator.
 
 TwoDAdvection
 -------------

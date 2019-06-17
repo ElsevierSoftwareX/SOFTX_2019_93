@@ -64,7 +64,7 @@ class EvenCart(MPIInterface):
         """Initialiser for EvenCart objects
 
         An EvenCart object is an implementation of MPIInterface that
-        assumes that the global topology uses the MPI cartesian methods.
+        assumes that the global topology uses the MPI Cartesian methods.
 
         Parameters
         ==========
@@ -83,7 +83,7 @@ class EvenCart(MPIInterface):
         the sub-grids for each MPI node based on that nodes rank.
 
         The calculation assumes that each MPI node should handle roughly the
-        same load as all others and that the MPI topology is cartesian.
+        same load as all others and that the MPI topology is Cartesian.
 
         Parameters
         ==========

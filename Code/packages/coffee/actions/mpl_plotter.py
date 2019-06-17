@@ -5,7 +5,7 @@ import numpy as np
 from coffee.actions import Prototype
 
 class Plotter(Prototype):
-    """An action that plots data using mathplotlib."""
+    """An action that plots data using matplotlib."""
 
     def __init__(
             self, 
