@@ -12,6 +12,8 @@ import math
 import logging
 import abc
 
+from coffee.tslices import tslices
+
 
 ################################################################################
 # Solver Abstract Base Class
@@ -102,6 +104,77 @@ class Euler(ABCSolver):
         r_time = t + dt        
         r_slice = u + dt*du
         r_slice.time = r_time        
+        return (r_time, r_slice)
+
+class ImplicitEuler(ABCSolver):
+    """An implementation of the first order implicit Euler method.
+    """
+    name = 'ImplicitEuler'
+
+    def NR(self, u_start, u_next, t, dt, domain):
+        """A Newton-Raphson auxilliary routine for
+        the implementation of the implicit Euler scheme.
+        """
+
+        # Starting guess for Newton-Raphson algorithm. Currently
+        # chooses current tslice.
+        # To be perhaps moved so user specifies this in system file or
+        # perhaps in setup file when choosing implicit Euler.
+        prev_u_next = u_next
+
+        while(True):
+            # Evolution equation of u
+            g = self.system.evaluate(t + dt,\
+                tslices.TimeSlice(prev_u_next,domain,time=t)).data
+
+            # Derivative of evolution equation of u w.r.t. evolved variable
+            dg, TOL = self.system.implicit_method_jacobian(t + dt,\
+                tslices.TimeSlice(prev_u_next,domain,time=t))
+
+            dg = dg.data
+
+            # NR is applied to f
+            f = prev_u_next - u_start - dt*g
+            df = 1. - dt*dg
+
+            # Compute next value of u_next
+            next_u_next = prev_u_next - f/df
+
+            # print abs(next_u_next - prev_u_next)
+            # print abs(next_u_next - prev_u_next) < TOL
+
+            # If we get to within a certain accuracy of the root stop
+            if(all(abs(next_u_next - prev_u_next)[0] < TOL)):
+                break
+
+            # Otherwise continue
+            prev_u_next = next_u_next
+
+        return next_u_next
+
+  
+    def advance(self, t, u, dt):
+        """An implicit Euler method implementation of ABCSolver.
+
+        See the ABCSolver.advance method for documentation.
+
+        """
+
+        # Current values of the evolved variables
+        u_start = u.data
+
+        # Initial guess for the Newton-Raphson method is the current value(s)
+        # of the evolved variables
+        u_next = u_start
+
+        # prev_u_next = u_next
+        prev_u_next = u_next
+
+        # Returns u_next from applying Newton-Raphson
+        u_ret = self.NR(u_start, u_next, t, dt, u.domain)
+
+        r_time = t + dt        
+        r_slice = tslices.TimeSlice(u_ret,u.domain,r_time)  
         return (r_time, r_slice)
 
 ################################################################################
