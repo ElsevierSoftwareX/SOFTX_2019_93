@@ -17,14 +17,14 @@ third-party installation instructions where needed. The instructions below
 cover installation on Ubuntu 18.04.
 
 1. Clone the coffee repository locally.
-1. Include the coffee/packages library in your `PYTHONPATH`. 
+2. Include the coffee/packages library in your `PYTHONPATH`. 
 ``cd <path to coffee/package directory>``
 ``export PYTHONPATH=$(pwd):$PYTHONPATH``
-1. Coffee uses `python2`. We prefer ``virualenv`` but any method to avoid repository
+3. Coffee uses `python2`. We prefer ``virualenv`` but any method to avoid repository
 contamination can be used.
 ``virtualenv -p <python2 executable> --system-site-packages``
 ``source venv/bin/activate``
-1. Install ``gnuplot-py`` if you wish to use ``gnuplot`` for visualisation (http://www.gnuplot.info/). The 
+4. Install ``gnuplot-py`` if you wish to use ``gnuplot`` for visualisation (http://www.gnuplot.info/). The 
 other alternative is ``matplotlib``. Examples scripts all use ``gnuplot`` and do
 not detect its absence. Errors will be generated if they display output to the
 screen.
@@ -33,10 +33,10 @@ screen.
 ``cd gnugnuplot-py-1.8``
 ``python setup.py install``
 ``cd ../..``
-1. Install the following python modules. They are likely to rely on additional
+5. Install the following python modules. They are likely to rely on additional
 ``C`` libraries. Please see module specific documentation to resolve any issues.
 The modules are: ``mpi4py``, ``h5py``, ``scipy``, ``PyFFTW3``.
-1. Compile the spin weighted spherical harmonic routines.
+6. Compile the spin weighted spherical harmonic routines.
 ``cd coffee/swsh/spinsfastpy/huffenberger_wandelt/``
 ``tar xvfz spinsfast_rev104.tar.gz``
 ``cd spinsfast_rev104``
@@ -46,7 +46,16 @@ You should be able to install ``spinsfast`` by executing the following:
 ``make``
 If you encounter missing headers first attempt installation of the following
 ``C``-libraries: ``libfftw3-dev`` and ``python-numpy``.
-1. Go to the systems directory and attempt to run them.
+7. Go to the systems directory and attempt to run them.
 
+Making the documentation
+=======
+These instructions describe how to make the documentation for coffee.
 
-
+1. Install ``python-sphinx``
+2. Make the documentation. 
+``cd coffee/documentation``
+``make``
+``make <type>``
+ The ``make`` command will bring up a list of Sphinx's options on how to make the documentation, such as to make one large ``.html`` documentation file. This list of commands can be substituted for <type> in the above. For example,
+``make singlehtml``
