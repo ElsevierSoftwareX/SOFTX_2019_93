@@ -98,7 +98,6 @@ class Euler(ABCSolver):
         """An Euler method implementation of ABCSolver.
 
         See the ABCSolver.advance method for documentation.
-
         """
         du = self.system.evaluate(t, u)
         r_time = t + dt        
@@ -111,9 +110,27 @@ class ImplicitEuler(ABCSolver):
     """
     name = 'ImplicitEuler'
 
-    def NR(self, u_start, u_next, t, dt, domain):
+    def _NR(self, u_start, u_next, t, dt, domain):
         """A Newton-Raphson auxilliary routine for
         the implementation of the implicit Euler scheme.
+
+        Parameters
+        ----------
+        u_start: numpy.ndarray
+            Initial values of the function.
+
+        u_next: numpy.ndarray
+            The first guess at the next values of the function.
+
+        t: float
+            Current time.
+
+        dt: float
+            Current time step.
+
+        domain: grid
+            The domain that the function is being evaluated over.
+            
         """
 
         # Starting guess for Newton-Raphson algorithm. Currently
@@ -124,12 +141,16 @@ class ImplicitEuler(ABCSolver):
 
         while(True):
             # Evolution equation of u
-            g = self.system.evaluate(t + dt,\
-                tslices.TimeSlice(prev_u_next,domain,time=t)).data
+            g = self.system.evaluate(
+                t + dt,
+                tslices.TimeSlice(prev_u_next,domain,time=t)
+            ).data
 
             # Derivative of evolution equation of u w.r.t. evolved variable
-            dg, TOL = self.system.implicit_method_jacobian(t + dt,\
-                tslices.TimeSlice(prev_u_next,domain,time=t))
+            dg, TOL = self.system.implicit_method_jacobian(
+                t + dt,
+                tslices.TimeSlice(prev_u_next,domain,time=t)
+            )
 
             dg = dg.data
 
@@ -139,9 +160,6 @@ class ImplicitEuler(ABCSolver):
 
             # Compute next value of u_next
             next_u_next = prev_u_next - f/df
-
-            # print abs(next_u_next - prev_u_next)
-            # print abs(next_u_next - prev_u_next) < TOL
 
             # If we get to within a certain accuracy of the root stop
             if(all(abs(next_u_next - prev_u_next)[0] < TOL)):
@@ -157,7 +175,6 @@ class ImplicitEuler(ABCSolver):
         """An implicit Euler method implementation of ABCSolver.
 
         See the ABCSolver.advance method for documentation.
-
         """
 
         # Current values of the evolved variables
@@ -171,7 +188,7 @@ class ImplicitEuler(ABCSolver):
         prev_u_next = u_next
 
         # Returns u_next from applying Newton-Raphson
-        u_ret = self.NR(u_start, u_next, t, dt, u.domain)
+        u_ret = self._NR(u_start, u_next, t, dt, u.domain)
 
         r_time = t + dt        
         r_slice = tslices.TimeSlice(u_ret,u.domain,r_time)  
