@@ -11,13 +11,16 @@ third-party installation instructions where needed. The instructions below
 cover installation on Ubuntu 18.04.
 
 1. Clone the coffee repository locally.
+
 2. Include the coffee/packages library in your `PYTHONPATH`. 
 ``cd <path to coffee/package directory>``
 ``export PYTHONPATH=$(pwd):$PYTHONPATH``
+
 3. Coffee uses `python2`. We prefer ``virualenv`` but any method to avoid repository
 contamination can be used.
 ``virtualenv -p <python2 executable> --system-site-packages``
 ``source venv/bin/activate``
+
 4. Install ``gnuplot-py`` if you wish to use ``gnuplot`` for visualisation 
 (http://www.gnuplot.info/). The other alternative is ``matplotlib``. 
 Examples scripts all use ``gnuplot`` and do not detect its absence. 
@@ -27,9 +30,11 @@ Errors will be generated if they display output to the screen.
 ``cd gnugnuplot-py-1.8``
 ``python setup.py install``
 ``cd ../..``
+
 5. Install the following python modules. They are likely to rely on additional
 ``C`` libraries. Please see module specific documentation to resolve any issues.
 The modules are: ``mpi4py``, ``h5py``, ``scipy``, ``PyFFTW3``.
+
 6. Compile the spin weighted spherical harmonic routines.
 ``cd coffee/swsh/spinsfastpy/huffenberger_wandelt/``
 ``tar xvfz spinsfast_rev104.tar.gz``
@@ -40,6 +45,7 @@ You should be able to install ``spinsfast`` by executing the following:
 ``make``
 If you encounter missing headers first attempt installation of the following
 ``C``-libraries: ``libfftw3-dev`` and ``python-numpy``.
+
 7. Go to the systems directory and attempt to run them.
 
 Performing your first simulation and getting to know COFFEE
